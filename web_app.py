@@ -4,12 +4,31 @@ from pydantic import BaseModel
 from agent import AsterVoss
 from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
+from memory.persistence import long_term_context
+from pathlib import Path
 
 CONFIG = load_config()
 
 def build_prompt():
     m = get_memory().context_block(reload=True)
-    return AGENT_IDENTITY.render_system_prompt() + ("\n\n" + m if m else "")
+    growth = ""
+    growth_path = Path(__file__).resolve().parent / "memory" / "GROWTH_LOG.md"
+    try:
+        growth = growth_path.read_text(encoding="utf-8")
+    except OSError:
+        growth = ""
+    parts = [AGENT_IDENTITY.render_system_prompt()]
+    if m:
+        parts.append(m)
+    if growth:
+        parts.append(
+            "<shared_growth_history>\\n"
+            "These are a few curated milestones in Aster and Mint's shared history. "
+            "Use them naturally when relevant; never recite the log unless asked.\\n"
+            + growth
+            + "\\n</shared_growth_history>"
+        )
+    return "\\n\\n".join(parts)
 
 agent = AsterVoss(
     CONFIG,
