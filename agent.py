@@ -5,7 +5,18 @@ from typing import Any
 import log
 from jev import create_jev_client
 from llm.base import LLMError,LLMMessage,LLMProvider
-from llm.router import TaskRouter
+from llm.factory import create_provider
+
+class RouteDecision:
+    def __init__(self,provider_name,source='configured',complexity=1):
+        self.provider_name=provider_name; self.source=source; self.complexity=complexity
+class TaskRouter:
+    def __init__(self,config,jev_client=None): self.config=config; self.jev=jev_client
+    def select(self,text): return RouteDecision(self.config.main_provider or 'deepseek')
+    def get_provider(self,name): return create_provider(name,self.config)
+    def reasoning_for(self,provider):
+        import os
+        return (os.getenv(f'{provider.name.upper()}_REASONING_EFFORT') or self.config.default_reasoning or '').strip() or None
 from tools.registry import run_tool,tool_specs
 from memory.persistence import load_history,save_history,clear_history,save_long_term_note
 DEFAULT_SYSTEM_PROMPT="You are a helpful personal assistant. Answer normal conversation directly. Use tools for local files and never invent file contents."
