@@ -18,10 +18,9 @@ from typing import Any
 from config import ProviderConfig, load_config
 
 from .base import LLMError, LLMProvider
-from .providers import DeepSeekProvider, OpenAIProvider
+from .providers.deepseek import DeepSeekProvider
 
 PROVIDER_REGISTRY: dict[str, type[LLMProvider]] = {
-    "openai": OpenAIProvider,
     "deepseek": DeepSeekProvider,
 }
 
