@@ -1,0 +1,4 @@
+Aster Voss test document.
+
+This file lives in data/ and exists so the file tool has something to read.
+Line 4 is intentionally plain so tests can assert on exact content.
