@@ -7,6 +7,9 @@ from aster import AGENT_IDENTITY,AGENT_TAGLINE,PROJECT_VERSION,get_memory
 from config import load_config
 from llm.base import LLMError
 from llm.factory import available_providers,create_provider
+
+# Vercel FastAPI entrypoint: expose the web application as `app`.
+from web_app import app
 from memory.persistence import memory_stats
 def build_system_prompt():
     sections=[AGENT_IDENTITY.render_system_prompt()]
