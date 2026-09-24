@@ -5,10 +5,12 @@ fallback, while the web deployment can keep durable memory in the cloud.
 """
 from __future__ import annotations
 import json, os
+from datetime import datetime, timezone
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 TABLE = "aster_memory"
+CONVERSATION_TABLE = "aster_conversations"
 
 def _cfg():
     url = os.getenv("SUPABASE_URL", "").rstrip("/")
@@ -68,6 +70,75 @@ def save(memory: list[dict], user_id: str = "mint") -> bool:
     if not enabled(): return False
     try:
         _request("POST", TABLE, {"user_id": user_id, "memory": memory})
+        return True
+    except Exception:
+        return False
+
+
+def _utc_now():
+    return datetime.now(timezone.utc).isoformat()
+
+def list_conversations(user_id: str = "mint") -> list[dict]:
+    if not enabled():
+        return []
+    try:
+        rows = _request(
+            "GET",
+            f"{CONVERSATION_TABLE}?user_id=eq.{user_id}&select=id,title,created_at,updated_at&order=updated_at.desc",
+        )
+        return rows if isinstance(rows, list) else []
+    except Exception:
+        return []
+
+def load_conversation(conversation_id: str, user_id: str = "mint"):
+    if not enabled() or not conversation_id:
+        return None
+    try:
+        rows = _request(
+            "GET",
+            f"{CONVERSATION_TABLE}?id=eq.{conversation_id}&user_id=eq.{user_id}&select=id,title,messages,created_at,updated_at&limit=1",
+        )
+        if rows and isinstance(rows, list):
+            row = rows[0]
+            if isinstance(row.get("messages"), list):
+                return row
+    except Exception:
+        pass
+    return None
+
+def save_conversation(
+    conversation_id: str,
+    title: str,
+    messages: list[dict],
+    user_id: str = "mint",
+    created_at: str | None = None,
+) -> bool:
+    if not enabled() or not conversation_id:
+        return False
+    try:
+        now = _utc_now()
+        payload = {
+            "id": conversation_id,
+            "user_id": user_id,
+            "title": title.strip() or "新对话",
+            "messages": messages,
+            "updated_at": now,
+        }
+        if created_at:
+            payload["created_at"] = created_at
+        _request("POST", CONVERSATION_TABLE, payload)
+        return True
+    except Exception:
+        return False
+
+def delete_conversation(conversation_id: str, user_id: str = "mint") -> bool:
+    if not enabled() or not conversation_id:
+        return False
+    try:
+        _request(
+            "DELETE",
+            f"{CONVERSATION_TABLE}?id=eq.{conversation_id}&user_id=eq.{user_id}",
+        )
         return True
     except Exception:
         return False
