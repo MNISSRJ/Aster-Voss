@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from agent import AsterVoss
@@ -8,6 +8,7 @@ from config import load_config
 from memory.persistence import long_term_context
 from memory import brain
 from pathlib import Path
+import json
 
 CONFIG = load_config()
 
@@ -44,6 +45,14 @@ app = FastAPI(title="Aster Voss")
 
 class ChatIn(BaseModel):
     message: str
+
+
+class MemoryIn(BaseModel):
+    text: str
+
+
+class MemoryEditIn(BaseModel):
+    text: str
 
 
 @app.get("/", response_class=HTMLResponse)
