@@ -100,7 +100,7 @@ textarea:focus{border-color:rgba(87,108,210,.55);box-shadow:0 0 0 4px rgba(111,1
 .side-foot button:hover{background:#181d26;color:#eef1f6}
 .settings-panel{position:fixed;top:0;right:0;bottom:0;width:min(430px,94vw);background:#11151c;border-left:1px solid #2a303c;box-shadow:0 18px 70px rgba(0,0,0,.45);transform:translateX(100%);transition:transform .2s ease;z-index:31;display:flex;flex-direction:column}
 .settings-panel.open{transform:translateX(0)}
-.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:30}
+.settings-overlay{position:fixed;inset:0;background:rgba(84,98,145,.18);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:30}
 .settings-overlay.open{opacity:1;pointer-events:auto}
 .settings-head{display:flex;align-items:center;justify-content:space-between;padding:18px;border-bottom:1px solid #2a303c}
 .settings-title{font-size:18px;font-weight:700}.settings-close{border:0;background:transparent;color:#8c95a5;font-size:24px}
@@ -216,7 +216,7 @@ html[data-theme="dark"] .settings-panel{background:rgba(246,249,255,.78)}
 
 <div class="bar">
   <textarea id="input" rows="1" placeholder="和 Aster 说点什么…"></textarea>
-  <button class="send" id="send" onclick="send()">发送</button>
+  <button class="send" id="send" onclick="send()" aria-label="发送">↑</button>
 </div>
 </main>
 
@@ -250,6 +250,16 @@ function add(t,k){
   d.textContent=t;
   c.appendChild(d);
   window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"});
+  return d;
+}
+
+function addThinking(){
+  const d=document.createElement("div");
+  d.className="msg a thinking a-thinking-glow";
+  d.innerHTML='<span class="thinking-name">Aster</span><span class="drops"><span class="drop"></span><span class="drop"></span><span class="drop"></span><span class="drop"></span></span>';
+  c.appendChild(d);
+  window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"});
+  return d;
 }
 
 async function send(){
@@ -259,7 +269,8 @@ async function send(){
   i.value="";
   i.style.height="48px";
   b.disabled=true;
-  s.textContent="Aster 正在思考…";
+  s.textContent="";
+  const thinking=addThinking();
   try{
     const r=await fetch("/api/chat",{
       method:"POST",
@@ -268,8 +279,10 @@ async function send(){
     });
     const x=await r.json();
     if(!r.ok) throw new Error(x.detail||x.error||"请求失败");
+    thinking.remove();
     add(x.text||"……","a");
   }catch(e){
+    thinking.remove();
     add("抱歉，刚才没有成功收到回复。请再试一次。","a");
     console.error(e);
   }finally{
@@ -304,9 +317,11 @@ function closeSettings(){
 }
 
 function setAsterTheme(theme){
-  document.body.classList.toggle("aster-light",theme==="light");
-  localStorage.setItem("aster-theme",theme);
-  document.querySelectorAll(".theme-option").forEach(btn=>btn.classList.toggle("active",btn.dataset.theme===theme));
+  const actual=theme==="light"?"light":"dark";
+  document.body.classList.toggle("aster-light",actual==="light");
+  document.documentElement.dataset.theme=actual;
+  localStorage.setItem("aster-theme",actual);
+  document.querySelectorAll(".theme-option").forEach(btn=>btn.classList.toggle("active",btn.dataset.theme===actual));
 }
 setAsterTheme(localStorage.getItem("aster-theme")||"dark");
 
