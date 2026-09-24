@@ -39,6 +39,11 @@ def _read(args: dict[str, Any]) -> str:
     path = _safe_project_path(raw_path)
     if path is None:
         return "Refused: outside project."
+    # Never allow an LLM tool call to read environment files or repository
+    # metadata that may contain credentials or deployment secrets.
+    sensitive = {".env", ".env.local", ".env.production", ".env.development", ".git"}
+    if any(part in sensitive or part.startswith(".env.") for part in path.parts):
+        return "Refused: sensitive project file."
     if not path.is_file():
         return "File not found."
     try:
