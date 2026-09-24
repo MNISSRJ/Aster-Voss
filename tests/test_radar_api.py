@@ -21,13 +21,15 @@ def test_radar_refresh_uses_service(monkeypatch):
 import web_app
 
 def test_radar_route_builds_real_provider(monkeypatch):
-    calls = {}
-    class FakeConfig:
-        is_configured = True
+    from types import SimpleNamespace
 
+    calls = {}
     fake_provider = object()
-    monkeypatch.setattr(web_app.CONFIG, "active_provider", FakeConfig())
-    monkeypatch.setattr(web_app.CONFIG, "main_provider", "deepseek")
+    fake_config = SimpleNamespace(
+        active_provider=SimpleNamespace(is_configured=True),
+        main_provider="deepseek",
+    )
+    monkeypatch.setattr(web_app, "CONFIG", fake_config)
     monkeypatch.setattr(
         web_app,
         "create_provider",
