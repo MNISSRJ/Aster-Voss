@@ -10,6 +10,7 @@ from memory import cloud
 class RadarService:
     def _fallback_payload(self, candidates):
         return {
+            "status": "ready" if candidates else "empty",
             "brief_date": time.strftime("%Y-%m-%d", time.gmtime()),
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "intro_zh": (
@@ -46,11 +47,15 @@ class RadarService:
                 payload = self._fallback_payload(candidates)
         else:
             payload = self._fallback_payload(candidates)
-        if cloud.enabled():
-            cloud.save_ai_brief(payload["brief_date"], payload)
+        payload.setdefault("status", "ready" if payload.get("items") else "empty")
+        payload["saved"] = bool(cloud.save_ai_brief(payload["brief_date"], payload)) if cloud.enabled() else False
         return payload
 
     def today(self):
         date_str = time.strftime("%Y-%m-%d", time.gmtime())
         stored = cloud.load_ai_brief(date_str) if cloud.enabled() else None
-        return stored["payload"] if stored and isinstance(stored.get("payload"), dict) else None
+        if stored and isinstance(stored.get("payload"), dict):
+            payload = dict(stored["payload"])
+            payload.setdefault("status", "ready" if payload.get("items") else "empty")
+            return payload
+        return None
