@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import os
 
 from . import brain
+from .retrieval import LexicalMemoryRetriever
 
 
 @dataclass(frozen=True)
@@ -29,3 +30,6 @@ class MemoryService:
 
     def replace(self, entries) -> bool:
         return brain.replace(entries, user_id=self.user_id)
+
+    def relevant(self, query: str, limit: int = 6):
+        return LexicalMemoryRetriever().search(query, self.list(), limit=limit)
