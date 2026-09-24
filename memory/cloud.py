@@ -11,7 +11,11 @@ from urllib.error import HTTPError, URLError
 TABLE = "aster_memory"
 
 def _cfg():
-    return os.getenv("SUPABASE_URL","").rstrip("/"), os.getenv("SUPABASE_SERVICE_ROLE_KEY","")
+    url = os.getenv("SUPABASE_URL", "").rstrip("/")
+    # Supabase now exposes a server-side Secret Key. Keep the old service-role
+    # variable as a backward-compatible fallback for existing deployments.
+    key = os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    return url, key
 
 def enabled() -> bool:
     url, key = _cfg()
