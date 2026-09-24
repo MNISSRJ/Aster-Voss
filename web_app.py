@@ -184,7 +184,9 @@ body::after{
 .conversation-item{width:100%;border:0;background:transparent;color:#67748b;border-radius:9px;padding:8px 7px;display:flex;align-items:center;gap:7px;text-align:left;font-size:12px;transition:.14s ease}
 .conversation-item:hover,.conversation-item.active{background:rgba(255,255,255,.55);color:#2c3850}
 .conversation-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.conversation-meta{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.conversation-meta{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.conversation-group{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#9aa6b9;padding:10px 7px 4px}
+.conversation-item time{font-size:9px;color:#8f9ab0}
+
 .conversation-time{font-size:9px;color:#8f9ab0;line-height:1.2}
 .radar-status{font-size:10px;color:#8290a8;margin-top:3px}
 
@@ -655,29 +657,43 @@ function formatConversationTime(value){
   if(isYesterday)return "昨天 "+d.toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});
   return d.toLocaleDateString("zh-CN",{month:"2-digit",day:"2-digit"});
 }
+function conversationGroup(item){
+  if(!item.created_at)return "其他";
+  const d=new Date(item.created_at), now=new Date();
+  const startToday=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const yesterday=new Date(startToday);yesterday.setDate(yesterday.getDate()-1);
+  if(d>=startToday)return "今天";
+  if(d>=yesterday)return "昨天";
+  return d.toLocaleDateString("zh-CN",{month:"long",day:"numeric"});
+}
 function renderConversations(items){
   conversationList.innerHTML="";
   if(!items.length){
     conversationList.innerHTML='<div class="conversation-empty">还没有过去的对话</div>';
     return;
   }
+  let group="";
   items.forEach(item=>{
+    const nextGroup=conversationGroup(item);
+    if(nextGroup!==group){
+      const heading=document.createElement("div");heading.className="conversation-group";heading.textContent=nextGroup;
+      conversationList.appendChild(heading);group=nextGroup;
+    }
     const row=document.createElement("div");
     row.className="conversation-item"+(item.id===currentConversationId?" active":"");
     const meta=document.createElement("div");meta.className="conversation-meta";
     const title=document.createElement("span");title.className="conversation-title";
     title.title=item.title||"新对话";title.textContent=item.title||"新对话";
-    const time=document.createElement("span");time.className="conversation-time";
+    const time=document.createElement("time");time.className="conversation-time";
     const startTime=item.created_at?formatConversationTime(item.created_at):"";
     const updated=item.updated_at?formatConversationTime(item.updated_at):"";
-    time.textContent=startTime?("开始 "+startTime+(updated&&updated!==startTime?(" · 更新 "+updated):"")):"";
+    time.title=item.created_at?new Date(item.created_at).toLocaleString("zh-CN"):"";
+    time.textContent=startTime?("开始 "+startTime+(updated&&updated!==startTime?(" · "+updated):"")):"";
     meta.append(title,time);
     const del=document.createElement("button");del.type="button";del.className="conversation-delete";
     del.setAttribute("aria-label","删除对话");del.textContent="×";
     row.append(meta,del);
-    row.addEventListener("click",event=>{
-      if(event.target!==del)openConversation(item.id);
-    });
+    row.addEventListener("click",event=>{if(event.target!==del)openConversation(item.id);});
     del.addEventListener("click",async event=>{event.stopPropagation();await deleteConversation(item.id);});
     conversationList.appendChild(row);
   });
