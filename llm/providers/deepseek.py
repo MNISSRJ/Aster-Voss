@@ -4,6 +4,7 @@ from typing import Any
 from ..base import LLMError,LLMProvider,LLMResponse,ToolCall
 class DeepSeekProvider(LLMProvider):
     name="deepseek"
+    @property\n    def capabilities(self):\n        return {"chat", "tools", "reasoning"}\n
     def complete(self,messages,tools=None,temperature=None,max_tokens=None,reasoning=None):
         if not self.is_available(): raise LLMError(self.unavailable_reason())
         ms=[]
