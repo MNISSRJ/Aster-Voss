@@ -184,7 +184,54 @@ def reset():
     return {"ok": True}
 
 
-@app.get("/api/memory")\ndef get_memories():\n    return {"memories": load_entries()}\n\n@app.post("/api/memory")\ndef post_memory(body: MemoryIn):\n    ok=add_memory(body.text, "manual")\n    return {"ok":ok}\n\n@app.put("/api/memory")\ndef put_memory(body: MemoryListIn):\n    return {"ok":replace_memory(body.memories)}\n\n@app.delete("/api/memory/{memory_id}")\ndef del_memory(memory_id: str):\n    return {"ok":delete_memory(memory_id)}\n\n@app.post("/api/memory/summarize")\ndef summarize_memory():\n    recent=[m for m in agent.messages if m.role in {"user","assistant"}][-12:]\n    if not recent: return {"ok":True,"message":"最近还没有足够的对话可以整理。"}\n    prompt="请从下面最近的对话中提取真正值得长期记住的用户信息。只提取稳定偏好、长期目标、持续项目、明确要求和重要事实；不要记录临时情绪、一次性任务、密码/API key等敏感信息。每条一行，直接写记忆内容，不要编号，不要解释。\\n\\n"+\\n        "\\n".join(f"{m.role}: {m.content}" for m in recent)\n    try:\n        p=agent.router.get_provider(CONFIG.main_provider)\n        r=p.complete([__import__("llm.base",fromlist=["LLMMessage"]).LLMMessage.system("你是记忆整理器。"),__import__("llm.base",fromlist=["LLMMessage"]).LLMMessage.user(prompt)])\n        lines=[x.strip("- •\\t ") for x in (r.text or "").splitlines() if x.strip()]\n        added=0\n        for line in lines:\n            if len(line)<3 or len(line)>300: continue\n            if add_memory(line,"conversation_summary"): added+=1\n        return {"ok":True,"message":f"整理完成，新增 {added} 条长期记忆。"}\n    except Exception as e:\n        return {"ok":False,"message":"暂时无法整理记忆。"}\n\n@app.get("/api/status")
+@app.get("/api/memory")
+def get_memories():
+    return {"memories": load_entries()}
+
+@app.post("/api/memory")
+def post_memory(body: MemoryIn):
+    ok=add_memory(body.text, "manual")
+    return {"ok":ok}
+
+@app.put("/api/memory")
+def put_memory(body: MemoryListIn):
+    return {"ok":replace_memory(body.memories)}
+
+@app.delete("/api/memory/{memory_id}")
+def del_memory(memory_id: str):
+    return {"ok":delete_memory(memory_id)}
+
+@app.post("/api/memory/summarize")
+def summarize_memory():
+    recent=[m for m in agent.messages if m.role in {"user","assistant"}][-12:]
+    if not recent:
+        return {"ok":True,"message":"最近还没有足够的对话可以整理。"}
+    prompt = (
+        "请从下面最近的对话中提取真正值得长期记住的用户信息。"
+        "只提取稳定偏好、长期目标、持续项目、明确要求和重要事实；"
+        "不要记录临时情绪、一次性任务、密码/API key等敏感信息。"
+        "每条一行，直接写记忆内容，不要编号，不要解释。\n\n"
+        + "\n".join(f"{m.role}: {m.content}" for m in recent)
+    )
+    try:
+        from llm.base import LLMMessage
+        p=agent.router.get_provider(CONFIG.main_provider)
+        r=p.complete([
+            LLMMessage.system("你是记忆整理器。"),
+            LLMMessage.user(prompt),
+        ])
+        lines=[x.strip("- •\t ") for x in (r.text or "").splitlines() if x.strip()]
+        added=0
+        for line in lines:
+            if len(line)<3 or len(line)>300:
+                continue
+            if add_memory(line,"conversation_summary"):
+                added+=1
+        return {"ok":True,"message":f"整理完成，新增 {added} 条长期记忆。"}
+    except Exception:
+        return {"ok":False,"message":"暂时无法整理记忆。"}
+
+@app.get("/api/status")
 def status():
     return {
         "name": AGENT_IDENTITY.name,
