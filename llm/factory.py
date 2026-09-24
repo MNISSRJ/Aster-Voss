@@ -19,9 +19,11 @@ from config import ProviderConfig, load_config
 
 from .base import LLMError, LLMProvider
 from .providers.deepseek import DeepSeekProvider
+from .providers.openai import OpenAIProvider
 
 PROVIDER_REGISTRY: dict[str, type[LLMProvider]] = {
     "deepseek": DeepSeekProvider,
+    "openai": OpenAIProvider,
 }
 
 _KNOWN_FIELDS = ("API_KEY", "MODEL", "BASE_URL", "TIMEOUT", "MAX_TOKENS")
