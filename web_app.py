@@ -721,19 +721,21 @@ def chat(body: ChatIn):
         request_agent = _agent_from_messages(history)
         r = request_agent.run(body.message)
 
-        if not cloud.save_conversation(
+        persisted = cloud.save_conversation(
             conversation_id,
             title,
             _message_dicts(request_agent.messages),
             created_at=created_at,
-        ):
-            raise HTTPException(status_code=503, detail="对话暂时无法保存")
+        )
+        # Conversation archiving must never make a successful model response
+        # fail. The archive can be unavailable while the chat itself remains usable.
         return {
             "text": r.text,
             "provider": r.provider,
             "model": r.model,
-            "conversation_id": conversation_id,
+            "conversation_id": conversation_id if persisted else None,
             "title": title,
+            "conversation_persisted": bool(persisted),
         }
 
     # Development fallback when cloud storage is not configured.
