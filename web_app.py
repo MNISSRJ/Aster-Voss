@@ -568,8 +568,8 @@ async function resetChat(){
   localStorage.removeItem("aster-current-conversation");
   try{await fetch("/api/reset",{method:"POST"});}catch(error){console.error(error)}
   chat.innerHTML='<div class="msg a welcome">新对话开始。<br>你好，我还是 Aster Voss。长期记忆不会因为新对话而消失。</div>';
-  renderConversations([]);
   setWorkspace("chat");
+  await loadConversations(false);
   input.focus();
   showToast("已开启新对话");
   sidebar.classList.remove("open");
