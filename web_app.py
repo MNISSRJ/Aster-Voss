@@ -572,9 +572,7 @@ async function openConversation(id,closeSidebar=true){
         }
       });
     }
-    renderConversations((await fetch("/api/conversations",{cache:"no-store"})).ok
-      ? ((await (await fetch("/api/conversations",{cache:"no-store"})).json()).conversations||[])
-      : []);
+    await loadConversations(false);
     if(closeSidebar)sidebar.classList.remove("open");
     input.focus();
     scrollChat();
