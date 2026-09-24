@@ -1,6 +1,8 @@
 from pathlib import Path
 
-SOURCE = (Path(__file__).resolve().parents[1] / "web_app.py").read_text(encoding="utf-8")
+ROOT = Path(__file__).resolve().parents[1]
+SOURCE = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+APP_SOURCE = (ROOT / "web_app.py").read_text(encoding="utf-8")
 
 def test_new_chat_returns_from_radar_to_chat():
     assert 'function resetChat(){' in SOURCE
