@@ -11,6 +11,8 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from llm.base import LLMMessage
+
 FEEDS = [
     ("TechCrunch AI", "https://techcrunch.com/category/artificial-intelligence/feed/"),
     ("The Verge AI", "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"),
@@ -154,8 +156,8 @@ def curate(provider, candidates: list[dict[str, Any]]) -> dict[str, Any]:
     )
     response = provider.complete(
         [
-            {"role": "system", "content": "Return valid JSON only."},
-            {"role": "user", "content": prompt},
+            LLMMessage.system("Return valid JSON only."),
+            LLMMessage.user(prompt),
         ],
         temperature=0.2,
         max_tokens=1400,
