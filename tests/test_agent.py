@@ -11,6 +11,9 @@ class FakeProvider(LLMProvider):
     def capabilities(self):
         return {"chat", "tools"}
 
+    def is_available(self):
+        return True
+
     def complete(self, messages, tools=None, temperature=None, max_tokens=None, reasoning=None):
         return LLMResponse(
             text="pong",
