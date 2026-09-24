@@ -266,7 +266,7 @@ def ai_radar_refresh():
 
 @app.get("/api/ai-radar/history")
 def ai_radar_history():
-    return {"briefs": cloud.list_ai_briefs(limit=14) if cloud.enabled() else []}
+    return {"briefs": RADAR.history(limit=14), "server_time": int(time.time())}
 
 
 @app.get("/api/cron/ai-radar")
@@ -355,7 +355,7 @@ def remove_memory(memory_id: str):
 
 @app.post("/api/memory/summarize")
 def summarize_memories(body: ConversationRefIn):
-    conversation = cloud.load_conversation(body.conversation_id or "") if cloud.enabled() else None
+    conversation = CONVERSATIONS.get(body.conversation_id or "") if CONVERSATIONS.enabled else None
     source_messages = conversation.get("messages", []) if conversation else _message_dicts(load_history())
     messages = [
         LLMMessage(role=item["role"], content=item["content"])
