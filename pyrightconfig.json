@@ -1,0 +1,6 @@
+{
+  "include": ["*.py", "aster", "memory", "llm", "tools", "services", "tests"],
+  "exclude": ["**/__pycache__", ".venv"],
+  "typeCheckingMode": "basic",
+  "reportMissingImports": false
+}
