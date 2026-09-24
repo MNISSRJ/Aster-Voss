@@ -145,7 +145,16 @@ def save_conversation(
             )
         else:
             payload["id"] = conversation_id
-            _request("POST", CONVERSATION_TABLE, payload)
+            try:
+                _request("POST", CONVERSATION_TABLE, payload)
+            except HTTPError as exc:
+                if exc.code != 409:
+                    raise
+                _request(
+                    "PATCH",
+                    f"{CONVERSATION_TABLE}?id=eq.{conversation_id}&user_id=eq.{user_id}",
+                    payload,
+                )
         return True
     except Exception:
         return False
