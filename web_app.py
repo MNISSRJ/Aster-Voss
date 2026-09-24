@@ -161,6 +161,16 @@ body::after{
 }
 .side-new:hover{background:rgba(255,255,255,.66);transform:translateY(-1px)}
 .side-nav{display:flex;flex-direction:column;gap:3px;margin-top:14px}
+.conversation-list{margin-top:10px;display:flex;flex-direction:column;gap:2px;overflow:auto;max-height:calc(100vh - 275px);scrollbar-width:none}
+.conversation-list::-webkit-scrollbar{display:none}
+.conversation-empty{padding:10px 10px;color:#95a0b3;font-size:11px;line-height:1.5}
+.conversation-item{width:100%;border:0;background:transparent;color:#67748b;border-radius:9px;padding:8px 7px;display:flex;align-items:center;gap:7px;text-align:left;font-size:12px;transition:.14s ease}
+.conversation-item:hover,.conversation-item.active{background:rgba(255,255,255,.55);color:#2c3850}
+.conversation-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.conversation-delete{flex:0 0 22px;width:22px;height:22px;border:0;background:transparent;color:#9aa4b5;border-radius:7px;opacity:0;font-size:14px;line-height:1}
+.conversation-item:hover .conversation-delete,.conversation-item.active .conversation-delete{opacity:1}
+.conversation-delete:hover{background:rgba(130,145,180,.16);color:#4f5c73}
+
 .side-item{
   width:100%;border:0;background:transparent;color:#6f7d94;border-radius:10px;padding:9px 10px;
   text-align:left;font-size:13px;display:flex;align-items:center;gap:9px;transition:.15s ease
@@ -318,8 +328,10 @@ body::after{
     <button class="side-new" id="new-chat-side">＋ 新对话</button>
     <nav class="side-nav">
       <button class="side-item active" id="nav-chat">⌂ <span>对话</span></button>
-      <button class="side-item" id="nav-memory">◉ <span>长期记忆</span></button>
     </nav>
+    <div class="conversation-list" id="conversation-list">
+      <div class="conversation-empty">还没有过去的对话</div>
+    </div>
     <div class="side-spacer"></div>
     <div class="side-foot"><button id="settings-side">⚙ 设置</button></div>
   </aside>
@@ -382,6 +394,8 @@ const overlay=document.querySelector("#overlay");
 const settings=document.querySelector("#settings");
 const toast=document.querySelector("#toast");
 const memoryList=document.querySelector("#memory-list");
+const conversationList=document.querySelector("#conversation-list");
+let currentConversationId=localStorage.getItem("aster-current-conversation")||null;
 const memoryInput=document.querySelector("#memory-input");
 
 function scrollChat(){
@@ -421,12 +435,17 @@ async function sendMessage(){
     const response=await fetch("/api/chat",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({message:value})
+      body:JSON.stringify({message:value,conversation_id:currentConversationId})
     });
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(data.detail||data.error||"请求失败");
     thinking.remove();
     addMessage(data.text||"……","a");
+    if(data.conversation_id){
+      currentConversationId=data.conversation_id;
+      localStorage.setItem("aster-current-conversation",currentConversationId);
+    }
+    await loadConversations(false);
   }catch(error){
     thinking.remove();
     addMessage("刚才没有成功收到回复，请再试一次。","a");
@@ -442,8 +461,11 @@ function toggleSidebar(){sidebar.classList.toggle("open")}
 document.querySelector("#mobile-menu").addEventListener("click",toggleSidebar);
 
 async function resetChat(){
+  currentConversationId=null;
+  localStorage.removeItem("aster-current-conversation");
   try{await fetch("/api/reset",{method:"POST"});}catch(error){console.error(error)}
   chat.innerHTML='<div class="msg a welcome">新对话开始。<br>你好，我还是 Aster Voss。长期记忆不会因为新对话而消失。</div>';
+  renderConversations([]);
   input.focus();
   showToast("已开启新对话");
   sidebar.classList.remove("open");
@@ -472,6 +494,113 @@ function applyTheme(theme){
 }
 document.querySelectorAll(".theme-btn").forEach(btn=>btn.addEventListener("click",()=>applyTheme(btn.dataset.themeChoice)));
 applyTheme(localStorage.getItem("aster-ui-theme")||"glass");
+
+
+function formatConversationDate(value){
+  if(!value)return "";
+  try{
+    const date=new Date(value);
+    return date.toLocaleDateString("zh-CN",{month:"2-digit",day:"2-digit"});
+  }catch(error){return ""}
+}
+function renderConversations(items){
+  conversationList.innerHTML="";
+  if(!items.length){
+    conversationList.innerHTML='<div class="conversation-empty">还没有过去的对话</div>';
+    return;
+  }
+  items.forEach(item=>{
+    const row=document.createElement("div");
+    row.className="conversation-item"+(item.id===currentConversationId?" active":"");
+    const title=document.createElement("span");
+    title.className="conversation-title";
+    title.title=item.title||"新对话";
+    title.textContent=item.title||"新对话";
+    const del=document.createElement("button");
+    del.type="button";
+    del.className="conversation-delete";
+    del.setAttribute("aria-label","删除对话");
+    del.textContent="×";
+    row.append(title,del);
+    title.addEventListener("click",()=>openConversation(item.id));
+    row.addEventListener("click",event=>{
+      if(event.target!==del)openConversation(item.id);
+    });
+    del.addEventListener("click",async event=>{
+      event.stopPropagation();
+      await deleteConversation(item.id);
+    });
+    conversationList.appendChild(row);
+  });
+}
+async function loadConversations(autoOpen=true){
+  try{
+    const response=await fetch("/api/conversations",{cache:"no-store"});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.detail||"读取对话失败");
+    const items=Array.isArray(data.conversations)?data.conversations:[];
+    renderConversations(items);
+    if(!autoOpen)return;
+    if(currentConversationId && items.some(item=>item.id===currentConversationId)){
+      await openConversation(currentConversationId,false);
+    }else if(items.length){
+      await openConversation(items[0].id,false);
+    }else{
+      currentConversationId=null;
+      localStorage.removeItem("aster-current-conversation");
+    }
+  }catch(error){
+    conversationList.innerHTML='<div class="conversation-empty">历史对话暂时无法读取</div>';
+    console.error(error);
+  }
+}
+async function openConversation(id,closeSidebar=true){
+  try{
+    const response=await fetch("/api/conversations/"+encodeURIComponent(id),{cache:"no-store"});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.detail||"读取对话失败");
+    currentConversationId=data.id;
+    localStorage.setItem("aster-current-conversation",currentConversationId);
+    chat.innerHTML="";
+    const messages=Array.isArray(data.messages)?data.messages:[];
+    if(!messages.length){
+      chat.innerHTML='<div class="msg a welcome">这个对话还没有消息。</div>';
+    }else{
+      messages.forEach(message=>{
+        if(message.role==="user"||message.role==="assistant"){
+          addMessage(message.content||"",message.role==="user"?"u":"a");
+        }
+      });
+    }
+    renderConversations((await fetch("/api/conversations",{cache:"no-store"})).ok
+      ? ((await (await fetch("/api/conversations",{cache:"no-store"})).json()).conversations||[])
+      : []);
+    if(closeSidebar)sidebar.classList.remove("open");
+    input.focus();
+    scrollChat();
+  }catch(error){
+    showToast("打开对话失败");
+    console.error(error);
+  }
+}
+async function deleteConversation(id){
+  if(!window.confirm("删除这段对话？删除后无法恢复。"))return;
+  try{
+    const response=await fetch("/api/conversations/"+encodeURIComponent(id),{method:"DELETE"});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.detail||"删除失败");
+    if(currentConversationId===id){
+      currentConversationId=null;
+      localStorage.removeItem("aster-current-conversation");
+      chat.innerHTML='<div class="msg a welcome">新对话开始。<br>你可以继续和 Aster 聊天。</div>';
+    }
+    await loadConversations(false);
+    showToast("对话已删除");
+  }catch(error){
+    showToast("删除对话失败");
+    console.error(error);
+  }
+}
 
 async function loadMemories(){
   memoryList.innerHTML='<div class="memory-empty">正在读取…</div>';
@@ -554,7 +683,7 @@ async function deleteMemory(id){
 async function summarizeMemories(){
   const button=document.querySelector("#memory-summary");button.disabled=true;button.textContent="正在整理…";
   try{
-    const response=await fetch("/api/memory/summarize",{method:"POST"});
+    if(!currentConversationId){showToast("先聊几句，再整理这段对话");button.disabled=false;button.textContent="✨ 从最近对话整理";return;}\n    const response=await fetch("/api/memory/summarize",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conversation_id:currentConversationId})});
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(data.detail||data.error||"整理失败");
     showToast(data.added?("已整理 "+data.added+" 条记忆"):"没有发现新的长期记忆");
@@ -574,6 +703,8 @@ input.addEventListener("keydown",event=>{
     sendMessage();
   }
 });
+loadConversations(true);
+
 </script>
 </body>
 </html>""")
