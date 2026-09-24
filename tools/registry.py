@@ -101,10 +101,13 @@ def tool_permission(name: str) -> str | None:
     return definition.permission if definition else None
 
 
-def run_tool(name: str, args: dict[str, Any] | None = None) -> str:
+def run_tool(name: str, args: dict[str, Any] | None = None, allowed_permissions: set[str] | None = None) -> str:
     definition = REGISTRY.get(name)
     if definition is None:
         return "Unknown tool."
+    permissions = allowed_permissions or {"read"}
+    if definition.permission not in permissions:
+        return "Refused: tool permission is not allowed."
     try:
         return definition.handler(args or {})
     except Exception as exc:
