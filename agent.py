@@ -11,8 +11,53 @@ class RouteDecision:
     def __init__(self,provider_name,source='configured',complexity=1):
         self.provider_name=provider_name; self.source=source; self.complexity=complexity
 class TaskRouter:
-    def __init__(self,config,jev_client=None): self.config=config; self.jev=jev_client
-    def select(self,text): return RouteDecision(self.config.main_provider or 'deepseek')
+    _REASONING_HINTS = (
+        "证明", "推导", "数学", "微积分", "线性代数", "debug", "报错",
+        "重构", "架构", "分析", "比较", "规划", "代码", "python",
+    )
+    _TOOL_HINTS = (
+        "读取文件", "打开文件", "项目", "仓库", "github", "文件", "查看代码",
+        "搜索项目", "读取", "修改代码",
+    )
+
+    def __init__(self, config, jev_client=None):
+        self.config = config
+        self.jev = jev_client
+
+    def _classify(self, text: str) -> tuple[int, str]:
+        normalized = (text or "").strip().lower()
+        reasoning = any(token.lower() in normalized for token in self._REASONING_HINTS)
+        tools = any(token.lower() in normalized for token in self._TOOL_HINTS)
+        if tools and reasoning:
+            return 3, "rules:reasoning+tools"
+        if reasoning:
+            return 2, "rules:reasoning"
+        if tools:
+            return 2, "rules:tools"
+        return 1, "rules:chat"
+
+    def select(self, text):
+        complexity, source = self._classify(text)
+        provider_name = self.config.main_provider or "deepseek"
+
+        # Explicit configuration remains the default. AUTO_ROUTING enables the
+        # lightweight policy layer without making an external router mandatory.
+        if self.config.auto_routing and self.jev is not None:
+            try:
+                decision = self.jev.decide(
+                    text=text,
+                    providers=list(self.config.providers.keys()),
+                    complexity=complexity,
+                )
+                if decision and decision.provider in self.config.providers:
+                    provider_name = decision.provider
+                    source = "jev"
+                    complexity = decision.complexity or complexity
+            except Exception:
+                source += ":jev-fallback"
+
+        return RouteDecision(provider_name, source=source, complexity=complexity)
+
     def get_provider(self,name): return create_provider(name,self.config)
     def reasoning_for(self,provider):
         import os
