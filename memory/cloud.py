@@ -268,3 +268,27 @@ def usage_summary(days: int = 30, user_id: str = DEFAULT_USER_ID):
         }
     except Exception:
         return {"events": 0, "total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
+
+
+def match_memory_vectors(
+    embedding: list[float],
+    user_id: str = DEFAULT_USER_ID,
+    limit: int = 6,
+    threshold: float = 0.72,
+):
+    if not enabled():
+        return []
+    try:
+        rows = _request(
+            "POST",
+            "rpc/match_aster_memory",
+            {
+                "query_embedding": embedding,
+                "match_threshold": threshold,
+                "match_count": max(1, min(limit, 20)),
+                "target_user_id": user_id,
+            },
+        )
+        return rows if isinstance(rows, list) else []
+    except Exception:
+        return []
