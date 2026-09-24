@@ -442,6 +442,8 @@ body::after{
         <button class="memory-add" id="memory-add" type="button">添加</button>
       </div>
       <button class="memory-import" id="memory-summary" type="button">✨ 从最近对话整理</button>
+      <button class="memory-import" id="memory-suggest" type="button">🪄 提取记忆建议（先审核）</button>
+      <div class="memory-list" id="memory-suggestions" hidden></div>
       <div class="memory-list" id="memory-list"><div class="memory-empty">正在读取…</div></div>
     </section>
   </div>
@@ -461,6 +463,7 @@ const memoryList=document.querySelector("#memory-list");
 const conversationList=document.querySelector("#conversation-list");
 let currentConversationId=localStorage.getItem("aster-current-conversation")||null;
 const memoryInput=document.querySelector("#memory-input");
+const memorySuggestions=document.querySelector("#memory-suggestions");
 const radarView=document.querySelector("#radar");
 const radarList=document.querySelector("#radar-list");
 const radarIntro=document.querySelector("#radar-intro");
@@ -768,6 +771,53 @@ async function deleteConversation(id){
   }
 }
 
+async function suggestMemories(){
+  if(!currentConversationId){showToast("先打开一段对话");return;}
+  const button=document.querySelector("#memory-suggest");
+  button.disabled=true;button.textContent="正在提取…";
+  memorySuggestions.hidden=false;
+  memorySuggestions.innerHTML='<div class="memory-empty">正在寻找值得长期记住的信息…</div>';
+  try{
+    const response=await fetch("/api/memory/suggestions",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({conversation_id:currentConversationId})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.detail||"提取失败");
+    if(!data.suggestions||!data.suggestions.length){
+      memorySuggestions.innerHTML='<div class="memory-empty">没有发现适合长期保存的内容。</div>';
+      return;
+    }
+    memorySuggestions.innerHTML="";
+    data.suggestions.forEach(value=>{
+      const card=document.createElement("div");card.className="memory-card";
+      const text=document.createElement("div");text.className="memory-text";text.textContent=value;
+      const actions=document.createElement("div");actions.className="memory-actions";actions.style.marginTop="9px";
+      const keep=document.createElement("button");keep.className="memory-action";keep.textContent="保存";
+      const skip=document.createElement("button");skip.className="memory-action";skip.textContent="忽略";
+      keep.onclick=async()=>{
+        const response=await fetch("/api/memory",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({text:value})
+        });
+        if(response.ok){card.remove();showToast("已保存");loadMemories();}
+      };
+      skip.onclick=()=>card.remove();
+      actions.append(keep,skip);
+      card.append(text,actions);
+      memorySuggestions.appendChild(card);
+    });
+  }catch(error){
+    memorySuggestions.innerHTML='<div class="memory-empty">记忆提取失败，请稍后再试。</div>';
+    console.error(error);
+  }finally{
+    button.disabled=false;
+    button.textContent="🪄 提取记忆建议（先审核）";
+  }
+}
+
 async function loadMemories(){
   memoryList.innerHTML='<div class="memory-empty">正在读取…</div>';
   try{
@@ -858,6 +908,7 @@ async function summarizeMemories(){
   finally{button.disabled=false;button.textContent="✨ 从最近对话整理";}
 }
 document.querySelector("#memory-summary").addEventListener("click",summarizeMemories);
+document.querySelector("#memory-suggest").addEventListener("click",suggestMemories);
 
 input.addEventListener("input",()=>{
   input.style.height="auto";
