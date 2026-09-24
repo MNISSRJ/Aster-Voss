@@ -127,6 +127,11 @@ class LLMProvider(ABC):
     def supports(self, capability: str) -> bool:
         return capability in self.capabilities
 
+    def supports_content(self, content: Any) -> bool:
+        if isinstance(content, list):
+            return self.supports("vision")
+        return True
+
     def unavailable_reason(self) -> str:
         if not self.api_key():
             return "API key is not set"
