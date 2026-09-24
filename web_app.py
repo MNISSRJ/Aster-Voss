@@ -184,6 +184,10 @@ body::after{
 .conversation-item{width:100%;border:0;background:transparent;color:#67748b;border-radius:9px;padding:8px 7px;display:flex;align-items:center;gap:7px;text-align:left;font-size:12px;transition:.14s ease}
 .conversation-item:hover,.conversation-item.active{background:rgba(255,255,255,.55);color:#2c3850}
 .conversation-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.conversation-meta{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.conversation-time{font-size:9px;color:#8f9ab0;line-height:1.2}
+.radar-status{font-size:10px;color:#8290a8;margin-top:3px}
+
 .conversation-delete{flex:0 0 22px;width:22px;height:22px;border:0;background:transparent;color:#9aa4b5;border-radius:7px;opacity:0;font-size:14px;line-height:1}
 .conversation-item:hover .conversation-delete,.conversation-item.active .conversation-delete{opacity:1}
 .conversation-delete:hover{background:rgba(130,145,180,.16);color:#4f5c73}
@@ -532,13 +536,18 @@ async function loadRadar(){
     const response=await fetch("/api/ai-radar/today",{cache:"no-store"});
     const data=await response.json();
     if(!response.ok)throw new Error(data.detail||"读取失败");
+    const statusLabel=data.status==="ready"?"已生成":data.status==="failed"?"生成失败":"未生成";
+    radarDate.textContent=(data.brief_date||"").replace(/-/g,".")+" · "+statusLabel;
+    if(data.generated_at){
+      radarDate.textContent += " · "+new Date(data.generated_at).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});
+    }
     if(!data.items||!data.items.length){
-      radarDate.textContent="还没有今日简报";
-      radarIntro.textContent="Aster 还没有拿到今天的热点。你可以点击“刷新”立即生成一份。";
+      radarIntro.textContent=data.status==="empty"
+        ?"Aster 还没有拿到今天的热点。点击“刷新”立即生成一份。"
+        :"当前没有可展示的简报内容。点击“刷新”重试。";
       radarList.innerHTML='<div class="radar-empty">暂无内容</div>';
       return;
     }
-    radarDate.textContent=(data.brief_date||"").replace(/-/g,".")+" · "+(data.source_count||0)+" 个来源";
     radarIntro.textContent=data.intro_zh||"Aster 已为你整理今天的 AI 热点。";
     radarList.innerHTML="";
     data.items.forEach(renderRadarCard);
@@ -565,16 +574,23 @@ document.querySelector("#nav-radar").addEventListener("click",()=>{setWorkspace(
 document.querySelector("#nav-chat").addEventListener("click",()=>{setWorkspace("chat");sidebar.classList.remove("open");});
 document.querySelector("#radar-refresh").addEventListener("click",async()=>{
   const btn=document.querySelector("#radar-refresh");btn.disabled=true;btn.textContent="整理中…";
+  radarList.innerHTML='<div class="radar-empty">正在抓取并整理最新 AI 热点…</div>';
   try{
     const response=await fetch("/api/ai-radar/refresh",{method:"POST"});
-    const data=await response.json();
-    if(!response.ok)throw new Error(data.detail||"刷新失败");
-    radarDate.textContent=(data.brief_date||"").replace(/-/g,".")+" · 刚刚更新";
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.detail||data.error||"刷新失败");
+    radarDate.textContent=(data.brief_date||"").replace(/-/g,".")+" · "+(data.status==="ready"?"刚刚更新":"已完成");
+    if(data.generated_at)radarDate.textContent+=" · "+new Date(data.generated_at).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});
     radarIntro.textContent=data.intro_zh||"";
-    radarList.innerHTML="";(data.items||[]).forEach(renderRadarCard);
-    showToast("AI 简报已更新");
-  }catch(error){showToast("简报更新失败");console.error(error)}
-  finally{btn.disabled=false;btn.textContent="↻ 刷新";}
+    radarList.innerHTML="";
+    (data.items||[]).forEach(renderRadarCard);
+    if(data.items&&data.items.length)showToast("AI 简报已更新，"+data.items.length+" 条");
+    else showToast("简报生成完成，但暂无可展示内容");
+  }catch(error){
+    radarList.innerHTML='<div class="radar-empty">简报生成失败。'+(error.message?("<br>"+error.message):"")+'</div>';
+    showToast("简报更新失败");
+    console.error(error);
+  }finally{btn.disabled=false;btn.textContent="↻ 刷新";}
 });
 function toggleSidebar(){sidebar.classList.toggle("open")}
 document.querySelector("#mobile-menu").addEventListener("click",toggleSidebar);
@@ -627,6 +643,18 @@ function formatConversationDate(value){
     return date.toLocaleDateString("zh-CN",{month:"2-digit",day:"2-digit"});
   }catch(error){return ""}
 }
+function formatConversationTime(value){
+  if(!value)return "";
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return "";
+  const now=new Date();
+  const sameDay=d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
+  if(sameDay)return d.toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});
+  const yesterday=new Date(now);yesterday.setDate(now.getDate()-1);
+  const isYesterday=d.getFullYear()===yesterday.getFullYear()&&d.getMonth()===yesterday.getMonth()&&d.getDate()===yesterday.getDate();
+  if(isYesterday)return "昨天 "+d.toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});
+  return d.toLocaleDateString("zh-CN",{month:"2-digit",day:"2-digit"});
+}
 function renderConversations(items){
   conversationList.innerHTML="";
   if(!items.length){
@@ -636,24 +664,21 @@ function renderConversations(items){
   items.forEach(item=>{
     const row=document.createElement("div");
     row.className="conversation-item"+(item.id===currentConversationId?" active":"");
-    const title=document.createElement("span");
-    title.className="conversation-title";
-    title.title=item.title||"新对话";
-    title.textContent=item.title||"新对话";
-    const del=document.createElement("button");
-    del.type="button";
-    del.className="conversation-delete";
-    del.setAttribute("aria-label","删除对话");
-    del.textContent="×";
-    row.append(title,del);
-    title.addEventListener("click",()=>openConversation(item.id));
+    const meta=document.createElement("div");meta.className="conversation-meta";
+    const title=document.createElement("span");title.className="conversation-title";
+    title.title=item.title||"新对话";title.textContent=item.title||"新对话";
+    const time=document.createElement("span");time.className="conversation-time";
+    const startTime=item.created_at?formatConversationTime(item.created_at):"";
+    const updated=item.updated_at?formatConversationTime(item.updated_at):"";
+    time.textContent=startTime?("开始 "+startTime+(updated&&updated!==startTime?(" · 更新 "+updated):"")):"";
+    meta.append(title,time);
+    const del=document.createElement("button");del.type="button";del.className="conversation-delete";
+    del.setAttribute("aria-label","删除对话");del.textContent="×";
+    row.append(meta,del);
     row.addEventListener("click",event=>{
       if(event.target!==del)openConversation(item.id);
     });
-    del.addEventListener("click",async event=>{
-      event.stopPropagation();
-      await deleteConversation(item.id);
-    });
+    del.addEventListener("click",async event=>{event.stopPropagation();await deleteConversation(item.id);});
     conversationList.appendChild(row);
   });
 }
