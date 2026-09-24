@@ -18,6 +18,7 @@ import json
 import time
 import os
 from uuid import uuid4
+import log
 
 CONFIG = load_config()
 MEMORY = MemoryService()
