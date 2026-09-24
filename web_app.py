@@ -121,7 +121,27 @@ textarea:focus{border-color:#4c78d8}
 .settings-theme{display:flex;background:#171b24;border-radius:10px;padding:3px;gap:3px}.theme-option{flex:1;border:0;background:transparent;color:#8c95a5;border-radius:8px;padding:8px;font-size:12px}.theme-option.active{background:#11151c;color:#f4f5f7}
 @media(min-width:900px){main{margin-left:238px;margin-right:0}.bar{width:min(820px,calc(100vw - 270px));left:calc(50% + 119px)}.settings-panel{width:430px}}
 @media(max-width:899px){.sidebar{transform:translateX(-100%);transition:transform .2s ease;width:270px}.sidebar.open{transform:translateX(0)}.bar{width:100%}.mobile-side{display:grid!important}}
-.mobile-side{display:none;border:0;background:transparent;color:#aab2bf;font-size:20px}</style>
+body.aster-light{background:#f7f7f5;color:#202124}
+body.aster-light .sidebar{background:#fff;border-color:#deded9}
+body.aster-light .side-logo{background:#f0f0ec}
+body.aster-light .side-new,body.aster-light .side-foot button{color:#353940}
+body.aster-light .side-item{color:#717780}body.aster-light .side-item:hover,body.aster-light .side-item.active{background:#f0f0ec;color:#202124}
+body.aster-light .side-foot{border-color:#deded9}
+body.aster-light .msg.a{color:#202124}body.aster-light .welcome{background:#fff;border-color:#deded9;color:#737981}
+body.aster-light .composer{background:#fff;border-color:#d8d8d2}
+body.aster-light textarea{color:#202124}body.aster-light .bar{background:linear-gradient(transparent,#f7f7f5 30%,#f7f7f5)}
+body.aster-light .settings-panel{background:#fff;border-color:#deded9;box-shadow:0 18px 70px rgba(31,35,40,.18)}
+body.aster-light .settings-head{border-color:#deded9}
+body.aster-light .memory-compose input,body.aster-light .memory-card{background:#f1f1ee;color:#202124;border-color:#deded9}
+body.aster-light .memory-card textarea{background:#fff;color:#202124;border-color:#d8d8d2}
+body.aster-light .memory-full{color:#353940;border-color:#d8d8d2}
+body.aster-light .settings-theme{background:#f1f1ee}
+body.aster-light .theme-option{color:#777d84}body.aster-light .theme-option.active{background:#fff;color:#202124}
+
+.mobile-side{display:none;border:0;background:transparent;color:#aab2bf;font-size:20px}
+.toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,10px);background:#1c212c;color:#f4f5f7;border:1px solid #2d3541;border-radius:9px;padding:8px 12px;font-size:12px;opacity:0;pointer-events:none;transition:.18s ease;z-index:50}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
 </head>
 <body>
 <aside class="sidebar" id="sidebar">
@@ -162,7 +182,7 @@ textarea:focus{border-color:#4c78d8}
   <div class="settings-body">
     <section class="settings-section">
       <h2>外观</h2><p>保持简洁、安静的工作空间。主题会保存在当前设备。</p>
-      <div class="settings-theme"><button class="theme-option" data-theme="dark" onclick="setAsterTheme("dark")">深色</button><button class="theme-option" data-theme="light" onclick="setAsterTheme("light")">浅色</button></div>
+      <div class="settings-theme"><button class="theme-option" data-theme="dark" onclick='setAsterTheme("dark")'>深色</button><button class="theme-option" data-theme="light" onclick='setAsterTheme("light")'>浅色</button></div>
     </section>
     <section class="settings-section">
       <h2>🧠 长期记忆</h2><p>这里是 Aster 的可编辑长期记忆。记忆会参与后续对话，但不会因为“新对话”而被清空。</p>
@@ -226,6 +246,95 @@ async function newChat(){
   i.focus();
 }
 
+function toggleAsterSidebar(){document.querySelector("#sidebar").classList.toggle("open")}
+
+function openSettings(){
+  document.querySelector("#settings-overlay").classList.add("open");
+  document.querySelector("#settings-panel").classList.add("open");
+  loadAsterMemories();
+  document.querySelector("#sidebar").classList.remove("open");
+}
+function closeSettings(){
+  document.querySelector("#settings-overlay").classList.remove("open");
+  document.querySelector("#settings-panel").classList.remove("open");
+}
+
+function setAsterTheme(theme){
+  document.body.classList.toggle("aster-light",theme==="light");
+  localStorage.setItem("aster-theme",theme);
+  document.querySelectorAll(".theme-option").forEach(btn=>btn.classList.toggle("active",btn.dataset.theme===theme));
+}
+setAsterTheme(localStorage.getItem("aster-theme")||"dark");
+
+async function loadAsterMemories(){
+  const list=document.querySelector("#memory-list");
+  list.innerHTML="<div class=\"memory-empty\">正在读取…</div>";
+  try{
+    const r=await fetch("/api/memory");
+    const x=await r.json();
+    if(!r.ok)throw new Error(x.detail||"读取失败");
+    if(!x.memories.length){list.innerHTML="<div class=\"memory-empty\">还没有长期记忆。<br>手动添加一条，或者让 Aster 从最近对话中整理。</div>";return;}
+    list.innerHTML="";x.memories.forEach(renderAsterMemory);
+  }catch(e){list.innerHTML="<div class=\"memory-empty\">长期记忆暂时无法读取。</div>";console.error(e)}
+}
+
+function renderAsterMemory(item){
+  const card=document.createElement("div");card.className="memory-card";
+  const row=document.createElement("div");row.className="memory-row";
+  const label=document.createElement("span");label.className="memory-label";label.textContent=item.source||"manual";
+  const actions=document.createElement("div");actions.className="memory-actions";
+  const edit=document.createElement("button");edit.textContent="编辑";edit.onclick=()=>editAsterMemory(item,card);
+  const del=document.createElement("button");del.textContent="删除";del.onclick=()=>deleteAsterMemory(item.id);
+  actions.append(edit,del);row.append(label,actions);
+  const text=document.createElement("div");text.className="memory-text";text.textContent=item.text||"";
+  card.append(row,text);document.querySelector("#memory-list").appendChild(card);
+}
+
+async function addAsterMemory(){
+  const input=document.querySelector("#memory-input");const text=input.value.trim();if(!text)return;
+  try{
+    const r=await fetch("/api/memory",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+    const x=await r.json();if(!r.ok)throw new Error(x.detail||"添加失败");
+    input.value="";showAsterToast("已加入长期记忆");loadAsterMemories();
+  }catch(e){showAsterToast("添加失败");console.error(e)}
+}
+
+function editAsterMemory(item,card){
+  card.innerHTML="";
+  const area=document.createElement("textarea");area.value=item.text||"";
+  const save=document.createElement("button");save.className="memory-save";save.textContent="保存";
+  const cancel=document.createElement("button");cancel.className="memory-cancel";cancel.textContent="取消";
+  card.append(area,save,cancel);
+  save.onclick=async()=>{
+    const text=area.value.trim();if(!text)return;
+    try{const r=await fetch("/api/memory/"+encodeURIComponent(item.id),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+      if(!r.ok)throw new Error("保存失败");showAsterToast("已更新");loadAsterMemories();
+    }catch(e){showAsterToast("更新失败");console.error(e)}
+  };
+  cancel.onclick=loadAsterMemories;
+}
+
+async function deleteAsterMemory(id){
+  if(!confirm("删除这条长期记忆？"))return;
+  try{const r=await fetch("/api/memory/"+encodeURIComponent(id),{method:"DELETE"});if(!r.ok)throw new Error("删除失败");showAsterToast("已删除");loadAsterMemories();}
+  catch(e){showAsterToast("删除失败");console.error(e)}
+}
+
+async function summarizeAsterMemory(){
+  const btn=document.querySelector("#memory-summary");btn.disabled=true;btn.textContent="正在整理…";
+  try{const r=await fetch("/api/memory/summarize",{method:"POST"});const x=await r.json();if(!r.ok)throw new Error(x.detail||"整理失败");
+    showAsterToast(x.added?("已整理 "+x.added+" 条记忆"):"没有发现新的长期记忆");loadAsterMemories();
+  }catch(e){showAsterToast("整理失败");console.error(e)}
+  finally{btn.disabled=false;btn.textContent="✨ 从最近对话整理"}
+}
+
+function showAsterToast(text){
+  const t=document.querySelector("#toast");t.textContent=text;t.classList.add("show");clearTimeout(window._asterToastTimer);
+  window._asterToastTimer=setTimeout(()=>t.classList.remove("show"),1800);
+}
+
+const memoryInput=document.querySelector("#memory-input");
+memoryInput.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addAsterMemory()}});
 i.addEventListener("input",()=>{
   i.style.height="auto";
   i.style.height=Math.min(i.scrollHeight,140)+"px";
