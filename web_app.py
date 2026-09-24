@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from agent import AsterVoss
@@ -7,9 +7,11 @@ from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
 from memory.persistence import long_term_context
 from memory import brain, cloud
+from ai_radar import collect_candidates, curate
 from pathlib import Path
 import json
 import time
+import os
 from uuid import uuid4
 
 CONFIG = load_config()
@@ -775,6 +777,62 @@ def remove_conversation(conversation_id: str):
     if not cloud.delete_conversation(conversation_id):
         raise HTTPException(status_code=503, detail="对话暂时无法删除")
     return {"ok": True}
+
+
+def _generate_ai_brief():
+    if not CONFIG.active_provider or not CONFIG.active_provider.is_available():
+        raise HTTPException(status_code=503, detail="模型当前不可用")
+    try:
+        candidates = collect_candidates()
+        if not candidates:
+            return {
+                "brief_date": time.strftime("%Y-%m-%d", time.gmtime()),
+                "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "intro_zh": "今天暂时没有抓到可用的 AI 热点。",
+                "items": [],
+                "source_count": 0,
+                "candidate_count": 0,
+            }
+        payload = curate(CONFIG.active_provider, candidates)
+        cloud.save_ai_brief(payload["brief_date"], payload)
+        return payload
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="AI 简报生成失败：" + type(exc).__name__) from exc
+
+
+@app.get("/api/ai-radar/today")
+def ai_radar_today():
+    date_str = time.strftime("%Y-%m-%d", time.gmtime())
+    stored = cloud.load_ai_brief(date_str) if cloud.enabled() else None
+    if stored and isinstance(stored.get("payload"), dict):
+        return stored["payload"]
+    return {"brief_date": date_str, "generated": False, "items": []}
+
+
+@app.post("/api/ai-radar/refresh")
+def ai_radar_refresh():
+    return _generate_ai_brief()
+
+
+@app.get("/api/ai-radar/history")
+def ai_radar_history():
+    return {"briefs": cloud.list_ai_briefs(limit=14) if cloud.enabled() else []}
+
+
+@app.get("/api/cron/ai-radar")
+def ai_radar_cron(request: Request):
+    user_agent = request.headers.get("user-agent", "")
+    authorization = request.headers.get("authorization", "")
+    secret = os.getenv("CRON_SECRET", "")
+    authorized = (
+        "vercel-cron/1.0" in user_agent
+        or (secret and authorization == "Bearer " + secret)
+    )
+    if not authorized:
+        raise HTTPException(status_code=401, detail="unauthorized")
+    return _generate_ai_brief()
 
 
 @app.get("/api/memory")
