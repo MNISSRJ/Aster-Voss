@@ -13,6 +13,7 @@ TABLE = "aster_memory"
 DEFAULT_USER_ID = (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "mint"
 CONVERSATION_TABLE = "aster_conversations"
 AI_BRIEF_TABLE = "ai_radar_briefs"
+USAGE_TABLE = "aster_usage_events"
 
 def _cfg():
     url = os.getenv("SUPABASE_URL", "").rstrip("/")
@@ -219,3 +220,51 @@ def list_ai_briefs(limit: int = 14, user_id: str = DEFAULT_USER_ID) -> list[dict
         return rows if isinstance(rows, list) else []
     except Exception:
         return []
+
+
+def save_usage_event(
+    conversation_id: str | None,
+    provider: str,
+    model: str,
+    usage: dict | None,
+    user_id: str = DEFAULT_USER_ID,
+) -> bool:
+    if not enabled() or not usage:
+        return False
+    try:
+        _request(
+            "POST",
+            USAGE_TABLE,
+            {
+                "user_id": user_id,
+                "conversation_id": conversation_id,
+                "provider": provider,
+                "model": model,
+                "prompt_tokens": int(usage.get("prompt_tokens") or 0),
+                "completion_tokens": int(usage.get("completion_tokens") or 0),
+                "total_tokens": int(usage.get("total_tokens") or 0),
+            },
+        )
+        return True
+    except Exception:
+        return False
+
+
+def usage_summary(days: int = 30, user_id: str = DEFAULT_USER_ID):
+    if not enabled():
+        return {"events": 0, "total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
+    try:
+        from urllib.parse import quote
+        rows = _request(
+            "GET",
+            f"{USAGE_TABLE}?user_id=eq.{quote(user_id, safe='')}&select=prompt_tokens,completion_tokens,total_tokens&limit=1000",
+        )
+        rows = rows if isinstance(rows, list) else []
+        return {
+            "events": len(rows),
+            "prompt_tokens": sum(int(x.get("prompt_tokens") or 0) for x in rows),
+            "completion_tokens": sum(int(x.get("completion_tokens") or 0) for x in rows),
+            "total_tokens": sum(int(x.get("total_tokens") or 0) for x in rows),
+        }
+    except Exception:
+        return {"events": 0, "total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
