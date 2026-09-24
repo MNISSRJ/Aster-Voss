@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from agent import AsterVoss
 from llm.base import LLMMessage
-from llm.factory import create_provider
+from llm.factory import create_provider, available_providers
 from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
 from memory.persistence import long_term_context
@@ -1215,8 +1215,22 @@ def summarize_memories(body: ConversationRefIn):
 @app.get("/api/status")
 def status():
     return {
+        "status": "ok",
         "name": AGENT_IDENTITY.name,
         "provider": CONFIG.main_provider,
+        "providers": available_providers(CONFIG),
         "configured": bool(CONFIG.active_provider and CONFIG.active_provider.is_configured),
+        "memory": "supabase" if MEMORY.cloud_enabled else "local-fallback",
+        "server_time": int(time.time()),
+        "version": "0.2.0",
+    }
+
+
+@app.get("/api/capabilities")
+def capabilities():
+    return {
+        "providers": available_providers(CONFIG),
+        "memory": MEMORY.cloud_enabled,
+        "automations": list_automations(),
         "server_time": int(time.time()),
     }
