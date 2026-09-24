@@ -9,7 +9,10 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, Sequence, TypeAlias
+
+
+MessageContent: TypeAlias = str | list[dict[str, Any]]
 
 
 class LLMError(Exception):
@@ -24,7 +27,7 @@ class LLMMessage:
     """One conversation turn in the vendor-neutral format."""
 
     role: str
-    content: str | None = None
+    content: MessageContent | None = None
     tool_calls: list["ToolCall"] = field(default_factory=list)
     tool_call_id: str | None = None
     name: str | None = None
