@@ -5,7 +5,6 @@ from agent import AsterVoss
 from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
 from memory.persistence import long_term_context
-from memory.brain import load_entries, add as add_memory, delete as delete_memory, replace as replace_memory, save_entries
 from pathlib import Path
 
 CONFIG = load_config()
@@ -44,12 +43,6 @@ app = FastAPI(title="Aster Voss")
 class ChatIn(BaseModel):
     message: str
 
-class MemoryIn(BaseModel):
-    text: str
-
-class MemoryListIn(BaseModel):
-    memories: list[dict]
-
 
 @app.get("/", response_class=HTMLResponse)
 def home():
@@ -80,7 +73,7 @@ textarea{flex:1;min-height:48px;max-height:140px;resize:none;border-radius:16px;
 textarea:focus{border-color:#4c78d8}
 .send{height:48px;border:0;border-radius:15px;padding:0 17px;background:#f4f5f7;color:#11151d;font-weight:700}
 .send:disabled{opacity:.5}
-.status{font-size:12px;color:#6f7785;text-align:center;padding:4px}.setting-card{background:#121620;border:1px solid #252c38;border-radius:18px;padding:18px}.setting-title{font-size:17px;font-weight:700}.setting-sub{font-size:13px;color:#7f8796;line-height:1.55;margin-top:7px}.memory-row{display:flex;gap:8px;align-items:center;background:#171b24;border:1px solid #2a3140;border-radius:12px;padding:10px}.memory-row input{flex:1;background:transparent;border:0;outline:0;color:#f4f5f7;font:inherit}.memory-del{border:0;background:transparent;color:#8b93a3;font-size:18px}.memory-add,.memory-ai{width:100%;margin-top:10px;border:1px solid #303746;background:#171b24;color:#e9edf5;border-radius:12px;padding:11px;font-weight:600}
+.status{font-size:12px;color:#6f7785;text-align:center;padding:4px}
 </style>
 </head>
 <body>
@@ -90,10 +83,10 @@ textarea:focus{border-color:#4c78d8}
     <div class="logo">✦</div>
     <div><h1>Aster Voss</h1><div class="sub">Your Personal AI Agent · persistent memory</div></div>
   </div>
-  <div style="display:flex;gap:8px"><button class="new" onclick="openSettings()">⚙ 设置</button><button class="new" onclick="newChat()">＋ 新对话</button></div>
+  <button class="new" onclick="newChat()">＋ 新对话</button>
 </header>
 
-<section id="settings" style="display:none;padding:8px 2px 120px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px"><h2 style="margin:0;font-size:20px">设置</h2><button class="new" onclick="closeSettings()">完成</button></div><div class="setting-card"><div class="setting-title">🧠 长期记忆</div><div class="setting-sub">这里是 Aster 的云端大脑。你可以自己编辑，也可以让 Aster 从对话中整理值得长期记住的内容。</div><div id="memories" style="display:flex;flex-direction:column;gap:8px;margin-top:14px"></div><button class="memory-add" onclick="addMemory()">＋ 添加记忆</button><button class="memory-ai" onclick="summarizeMemory()">✨ 从最近对话整理</button></div></section><div id="chat" class="chat">
+<div id="chat" class="chat">
   <div class="msg welcome">你好，我是 Aster Voss。<br>这是我的新对话空间。你可以直接和我聊天，也可以说“记住：……”让我记住一件事。</div>
 </div>
 
@@ -109,9 +102,9 @@ textarea:focus{border-color:#4c78d8}
 const c=document.querySelector("#chat");
 const i=document.querySelector("#input");
 const b=document.querySelector("#send");
-const s=document.querySelector("#status");\nconst settings=document.querySelector("#settings");
+const s=document.querySelector("#status");
 
-async function openSettings(){settings.style.display="block";c.style.display="none";document.querySelector(".bar").style.display="none";await loadMemories()}\nfunction closeSettings(){settings.style.display="none";c.style.display="flex";document.querySelector(".bar").style.display="flex"}\nasync function loadMemories(){const r=await fetch("/api/memory");const x=await r.json();const box=document.querySelector("#memories");box.innerHTML="";(x.memories||[]).forEach(m=>{const row=document.createElement("div");row.className="memory-row";const inp=document.createElement("input");inp.value=m.text||"";inp.onchange=()=>updateMemory(m.id,inp.value);const del=document.createElement("button");del.className="memory-del";del.textContent="×";del.onclick=()=>removeMemory(m.id);row.append(inp,del);box.appendChild(row)})}\nasync function addMemory(){const t=prompt("想让 Aster 长期记住什么？");if(!t||!t.trim())return;await fetch("/api/memory",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t.trim()})});loadMemories()}\nasync function removeMemory(id){const r=await fetch("/api/memory/"+encodeURIComponent(id),{method:"DELETE"});loadMemories()}\nasync function updateMemory(id,text){const r=await fetch("/api/memory");const x=await r.json();const arr=(x.memories||[]).map(m=>String(m.id)===String(id)?{...m,text}:m);await fetch("/api/memory",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({memories:arr})})}\nasync function summarizeMemory(){s.textContent="Aster 正在整理最近的对话…";try{const r=await fetch("/api/memory/summarize",{method:"POST"});const x=await r.json();s.textContent=x.message||"整理完成";await loadMemories()}catch(e){s.textContent="整理失败，请稍后再试"}setTimeout(()=>s.textContent="",1800)}\n\nfunction add(t,k){
+function add(t,k){
   const d=document.createElement("div");
   d.className="msg "+k;
   d.textContent=t;
@@ -183,53 +176,6 @@ def reset():
     agent.reset()
     return {"ok": True}
 
-
-@app.get("/api/memory")
-def get_memories():
-    return {"memories": load_entries()}
-
-@app.post("/api/memory")
-def post_memory(body: MemoryIn):
-    ok=add_memory(body.text, "manual")
-    return {"ok":ok}
-
-@app.put("/api/memory")
-def put_memory(body: MemoryListIn):
-    return {"ok":replace_memory(body.memories)}
-
-@app.delete("/api/memory/{memory_id}")
-def del_memory(memory_id: str):
-    return {"ok":delete_memory(memory_id)}
-
-@app.post("/api/memory/summarize")
-def summarize_memory():
-    recent=[m for m in agent.messages if m.role in {"user","assistant"}][-12:]
-    if not recent:
-        return {"ok":True,"message":"最近还没有足够的对话可以整理。"}
-    prompt = (
-        "请从下面最近的对话中提取真正值得长期记住的用户信息。"
-        "只提取稳定偏好、长期目标、持续项目、明确要求和重要事实；"
-        "不要记录临时情绪、一次性任务、密码/API key等敏感信息。"
-        "每条一行，直接写记忆内容，不要编号，不要解释。\n\n"
-        + "\n".join(f"{m.role}: {m.content}" for m in recent)
-    )
-    try:
-        from llm.base import LLMMessage
-        p=agent.router.get_provider(CONFIG.main_provider)
-        r=p.complete([
-            LLMMessage.system("你是记忆整理器。"),
-            LLMMessage.user(prompt),
-        ])
-        lines=[x.strip("- •\t ") for x in (r.text or "").splitlines() if x.strip()]
-        added=0
-        for line in lines:
-            if len(line)<3 or len(line)>300:
-                continue
-            if add_memory(line,"conversation_summary"):
-                added+=1
-        return {"ok":True,"message":f"整理完成，新增 {added} 条长期记忆。"}
-    except Exception:
-        return {"ok":False,"message":"暂时无法整理记忆。"}
 
 @app.get("/api/status")
 def status():
