@@ -163,40 +163,40 @@ body::after{
 }
 .side-new:hover{background:rgba(255,255,255,.66);transform:translateY(-1px)}
 .side-nav{display:flex;flex-direction:column;gap:3px;margin-top:14px}
-.conversation-list{margin-top:10px;.radar-view{height:calc(100vh - 64px);overflow-y:auto;padding:28px min(7vw,90px) 80px;scrollbar-width:none}
-.radar-view::-webkit-scrollbar{display:none}
-.radar-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px}
-.radar-kicker{font-size:11px;font-weight:700;letter-spacing:.12em;color:#7987a3;text-transform:uppercase}
-.radar-title{font-size:30px;letter-spacing:-.7px;margin-top:4px;color:#28354c}
-.radar-date{font-size:12px;color:#7b879d;margin-top:5px}
-.radar-refresh{border:1px solid rgba(103,121,176,.20);background:rgba(255,255,255,.52);color:#46536b;border-radius:11px;padding:9px 12px;font-size:12px}
-.radar-refresh:hover{background:rgba(255,255,255,.72)}
-.radar-intro{padding:15px 16px;border:1px solid rgba(255,255,255,.78);background:rgba(255,255,255,.46);border-radius:16px;color:#56647d;line-height:1.65;box-shadow:0 8px 24px rgba(88,103,157,.07);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);margin-bottom:14px}
-.radar-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
-.radar-card{padding:15px;border:1px solid rgba(255,255,255,.78);background:rgba(255,255,255,.46);border-radius:16px;box-shadow:0 8px 26px rgba(88,103,157,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);transition:transform .16s ease,box-shadow .16s ease}
-.radar-card:hover{transform:translateY(-2px);box-shadow:0 13px 32px rgba(88,103,157,.12)}
-.radar-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.radar-company{font-size:10px;color:#7f8ba0;text-transform:uppercase;letter-spacing:.07em}
-.radar-score{font-size:10px;color:#637190;background:rgba(225,231,249,.68);padding:4px 7px;border-radius:999px}
-.radar-headline{font-size:16px;line-height:1.45;font-weight:700;color:#28354c;margin-top:8px}
-.radar-summary{font-size:12.5px;line-height:1.65;color:#5f6d85;margin-top:7px}
-.radar-why{font-size:11.5px;line-height:1.55;color:#7b879c;margin-top:9px;padding-top:9px;border-top:1px solid rgba(128,142,184,.14)}
-.radar-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
-.radar-tag{font-size:10px;color:#657390;background:rgba(238,242,252,.72);padding:4px 7px;border-radius:7px}
-.radar-source{display:block;margin-top:10px;font-size:10px;color:#8a95a9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.radar-empty{padding:30px 16px;text-align:center;border:1px dashed rgba(115,132,176,.22);border-radius:16px;color:#818da2;font-size:12px}
-.side-item.radar-active{background:rgba(255,255,255,.58);color:#2d3850}
-@media(max-width:899px){.radar-view{padding:22px 14px 72px}.radar-head{align-items:flex-start}.radar-title{font-size:25px}.radar-list{grid-template-columns:1fr}.radar-refresh{padding:8px 10px}}
-display:flex;flex-direction:column;gap:2px;overflow:auto;max-height:calc(100vh - 275px);scrollbar-width:none}
+.conversation-list{margin-top:10px;display:flex;flex-direction:column;gap:2px;overflow:auto;max-height:calc(100vh - 275px);scrollbar-width:none}
 .conversation-list::-webkit-scrollbar{display:none}
-.conversation-empty{padding:10px 10px;color:#95a0b3;font-size:11px;line-height:1.5}
+.conversation-empty{padding:10px;color:#95a0b3;font-size:11px;line-height:1.5}
 .conversation-item{width:100%;border:0;background:transparent;color:#67748b;border-radius:9px;padding:8px 7px;display:flex;align-items:center;gap:7px;text-align:left;font-size:12px;transition:.14s ease}
 .conversation-item:hover,.conversation-item.active{background:rgba(255,255,255,.55);color:#2c3850}
 .conversation-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .conversation-delete{flex:0 0 22px;width:22px;height:22px;border:0;background:transparent;color:#9aa4b5;border-radius:7px;opacity:0;font-size:14px;line-height:1}
 .conversation-item:hover .conversation-delete,.conversation-item.active .conversation-delete{opacity:1}
 .conversation-delete:hover{background:rgba(130,145,180,.16);color:#4f5c73}
-
+.radar-view{height:calc(100vh - 64px);overflow-y:auto;padding:34px min(7vw,92px) 86px;scrollbar-width:none}
+.radar-view::-webkit-scrollbar{display:none}
+.radar-head{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;margin-bottom:18px}
+.radar-kicker{font-size:10px;font-weight:800;letter-spacing:.16em;color:#8290aa;text-transform:uppercase}
+.radar-title{font-size:31px;letter-spacing:-.8px;margin-top:5px;color:#293650}
+.radar-date{font-size:12px;color:#7b879d;margin-top:5px}
+.radar-refresh{border:1px solid rgba(103,121,176,.20);background:rgba(255,255,255,.60);color:#44516a;border-radius:12px;padding:9px 13px;font-size:12px;box-shadow:0 5px 18px rgba(88,103,157,.06)}
+.radar-refresh:hover{background:rgba(255,255,255,.80);transform:translateY(-1px)}
+.radar-intro{padding:14px 16px;border:1px solid rgba(255,255,255,.82);background:rgba(255,255,255,.48);border-radius:16px;color:#596780;line-height:1.65;box-shadow:0 8px 24px rgba(88,103,157,.06);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);margin-bottom:12px}
+.radar-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.radar-card{min-height:220px;padding:16px;border:1px solid rgba(255,255,255,.82);background:rgba(255,255,255,.50);border-radius:17px;box-shadow:0 9px 28px rgba(88,103,157,.07);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);transition:transform .16s ease,box-shadow .16s ease;display:flex;flex-direction:column}
+.radar-card:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(88,103,157,.11)}
+.radar-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.radar-company{font-size:10px;color:#7f8ba0;text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+.radar-score{font-size:10px;color:#637190;background:rgba(225,231,249,.68);padding:4px 7px;border-radius:999px}
+.radar-headline{font-size:16px;line-height:1.45;font-weight:720;color:#293650;margin-top:8px}
+.radar-summary{font-size:12.5px;line-height:1.65;color:#5f6d85;margin-top:7px}
+.radar-why{font-size:11.5px;line-height:1.55;color:#7b879c;margin-top:9px;padding-top:9px;border-top:1px solid rgba(128,142,184,.14)}
+.radar-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.radar-tag{font-size:10px;color:#657390;background:rgba(238,242,252,.72);padding:4px 7px;border-radius:7px}
+.radar-source{display:block;margin-top:auto;padding-top:12px;font-size:10px;color:#687895;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none}
+.radar-source:hover{text-decoration:underline}
+.radar-empty{padding:32px 16px;text-align:center;border:1px dashed rgba(115,132,176,.22);border-radius:16px;color:#818da2;font-size:12px;grid-column:1/-1}
+.side-item.radar-active{background:rgba(255,255,255,.58);color:#2d3850}
+@media(max-width:899px){.radar-view{padding:22px 14px 72px}.radar-head{align-items:flex-start}.radar-title{font-size:25px}.radar-list{grid-template-columns:1fr}.radar-refresh{padding:8px 10px}}
 .side-item{
   width:100%;border:0;background:transparent;color:#6f7d94;border-radius:10px;padding:9px 10px;
   text-align:left;font-size:13px;display:flex;align-items:center;gap:9px;transition:.15s ease
@@ -882,26 +882,67 @@ def remove_conversation(conversation_id: str):
 
 
 def _generate_ai_brief():
-    if not CONFIG.active_provider or not CONFIG.active_provider.is_available():
-        raise HTTPException(status_code=503, detail="模型当前不可用")
+    now = time.gmtime()
+    base = {
+        "brief_date": time.strftime("%Y-%m-%d", now),
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", now),
+        "intro_zh": "",
+        "items": [],
+        "source_count": 0,
+        "candidate_count": 0,
+    }
     try:
         candidates = collect_candidates()
+        base["source_count"] = len({s for item in candidates for s in item.get("source_list", [])})
+        base["candidate_count"] = len(candidates)
         if not candidates:
-            return {
-                "brief_date": time.strftime("%Y-%m-%d", time.gmtime()),
-                "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "intro_zh": "今天暂时没有抓到可用的 AI 热点。",
-                "items": [],
-                "source_count": 0,
-                "candidate_count": 0,
-            }
-        payload = curate(CONFIG.active_provider, candidates)
-        cloud.save_ai_brief(payload["brief_date"], payload)
-        return payload
-    except HTTPException:
-        raise
+            base["intro_zh"] = "今天暂时没有抓到可用的 AI 热点。"
+        elif CONFIG.active_provider and CONFIG.active_provider.is_available():
+            try:
+                payload = curate(CONFIG.active_provider, candidates)
+                base.update(payload)
+            except Exception:
+                # The radar should remain useful when an external model call fails:
+                # expose the freshest ranked source items instead of breaking the page.
+                base["intro_zh"] = "AI 编辑暂时不可用，以下是按新鲜度与跨来源出现情况整理的实时候选。"
+                base["items"] = [
+                    {
+                        "id": item["id"],
+                        "headline_zh": item["title"],
+                        "summary_zh": item.get("description", "")[:180],
+                        "why_it_matters_zh": "这条信息近期出现且来源较集中。",
+                        "company": "",
+                        "tags": ["AI 热点"],
+                        "url": item["url"],
+                        "source_list": item.get("source_list", []),
+                        "published_at": item["published_at"],
+                        "hot_score": item["hot_score"],
+                    }
+                    for item in candidates[:6]
+                ]
+        else:
+            base["intro_zh"] = "模型尚未配置，先展示抓取到的实时 AI 热点。"
+            base["items"] = [
+                {
+                    "id": item["id"],
+                    "headline_zh": item["title"],
+                    "summary_zh": item.get("description", "")[:180],
+                    "why_it_matters_zh": "按新鲜度与跨来源出现情况排序。",
+                    "company": "",
+                    "tags": ["AI 热点"],
+                    "url": item["url"],
+                    "source_list": item.get("source_list", []),
+                    "published_at": item["published_at"],
+                    "hot_score": item["hot_score"],
+                }
+                for item in candidates[:6]
+            ]
+
+        if cloud.enabled():
+            cloud.save_ai_brief(base["brief_date"], base)
+        return base
     except Exception as exc:
-        raise HTTPException(status_code=502, detail="AI 简报生成失败：" + type(exc).__name__) from exc
+        raise HTTPException(status_code=502, detail="AI 热点抓取失败：" + type(exc).__name__) from exc
 
 
 @app.get("/api/ai-radar/today")
