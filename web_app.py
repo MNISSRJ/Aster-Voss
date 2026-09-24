@@ -877,7 +877,9 @@ def chat(body: ChatIn):
             _message_dicts(request_agent.messages),
             created_at=created_at,
         )
+        saved_record = CONVERSATIONS.get(conversation_id) if persisted else None
         return {
+            "ok": True,
             "text": r.text,
             "provider": r.provider,
             "model": r.model,
@@ -885,8 +887,11 @@ def chat(body: ChatIn):
             "title": title,
             "conversation_persisted": bool(persisted),
             "server_time": int(time.time()),
-            "created_at": (CONVERSATIONS.get(conversation_id) or {}).get("created_at") if persisted else None,
-            "updated_at": (CONVERSATIONS.get(conversation_id) or {}).get("updated_at") if persisted else None,
+            "created_at": saved_record.get("created_at") if saved_record else None,
+            "updated_at": saved_record.get("updated_at") if saved_record else None,
+            "usage": r.usage,
+            "source": r.source,
+            "complexity": r.complexity,
         }
 
     # Development fallback when cloud storage is not configured:
@@ -926,17 +931,18 @@ def get_conversations():
 
 @app.get("/api/conversations/{conversation_id}")
 def get_conversation(conversation_id: str):
-    conversation = cloud.load_conversation(conversation_id)
+    conversation = CONVERSATIONS.get(conversation_id)
     if not conversation:
         raise HTTPException(status_code=404, detail="对话不存在")
+    conversation["server_time"] = int(time.time())
     return conversation
 
 
 @app.delete("/api/conversations/{conversation_id}")
 def remove_conversation(conversation_id: str):
-    if not cloud.delete_conversation(conversation_id):
+    if not CONVERSATIONS.delete(conversation_id):
         raise HTTPException(status_code=503, detail="对话暂时无法删除")
-    return {"ok": True}
+    return {"ok": True, "server_time": int(time.time())}
 
 
 def _generate_ai_brief():
