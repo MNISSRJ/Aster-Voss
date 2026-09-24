@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 from .cloud import enabled, load as cloud_load, save as cloud_save
-from .memory import get_memory
+from aster.memory import get_memory
 
 USER_ID = "mint"
 
