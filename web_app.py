@@ -85,11 +85,58 @@ textarea:focus{border-color:#4c78d8}
 .send{height:48px;border:0;border-radius:15px;padding:0 17px;background:#f4f5f7;color:#11151d;font-weight:700}
 .send:disabled{opacity:.5}
 .status{font-size:12px;color:#6f7785;text-align:center;padding:4px}
-</style>
+
+/* Phase 5: clean AI workspace inspired by modern ChatGPT / Claude patterns. */
+.sidebar{position:fixed;inset:0 auto 0 0;width:238px;background:#0f1218;border-right:1px solid #252b36;padding:14px 11px;display:flex;flex-direction:column;z-index:10}
+.side-brand{display:flex;align-items:center;gap:10px;padding:5px 8px 15px}
+.side-logo{width:34px;height:34px;border-radius:11px;background:#171c25;display:grid;place-items:center;font-size:18px}
+.side-name{font-size:14px;font-weight:700}.side-sub{font-size:11px;color:#7d8695;margin-top:2px}
+.side-new{width:100%;border:1px solid #2b3340;background:transparent;color:#edf0f5;border-radius:10px;padding:9px 11px;text-align:left;font-size:13px;font-weight:650}
+.side-nav{display:flex;flex-direction:column;gap:3px;margin-top:14px}
+.side-item{border:0;background:transparent;color:#8c95a5;border-radius:9px;padding:9px 10px;text-align:left;font-size:13px;display:flex;gap:9px;align-items:center}
+.side-item:hover,.side-item.active{background:#181d26;color:#eef1f6}
+.side-spacer{flex:1}.side-foot{border-top:1px solid #252b36;padding-top:8px}
+.side-foot button{width:100%;border:0;background:transparent;color:#8c95a5;border-radius:9px;padding:9px 10px;text-align:left;font-size:13px}
+.side-foot button:hover{background:#181d26;color:#eef1f6}
+.settings-panel{position:fixed;top:0;right:0;bottom:0;width:min(430px,94vw);background:#11151c;border-left:1px solid #2a303c;box-shadow:0 18px 70px rgba(0,0,0,.45);transform:translateX(100%);transition:transform .2s ease;z-index:31;display:flex;flex-direction:column}
+.settings-panel.open{transform:translateX(0)}
+.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:30}
+.settings-overlay.open{opacity:1;pointer-events:auto}
+.settings-head{display:flex;align-items:center;justify-content:space-between;padding:18px;border-bottom:1px solid #2a303c}
+.settings-title{font-size:18px;font-weight:700}.settings-close{border:0;background:transparent;color:#8c95a5;font-size:24px}
+.settings-body{padding:18px;overflow:auto}.settings-section{margin-bottom:28px}
+.settings-section h2{font-size:13px;margin:0 0 6px}.settings-section p{font-size:12px;color:#8c95a5;line-height:1.6;margin:0 0 12px}
+.memory-compose{display:flex;gap:7px}.memory-compose input{flex:1;min-width:0;border:1px solid #303746;background:#171b24;color:#f4f5f7;border-radius:10px;padding:10px;outline:0}
+.memory-compose input:focus{border-color:#4a6cae}.memory-primary{border:0;background:#f4f5f7;color:#11151d;border-radius:10px;padding:10px 12px;font-weight:700}
+.memory-full{width:100%;margin-top:8px;border:1px solid #303746;background:transparent;color:#e8ebf0;border-radius:10px;padding:10px 12px;text-align:left;font-size:12px}
+.memory-full:hover{background:#181d26}.memory-list{display:flex;flex-direction:column;gap:8px;margin-top:13px}
+.memory-card{border:1px solid #2a303c;background:#151922;border-radius:12px;padding:11px}
+.memory-row{display:flex;justify-content:space-between;align-items:center;gap:8px}.memory-label{font-size:10px;color:#7f8796;letter-spacing:.06em;text-transform:uppercase}
+.memory-actions{display:flex;gap:4px}.memory-actions button{border:0;background:transparent;color:#8c95a5;font-size:11px;padding:4px 5px;border-radius:7px}
+.memory-actions button:hover{background:#202631;color:#f3f5f7}.memory-text{font-size:12.5px;line-height:1.55;margin-top:7px;white-space:pre-wrap;word-break:break-word}
+.memory-card textarea{width:100%;min-height:82px;resize:vertical;border:1px solid #303746;background:#11151c;color:#f4f5f7;border-radius:9px;padding:9px;margin-top:7px;outline:0;line-height:1.5}
+.memory-save{border:0;background:#f4f5f7;color:#11151d;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:700;margin-top:7px}
+.memory-cancel{border:1px solid #303746;background:transparent;color:#d8dce3;border-radius:8px;padding:7px 10px;font-size:11px;margin:7px 0 0 5px}
+.memory-empty{border:1px dashed #303746;border-radius:12px;padding:19px 12px;text-align:center;color:#7f8796;font-size:12px;line-height:1.6}
+.settings-theme{display:flex;background:#171b24;border-radius:10px;padding:3px;gap:3px}.theme-option{flex:1;border:0;background:transparent;color:#8c95a5;border-radius:8px;padding:8px;font-size:12px}.theme-option.active{background:#11151c;color:#f4f5f7}
+@media(min-width:900px){main{margin-left:238px;margin-right:0}.bar{width:min(820px,calc(100vw - 270px));left:calc(50% + 119px)}.settings-panel{width:430px}}
+@media(max-width:899px){.sidebar{transform:translateX(-100%);transition:transform .2s ease;width:270px}.sidebar.open{transform:translateX(0)}.bar{width:100%}.mobile-side{display:grid!important}}
+.mobile-side{display:none;border:0;background:transparent;color:#aab2bf;font-size:20px}</style>
 </head>
 <body>
+<aside class="sidebar" id="sidebar">
+  <div class="side-brand"><div class="side-logo">✦</div><div><div class="side-name">Aster Voss</div><div class="side-sub">Personal AI Agent</div></div></div>
+  <button class="side-new" onclick="newChat()">＋ 新对话</button>
+  <div class="side-nav">
+    <button class="side-item active"><span>⌂</span>对话</button>
+    <button class="side-item" onclick="openSettings()">◉ 长期记忆</button>
+  </div>
+  <div class="side-spacer"></div>
+  <div class="side-foot"><button onclick="openSettings()">⚙ 设置</button></div>
+</aside>
 <main>
 <header>
+  <button class="mobile-side" onclick="toggleAsterSidebar()" aria-label="打开菜单">☰</button>
   <div class="brand">
     <div class="logo">✦</div>
     <div><h1>Aster Voss</h1><div class="sub">Your Personal AI Agent · persistent memory</div></div>
@@ -108,6 +155,24 @@ textarea:focus{border-color:#4c78d8}
   <button class="send" id="send" onclick="send()">发送</button>
 </div>
 </main>
+
+<div class="settings-overlay" id="settings-overlay" onclick="closeSettings()"></div>
+<aside class="settings-panel" id="settings-panel" aria-label="设置">
+  <div class="settings-head"><div class="settings-title">设置</div><button class="settings-close" onclick="closeSettings()" aria-label="关闭">×</button></div>
+  <div class="settings-body">
+    <section class="settings-section">
+      <h2>外观</h2><p>保持简洁、安静的工作空间。主题会保存在当前设备。</p>
+      <div class="settings-theme"><button class="theme-option" data-theme="dark" onclick="setAsterTheme("dark")">深色</button><button class="theme-option" data-theme="light" onclick="setAsterTheme("light")">浅色</button></div>
+    </section>
+    <section class="settings-section">
+      <h2>🧠 长期记忆</h2><p>这里是 Aster 的可编辑长期记忆。记忆会参与后续对话，但不会因为“新对话”而被清空。</p>
+      <div class="memory-compose"><input id="memory-input" placeholder="添加一条长期记忆…"><button class="memory-primary" onclick="addAsterMemory()">添加</button></div>
+      <button class="memory-full" id="memory-summary" onclick="summarizeAsterMemory()">✨ 从最近对话整理</button>
+      <div class="memory-list" id="memory-list"><div class="memory-empty">正在读取…</div></div>
+    </section>
+  </div>
+</aside>
+<div class="toast" id="toast"></div>
 
 <script>
 const c=document.querySelector("#chat");
