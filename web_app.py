@@ -818,19 +818,19 @@ def chat(body: ChatIn):
         request_agent = _agent_from_messages(history)
         r = request_agent.run(body.message)
 
-        if not cloud.save_conversation(
+        persisted = cloud.save_conversation(
             conversation_id,
             title,
             _message_dicts(request_agent.messages),
             created_at=created_at,
-        ):
-            raise HTTPException(status_code=503, detail="对话暂时无法保存")
+        )
         return {
             "text": r.text,
             "provider": r.provider,
             "model": r.model,
-            "conversation_id": conversation_id,
+            "conversation_id": conversation_id if persisted else None,
             "title": title,
+            "conversation_persisted": bool(persisted),
         }
 
     # Development fallback when cloud storage is not configured:
@@ -1006,7 +1006,6 @@ def edit_memory(memory_id: str, body: MemoryEditIn):
             item["source"] = item.get("source") or "manual"
             if not brain.replace(memories):
                 raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
-            agent.refresh_system_prompt(build_prompt())
             return {"ok": True}
     raise HTTPException(status_code=404, detail="记忆不存在")
 
@@ -1077,8 +1076,6 @@ def summarize_memories(body: ConversationRefIn):
         value = brain.scrub_secrets(str(candidate)).strip()
         if value and brain.add(value, source="conversation"):
             saved.append(value)
-    if saved:
-        agent.refresh_system_prompt(build_prompt())
     return {"ok": True, "added": len(saved), "memories": saved}
 
 
