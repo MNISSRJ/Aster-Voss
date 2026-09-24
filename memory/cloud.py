@@ -11,6 +11,7 @@ from urllib.error import HTTPError, URLError
 
 TABLE = "aster_memory"
 CONVERSATION_TABLE = "aster_conversations"
+AI_BRIEF_TABLE = "ai_radar_briefs"
 
 def _cfg():
     url = os.getenv("SUPABASE_URL", "").rstrip("/")
@@ -142,3 +143,48 @@ def delete_conversation(conversation_id: str, user_id: str = "mint") -> bool:
         return True
     except Exception:
         return False
+
+
+def save_ai_brief(brief_date: str, payload: dict, user_id: str = "mint") -> bool:
+    if not enabled() or not brief_date:
+        return False
+    try:
+        _request(
+            "POST",
+            AI_BRIEF_TABLE,
+            {
+                "brief_date": brief_date,
+                "user_id": user_id,
+                "payload": payload,
+                "updated_at": _utc_now(),
+            },
+        )
+        return True
+    except Exception:
+        return False
+
+def load_ai_brief(brief_date: str, user_id: str = "mint"):
+    if not enabled() or not brief_date:
+        return None
+    try:
+        rows = _request(
+            "GET",
+            f"{AI_BRIEF_TABLE}?brief_date=eq.{brief_date}&user_id=eq.{user_id}&select=brief_date,payload,updated_at&limit=1",
+        )
+        if rows and isinstance(rows, list):
+            return rows[0]
+    except Exception:
+        pass
+    return None
+
+def list_ai_briefs(limit: int = 14, user_id: str = "mint") -> list[dict]:
+    if not enabled():
+        return []
+    try:
+        rows = _request(
+            "GET",
+            f"{AI_BRIEF_TABLE}?user_id=eq.{user_id}&select=brief_date,payload,updated_at&order=brief_date.desc&limit={max(1, min(int(limit), 30))}",
+        )
+        return rows if isinstance(rows, list) else []
+    except Exception:
+        return []
