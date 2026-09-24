@@ -163,7 +163,31 @@ body::after{
 }
 .side-new:hover{background:rgba(255,255,255,.66);transform:translateY(-1px)}
 .side-nav{display:flex;flex-direction:column;gap:3px;margin-top:14px}
-.conversation-list{margin-top:10px;display:flex;flex-direction:column;gap:2px;overflow:auto;max-height:calc(100vh - 275px);scrollbar-width:none}
+.conversation-list{margin-top:10px;.radar-view{height:calc(100vh - 64px);overflow-y:auto;padding:28px min(7vw,90px) 80px;scrollbar-width:none}
+.radar-view::-webkit-scrollbar{display:none}
+.radar-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px}
+.radar-kicker{font-size:11px;font-weight:700;letter-spacing:.12em;color:#7987a3;text-transform:uppercase}
+.radar-title{font-size:30px;letter-spacing:-.7px;margin-top:4px;color:#28354c}
+.radar-date{font-size:12px;color:#7b879d;margin-top:5px}
+.radar-refresh{border:1px solid rgba(103,121,176,.20);background:rgba(255,255,255,.52);color:#46536b;border-radius:11px;padding:9px 12px;font-size:12px}
+.radar-refresh:hover{background:rgba(255,255,255,.72)}
+.radar-intro{padding:15px 16px;border:1px solid rgba(255,255,255,.78);background:rgba(255,255,255,.46);border-radius:16px;color:#56647d;line-height:1.65;box-shadow:0 8px 24px rgba(88,103,157,.07);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);margin-bottom:14px}
+.radar-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.radar-card{padding:15px;border:1px solid rgba(255,255,255,.78);background:rgba(255,255,255,.46);border-radius:16px;box-shadow:0 8px 26px rgba(88,103,157,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);transition:transform .16s ease,box-shadow .16s ease}
+.radar-card:hover{transform:translateY(-2px);box-shadow:0 13px 32px rgba(88,103,157,.12)}
+.radar-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.radar-company{font-size:10px;color:#7f8ba0;text-transform:uppercase;letter-spacing:.07em}
+.radar-score{font-size:10px;color:#637190;background:rgba(225,231,249,.68);padding:4px 7px;border-radius:999px}
+.radar-headline{font-size:16px;line-height:1.45;font-weight:700;color:#28354c;margin-top:8px}
+.radar-summary{font-size:12.5px;line-height:1.65;color:#5f6d85;margin-top:7px}
+.radar-why{font-size:11.5px;line-height:1.55;color:#7b879c;margin-top:9px;padding-top:9px;border-top:1px solid rgba(128,142,184,.14)}
+.radar-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.radar-tag{font-size:10px;color:#657390;background:rgba(238,242,252,.72);padding:4px 7px;border-radius:7px}
+.radar-source{display:block;margin-top:10px;font-size:10px;color:#8a95a9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.radar-empty{padding:30px 16px;text-align:center;border:1px dashed rgba(115,132,176,.22);border-radius:16px;color:#818da2;font-size:12px}
+.side-item.radar-active{background:rgba(255,255,255,.58);color:#2d3850}
+@media(max-width:899px){.radar-view{padding:22px 14px 72px}.radar-head{align-items:flex-start}.radar-title{font-size:25px}.radar-list{grid-template-columns:1fr}.radar-refresh{padding:8px 10px}}
+display:flex;flex-direction:column;gap:2px;overflow:auto;max-height:calc(100vh - 275px);scrollbar-width:none}
 .conversation-list::-webkit-scrollbar{display:none}
 .conversation-empty{padding:10px 10px;color:#95a0b3;font-size:11px;line-height:1.5}
 .conversation-item{width:100%;border:0;background:transparent;color:#67748b;border-radius:9px;padding:8px 7px;display:flex;align-items:center;gap:7px;text-align:left;font-size:12px;transition:.14s ease}
@@ -330,6 +354,7 @@ body::after{
     <button class="side-new" id="new-chat-side">＋ 新对话</button>
     <nav class="side-nav">
       <button class="side-item active" id="nav-chat">⌂ <span>对话</span></button>
+      <button class="side-item" id="nav-radar">✦ <span>AI Radar</span></button>
     </nav>
     <div class="conversation-list" id="conversation-list">
       <div class="conversation-empty">还没有过去的对话</div>
@@ -350,6 +375,19 @@ body::after{
     <div id="chat" class="chat">
       <div class="msg a welcome">你好，我是 Aster Voss。<br>现在我有了云端长期记忆。你可以直接和我聊天，也可以说“记住：……”让我记住一件事。</div>
     </div>
+
+    <section id="radar" class="radar-view" hidden>
+      <div class="radar-head">
+        <div>
+          <div class="radar-kicker">ASTER INTELLIGENCE</div>
+          <div class="radar-title">今日 AI 简报</div>
+          <div class="radar-date" id="radar-date">正在加载…</div>
+        </div>
+        <button class="radar-refresh" id="radar-refresh" type="button">↻ 刷新</button>
+      </div>
+      <div class="radar-intro" id="radar-intro">Aster 正在整理多源 AI 热点。</div>
+      <div class="radar-list" id="radar-list"><div class="radar-empty">正在读取今日简报…</div></div>
+    </section>
 
     <div class="composer-wrap">
       <form class="composer" id="chat-form">
@@ -399,6 +437,10 @@ const memoryList=document.querySelector("#memory-list");
 const conversationList=document.querySelector("#conversation-list");
 let currentConversationId=localStorage.getItem("aster-current-conversation")||null;
 const memoryInput=document.querySelector("#memory-input");
+const radarView=document.querySelector("#radar");
+const radarList=document.querySelector("#radar-list");
+const radarIntro=document.querySelector("#radar-intro");
+const radarDate=document.querySelector("#radar-date");
 
 function scrollChat(){
   requestAnimationFrame(()=>{chat.scrollTo({top:chat.scrollHeight,behavior:"smooth"});});
@@ -459,6 +501,65 @@ async function sendMessage(){
 }
 form.addEventListener("submit",event=>{event.preventDefault();sendMessage();});
 
+function setWorkspace(view){
+  const showingRadar=view==="radar";
+  radarView.hidden=!showingRadar;
+  chat.style.display=showingRadar?"none":"flex";
+  document.querySelector(".composer-wrap").style.display=showingRadar?"none":"block";
+  document.querySelector("#nav-chat").classList.toggle("active",!showingRadar);
+  document.querySelector("#nav-radar").classList.toggle("radar-active",showingRadar);
+  if(showingRadar)loadRadar();
+}
+async function loadRadar(){
+  radarList.innerHTML='<div class="radar-empty">正在读取今日简报…</div>';
+  try{
+    const response=await fetch("/api/ai-radar/today",{cache:"no-store"});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.detail||"读取失败");
+    if(!data.items||!data.items.length){
+      radarDate.textContent="还没有今日简报";
+      radarIntro.textContent="Aster 还没有拿到今天的热点。你可以点击“刷新”立即生成一份。";
+      radarList.innerHTML='<div class="radar-empty">暂无内容</div>';
+      return;
+    }
+    radarDate.textContent=(data.brief_date||"").replace(/-/g,".")+" · "+(data.source_count||0)+" 个来源";
+    radarIntro.textContent=data.intro_zh||"Aster 已为你整理今天的 AI 热点。";
+    radarList.innerHTML="";
+    data.items.forEach(renderRadarCard);
+  }catch(error){
+    radarList.innerHTML='<div class="radar-empty">简报暂时无法读取，请点击刷新。</div>';
+    console.error(error);
+  }
+}
+function renderRadarCard(item){
+  const card=document.createElement("article");card.className="radar-card";
+  const top=document.createElement("div");top.className="radar-top";
+  const company=document.createElement("span");company.className="radar-company";company.textContent=item.company||"AI";
+  const score=document.createElement("span");score.className="radar-score";score.textContent="Aster 热点 "+(item.hot_score??"-");
+  top.append(company,score);
+  const headline=document.createElement("div");headline.className="radar-headline";headline.textContent=item.headline_zh||"";
+  const summary=document.createElement("div");summary.className="radar-summary";summary.textContent=item.summary_zh||"";
+  const why=document.createElement("div");why.className="radar-why";why.textContent=item.why_it_matters_zh?("为什么重要 · "+item.why_it_matters_zh):"";
+  const tags=document.createElement("div");tags.className="radar-tags";
+  (item.tags||[]).forEach(tag=>{const span=document.createElement("span");span.className="radar-tag";span.textContent=tag;tags.appendChild(span);});
+  const link=document.createElement("a");link.className="radar-source";link.textContent=(item.source_list||[]).join(" · ")+"  ↗";link.href=item.url||"#";link.target="_blank";link.rel="noopener noreferrer";
+  card.append(top,headline,summary,why,tags,link);radarList.appendChild(card);
+}
+document.querySelector("#nav-radar").addEventListener("click",()=>{setWorkspace("radar");sidebar.classList.remove("open");});
+document.querySelector("#nav-chat").addEventListener("click",()=>{setWorkspace("chat");sidebar.classList.remove("open");});
+document.querySelector("#radar-refresh").addEventListener("click",async()=>{
+  const btn=document.querySelector("#radar-refresh");btn.disabled=true;btn.textContent="整理中…";
+  try{
+    const response=await fetch("/api/ai-radar/refresh",{method:"POST"});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.detail||"刷新失败");
+    radarDate.textContent=(data.brief_date||"").replace(/-/g,".")+" · 刚刚更新";
+    radarIntro.textContent=data.intro_zh||"";
+    radarList.innerHTML="";(data.items||[]).forEach(renderRadarCard);
+    showToast("AI 简报已更新");
+  }catch(error){showToast("简报更新失败");console.error(error)}
+  finally{btn.disabled=false;btn.textContent="↻ 刷新";}
+});
 function toggleSidebar(){sidebar.classList.toggle("open")}
 document.querySelector("#mobile-menu").addEventListener("click",toggleSidebar);
 
@@ -704,6 +805,7 @@ input.addEventListener("keydown",event=>{
   }
 });
 loadConversations(true);
+loadRadar();
 
 </script>
 </body>
