@@ -180,44 +180,39 @@ def reset():
 @app.get("/api/_phase3-test")
 def phase3_test():
     """Temporary preview-only CRUD probe for Supabase cloud memory."""
-    from memory import brain
-
-    test_user = "phase3-test"
-    test_text = "Aster Phase 3 cloud-memory connectivity test"
-    ok = {
-        "cloud_enabled": brain.enabled(),
-        "saved": False,
-        "loaded": False,
-        "deleted": False,
-        "remaining": False,
-    }
-    if not ok["cloud_enabled"]:
-        return ok
-
     try:
-        # Start from a clean test row, then exercise save -> read -> delete -> read.
-        brain.replace([], user_id=test_user)
-    except TypeError:
-        # Backward-compatible path if the branch implementation still uses the
-        # fixed Mint user id.
-        test_user = brain.USER_ID
+        from memory import brain
 
-    try:
+        test_user = "phase3-test"
+        test_text = "Aster Phase 3 cloud-memory connectivity test"
+        result = {
+            "cloud_enabled": brain.enabled(),
+            "saved": False,
+            "loaded": False,
+            "deleted": False,
+            "remaining": False,
+        }
+        if not result["cloud_enabled"]:
+            return result
+
         entry = {
             "id": "phase3-test-entry",
             "text": test_text,
             "source": "phase3-test",
             "created_at": brain._now(),
         }
-        ok["saved"] = bool(brain.save_entries([entry], user_id=test_user))
+
+        # Exercise the real brain -> cloud -> Supabase path.
+        result["saved"] = bool(brain.save_entries([entry], user_id=test_user))
         loaded = brain.load_entries(user_id=test_user)
-        ok["loaded"] = any(item.get("text") == test_text for item in loaded)
-        ok["deleted"] = bool(brain.replace([], user_id=test_user))
+        result["loaded"] = any(item.get("text") == test_text for item in loaded)
+
+        result["deleted"] = bool(brain.replace([], user_id=test_user))
         remaining = brain.load_entries(user_id=test_user)
-        ok["remaining"] = any(item.get("text") == test_text for item in remaining)
+        result["remaining"] = any(item.get("text") == test_text for item in remaining)
+        return result
     except Exception as exc:
-        ok["error"] = str(exc)
-    return ok
+        return {"ok": False, "error_type": type(exc).__name__, "error": str(exc)}
 
 
 @app.get("/api/status")
