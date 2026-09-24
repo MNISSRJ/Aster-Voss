@@ -33,7 +33,7 @@ def test_radar_route_builds_real_provider(monkeypatch):
     monkeypatch.setattr(
         web_app,
         "create_provider",
-        lambda name, config: calls.setdefault("args", (name, config)) or fake_provider,
+        lambda name, config: (calls.setdefault("args", (name, config)), fake_provider)[1],
     )
     monkeypatch.setattr(web_app.RADAR, "generate", lambda provider=None: {"provider_ok": provider is fake_provider})
     result = web_app._generate_ai_brief()
