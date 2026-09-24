@@ -9,6 +9,7 @@ from memory.persistence import long_term_context
 from memory import brain
 from pathlib import Path
 import json
+import time
 
 CONFIG = load_config()
 
@@ -650,8 +651,10 @@ def summarize_memories():
 
 
 @app.get("/api/status")
-def status():    return {
+def status():
+    return {
         "name": AGENT_IDENTITY.name,
         "provider": CONFIG.main_provider,
         "configured": bool(CONFIG.active_provider and CONFIG.active_provider.is_configured),
+        "server_time": int(time.time()),
     }
