@@ -1,10 +1,20 @@
-*.env
+# Secrets
 .env
-.env.*.local
+.env.*
+!.env.example
+
+# Python
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .venv/
 venv/
-*.log
-.DS_Store
-Thumbs.db
+
+# Local runtime state
+memory/*.tmp
+memory/CONVERSATION_HISTORY.local.json
+memory/LONG_TERM_MEMORY.local.md
+
+# Tooling
+.ruff_cache/
+.pyright/
