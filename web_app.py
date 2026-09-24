@@ -191,9 +191,106 @@ def reset():
     return {"ok": True}
 
 
+@app.get("/api/memory")
+def get_memories():
+    return {"cloud": brain.enabled(), "memories": brain.load_entries()}
+
+
+@app.post("/api/memory")
+def add_memory(body: MemoryIn):
+    text_value = brain.scrub_secrets(body.text).strip()
+    if not text_value:
+        raise HTTPException(status_code=400, detail="记忆内容不能为空")
+    if not brain.add(text_value, source="manual"):
+        raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
+    agent.refresh_system_prompt(build_prompt())
+    return {"ok": True}
+
+
+@app.put("/api/memory/{memory_id}")
+def edit_memory(memory_id: str, body: MemoryEditIn):
+    text_value = brain.scrub_secrets(body.text).strip()
+    if not text_value:
+        raise HTTPException(status_code=400, detail="记忆内容不能为空")
+    memories = brain.load_entries()
+    for item in memories:
+        if str(item.get("id")) == str(memory_id):
+            item["text"] = text_value
+            item["source"] = item.get("source") or "manual"
+            if not brain.replace(memories):
+                raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
+            agent.refresh_system_prompt(build_prompt())
+            return {"ok": True}
+    raise HTTPException(status_code=404, detail="记忆不存在")
+
+
+@app.delete("/api/memory/{memory_id}")
+def remove_memory(memory_id: str):
+    if not brain.delete(memory_id):
+        raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
+    agent.refresh_system_prompt(build_prompt())
+    return {"ok": True}
+
+
+@app.post("/api/memory/summarize")
+def summarize_memories():
+    messages = [
+        m for m in agent.messages
+        if m.role in {"user", "assistant"} and (m.content or "").strip()
+    ][-16:]
+    if not messages:
+        return {"ok": True, "added": 0, "memories": []}
+
+    transcript = "\n".join(
+        m.role.upper() + ": " + m.content.strip() for m in messages
+    )
+    curator_prompt = (
+        "Extract only durable, useful memories about Mint from the conversation below. "
+        "Keep them concise and factual. Prefer stable preferences, explicitly shared identity details, "
+        "ongoing projects, recurring workflow preferences, and long-term goals. "
+        "Do not save passwords, API keys, tokens, financial secrets, highly sensitive personal data, "
+        "temporary emotions, or one-off details. "
+        "Return JSON only: {\"memories\":[\"...\"]}. "
+        "Return an empty list when nothing is worth remembering.\n\n"
+        + transcript
+    )
+    try:
+        decision = agent.router.select("Summarize durable user memory")
+        provider = agent.router.get_provider(decision.provider_name)
+        if not provider.is_available():
+            raise HTTPException(status_code=503, detail="模型当前不可用")
+        response = provider.complete(
+            [LLMMessage.system("You are a precise memory curator."), LLMMessage.user(curator_prompt)],
+            temperature=0.2,
+            max_tokens=800,
+            reasoning=None,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="整理记忆失败：" + type(exc).__name__) from exc
+
+    raw = (response.text or "").strip()
+    if "```" in raw:
+        raw = raw.replace("```json", "").replace("```", "").strip()
+    try:
+        data = json.loads(raw)
+        candidates = data.get("memories") if isinstance(data, dict) else []
+    except Exception:
+        candidates = []
+
+    saved = []
+    for candidate in candidates[:8] if isinstance(candidates, list) else []:
+        value = brain.scrub_secrets(str(candidate)).strip()
+        if value and brain.add(value, source="conversation"):
+            saved.append(value)
+    if saved:
+        agent.refresh_system_prompt(build_prompt())
+    return {"ok": True, "added": len(saved), "memories": saved}
+
+
 @app.get("/api/status")
-def status():
-    return {
+def status():    return {
         "name": AGENT_IDENTITY.name,
         "provider": CONFIG.main_provider,
         "configured": bool(CONFIG.active_provider and CONFIG.active_provider.is_configured),
