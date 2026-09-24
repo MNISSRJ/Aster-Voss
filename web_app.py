@@ -6,10 +6,11 @@ from llm.base import LLMMessage
 from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
 from memory.persistence import long_term_context
-from memory import brain
+from memory import brain, cloud
 from pathlib import Path
 import json
 import time
+from uuid import uuid4
 
 CONFIG = load_config()
 
@@ -44,8 +45,50 @@ agent = AsterVoss(
 app = FastAPI(title="Aster Voss")
 
 
+def _message_dicts(messages):
+    return [
+        {"role": m.role, "content": m.content}
+        for m in messages
+        if m.role in {"user", "assistant"}
+        and isinstance(m.content, str)
+        and m.content.strip()
+    ][-80:]
+
+
+def _conversation_title(text: str) -> str:
+    clean = " ".join((text or "").strip().split())
+    if not clean:
+        return "新对话"
+    return clean[:30] + ("…" if len(clean) > 30 else "")
+
+
+def _agent_from_messages(history):
+    a = AsterVoss(
+        CONFIG,
+        system_prompt=build_prompt(),
+        identity_name=AGENT_IDENTITY.name,
+        identity_tagline=AGENT_TAGLINE,
+    )
+    restored = []
+    for item in history or []:
+        if (
+            isinstance(item, dict)
+            and item.get("role") in {"user", "assistant"}
+            and isinstance(item.get("content"), str)
+            and item["content"].strip()
+        ):
+            restored.append(LLMMessage(role=item["role"], content=item["content"]))
+    a._messages = [LLMMessage.system(build_prompt())] + restored
+    return a
+
+
 class ChatIn(BaseModel):
     message: str
+    conversation_id: str | None = None
+
+
+class ConversationRefIn(BaseModel):
+    conversation_id: str | None = None
 
 
 class MemoryIn(BaseModel):
@@ -539,16 +582,69 @@ input.addEventListener("keydown",event=>{
 
 @app.post("/api/chat")
 def chat(body: ChatIn):
-    # Refresh durable memory before every model call so cloud changes are visible
-    # without restarting the server.
+    if cloud.enabled():
+        conversation_id = (body.conversation_id or "").strip() or str(uuid4())
+        existing = cloud.load_conversation(conversation_id)
+        history = existing.get("messages", []) if existing else []
+        title = existing.get("title", "新对话") if existing else _conversation_title(body.message)
+        created_at = existing.get("created_at") if existing else None
+
+        request_agent = _agent_from_messages(history)
+        r = request_agent.run(body.message)
+
+        if not cloud.save_conversation(
+            conversation_id,
+            title,
+            _message_dicts(request_agent.messages),
+            created_at=created_at,
+        ):
+            raise HTTPException(status_code=503, detail="对话暂时无法保存")
+        return {
+            "text": r.text,
+            "provider": r.provider,
+            "model": r.model,
+            "conversation_id": conversation_id,
+            "title": title,
+        }
+
+    # Development fallback when cloud storage is not configured.
     agent.refresh_system_prompt(build_prompt())
     r = agent.run(body.message)
-    return {"text": r.text, "provider": r.provider, "model": r.model}
+    return {
+        "text": r.text,
+        "provider": r.provider,
+        "model": r.model,
+        "conversation_id": None,
+        "title": "新对话",
+    }
 
 
 @app.post("/api/reset")
 def reset():
     agent.reset()
+    return {"ok": True}
+
+
+@app.get("/api/conversations")
+def get_conversations():
+    return {
+        "cloud": cloud.enabled(),
+        "conversations": cloud.list_conversations() if cloud.enabled() else [],
+    }
+
+
+@app.get("/api/conversations/{conversation_id}")
+def get_conversation(conversation_id: str):
+    conversation = cloud.load_conversation(conversation_id)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="对话不存在")
+    return conversation
+
+
+@app.delete("/api/conversations/{conversation_id}")
+def remove_conversation(conversation_id: str):
+    if not cloud.delete_conversation(conversation_id):
+        raise HTTPException(status_code=503, detail="对话暂时无法删除")
     return {"ok": True}
 
 
@@ -594,11 +690,17 @@ def remove_memory(memory_id: str):
 
 
 @app.post("/api/memory/summarize")
-def summarize_memories():
+def summarize_memories(body: ConversationRefIn):
+    conversation = cloud.load_conversation(body.conversation_id or "") if cloud.enabled() else None
+    source_messages = conversation.get("messages", []) if conversation else _message_dicts(agent.messages)
     messages = [
-        m for m in agent.messages
-        if m.role in {"user", "assistant"} and (m.content or "").strip()
-    ][-16:]
+        LLMMessage(role=item["role"], content=item["content"])
+        for item in source_messages[-16:]
+        if isinstance(item, dict)
+        and item.get("role") in {"user", "assistant"}
+        and isinstance(item.get("content"), str)
+        and item["content"].strip()
+    ]
     if not messages:
         return {"ok": True, "added": 0, "memories": []}
 
