@@ -179,6 +179,7 @@ def reset():
 
 @app.get("/api/_phase3-test")
 def phase3_test():
+    # Preview-only probe; remove after Phase 3 verification.
     """Temporary preview-only CRUD probe for Supabase cloud memory."""
     try:
         from memory import brain
