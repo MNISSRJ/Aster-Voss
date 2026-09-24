@@ -9,7 +9,10 @@ from ..base import LLMError, LLMProvider, LLMResponse, ToolCall
 
 class OpenAIProvider(LLMProvider):
     name = "openai"
-    @property\n    def capabilities(self):\n        return {"chat", "tools", "reasoning"}\n
+    @property
+    def capabilities(self):
+        return {"chat", "tools", "reasoning"}
+
 
     def complete(
         self,
