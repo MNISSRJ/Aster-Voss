@@ -5,12 +5,13 @@ from agent import AsterVoss
 from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
 from memory.persistence import long_term_context
+from memory import brain
 from pathlib import Path
 
 CONFIG = load_config()
 
-def build_prompt():
-    m = get_memory().context_block(reload=True)
+def build_prompt(user_id: str = "mint"):
+    m = brain.context_block(user_id=user_id) if brain.enabled() else get_memory().context_block(reload=True)
     growth = ""
     growth_path = Path(__file__).resolve().parent / "memory" / "GROWTH_LOG.md"
     try:
@@ -167,6 +168,9 @@ i.addEventListener("keydown",e=>{
 
 @app.post("/api/chat")
 def chat(body: ChatIn):
+    # Refresh durable memory before every model call so cloud changes are visible
+    # without restarting the server.
+    agent.refresh_system_prompt(build_prompt())
     r = agent.run(body.message)
     return {"text": r.text, "provider": r.provider, "model": r.model}
 
