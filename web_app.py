@@ -181,6 +181,43 @@ def reset():
     return {"ok": True}
 
 
+@app.get("/api/_phase4-test")
+def phase4_test():
+    """Temporary preview-only probe for cloud-memory prompt injection."""
+    test_user = "phase4-test"
+    test_text = "Aster phase 4 memory loop test phrase 7382"
+    result = {"memory_saved": False, "memory_loaded": False, "prompt_injected": False, "model_recalled": False}
+
+    try:
+        brain.replace([], user_id=test_user)
+        result["memory_saved"] = brain.add(test_text, source="phase4-test", user_id=test_user)
+        loaded = brain.load_entries(user_id=test_user)
+        result["memory_loaded"] = any(x.get("text") == test_text for x in loaded)
+
+        prompt = build_prompt(user_id=test_user)
+        result["prompt_injected"] = test_text in prompt
+
+        decision = agent.router.select("Recall the test memory.")
+        provider = agent.router.get_provider(decision.provider_name)
+        response = provider.complete(
+            [
+                LLMMessage.system(prompt),
+                LLMMessage.user("Recall the stored test phrase exactly and return only that phrase."),
+            ],
+            reasoning=agent.router.reasoning_for(provider),
+        )
+        result["model_recalled"] = test_text in (response.text or "")
+        result["model"] = response.model
+    except Exception as exc:
+        result["ok"] = False
+        result["error_type"] = type(exc).__name__
+        result["error"] = str(exc)
+    finally:
+        brain.replace([], user_id=test_user)
+
+    return result
+
+
 @app.get("/api/status")
 def status():
     return {
