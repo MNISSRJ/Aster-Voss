@@ -8,6 +8,11 @@ from memory import cloud
 
 
 class RadarService:
+    def __init__(self, repository=None, user_id: str = "mint"):
+        from .radar_repository import RadarRepository
+        self.repository = repository or RadarRepository()
+        self.user_id = user_id
+
     def _fallback_payload(self, candidates):
         return {
             "status": "ready" if candidates else "empty",
@@ -48,14 +53,17 @@ class RadarService:
         else:
             payload = self._fallback_payload(candidates)
         payload.setdefault("status", "ready" if payload.get("items") else "empty")
-        payload["saved"] = bool(cloud.save_ai_brief(payload["brief_date"], payload)) if cloud.enabled() else False
+        payload["saved"] = bool(self.repository.save(payload["brief_date"], payload, self.user_id)) if cloud.enabled() else False
         return payload
 
     def today(self):
         date_str = time.strftime("%Y-%m-%d", time.gmtime())
-        stored = cloud.load_ai_brief(date_str) if cloud.enabled() else None
+        stored = self.repository.get(date_str, self.user_id)
         if stored and isinstance(stored.get("payload"), dict):
             payload = dict(stored["payload"])
             payload.setdefault("status", "ready" if payload.get("items") else "empty")
             return payload
         return None
+
+    def history(self, limit=14):
+        return self.repository.list(limit=limit, user_id=self.user_id)
