@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 
 from . import brain
 
 
 @dataclass(frozen=True)
 class MemoryService:
-    user_id: str = "mint"
+    user_id: str = (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "mint"
 
     @property
     def cloud_enabled(self) -> bool:
