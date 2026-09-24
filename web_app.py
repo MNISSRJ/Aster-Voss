@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from agent import AsterVoss
+from llm.base import LLMMessage
 from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
 from memory.persistence import long_term_context
