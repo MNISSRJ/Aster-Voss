@@ -17,6 +17,14 @@ LONG_TERM_PATH = ROOT / "LONG_TERM_MEMORY.md"
 MAX_HISTORY_MESSAGES = 80
 
 
+def local_persistence_enabled() -> bool:
+    raw = os.getenv("ASTER_LOCAL_PERSISTENCE")
+    if raw is not None:
+        return raw.strip().lower() in {"1", "true", "yes", "on"}
+    # Vercel filesystem writes are ephemeral/read-only in serverless functions.
+    return not bool(os.getenv("VERCEL"))
+
+
 def _atomic_write(path: Path, text: str) -> bool:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -46,6 +54,8 @@ def load_history():
 
 
 def save_history(messages: list[LLMMessage]):
+    if not local_persistence_enabled():
+        return
     data = [
         {"role": m.role, "content": m.content}
         for m in messages
@@ -62,6 +72,8 @@ def save_history(messages: list[LLMMessage]):
 
 
 def clear_history():
+    if not local_persistence_enabled():
+        return
     _atomic_write(HISTORY_PATH, "[]\n")
 
 
