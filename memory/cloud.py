@@ -69,9 +69,14 @@ def load(user_id: str = DEFAULT_USER_ID) -> list[dict]:
     return []
 
 def save(memory: list[dict], user_id: str = DEFAULT_USER_ID) -> bool:
-    if not enabled(): return False
+    if not enabled():
+        return False
     try:
-        _request("POST", TABLE, {"user_id": user_id, "memory": memory})
+        existing = _request("GET", f"{TABLE}?user_id=eq.{user_id}&select=user_id&limit=1")
+        if existing:
+            _request("PATCH", f"{TABLE}?user_id=eq.{user_id}", {"memory": memory})
+        else:
+            _request("POST", TABLE, {"user_id": user_id, "memory": memory})
         return True
     except Exception:
         return False
@@ -120,7 +125,6 @@ def save_conversation(
     try:
         now = _utc_now()
         payload = {
-            "id": conversation_id,
             "user_id": user_id,
             "title": title.strip() or "新对话",
             "messages": messages,
@@ -128,7 +132,20 @@ def save_conversation(
         }
         if created_at:
             payload["created_at"] = created_at
-        _request("POST", CONVERSATION_TABLE, payload)
+
+        existing = _request(
+            "GET",
+            f"{CONVERSATION_TABLE}?id=eq.{conversation_id}&user_id=eq.{user_id}&select=id&limit=1",
+        )
+        if existing:
+            _request(
+                "PATCH",
+                f"{CONVERSATION_TABLE}?id=eq.{conversation_id}&user_id=eq.{user_id}",
+                payload,
+            )
+        else:
+            payload["id"] = conversation_id
+            _request("POST", CONVERSATION_TABLE, payload)
         return True
     except Exception:
         return False
@@ -150,16 +167,20 @@ def save_ai_brief(brief_date: str, payload: dict, user_id: str = DEFAULT_USER_ID
     if not enabled() or not brief_date:
         return False
     try:
-        _request(
-            "POST",
-            AI_BRIEF_TABLE,
-            {
-                "brief_date": brief_date,
-                "user_id": user_id,
-                "payload": payload,
-                "updated_at": _utc_now(),
-            },
+        body = {"user_id": user_id, "payload": payload, "updated_at": _utc_now()}
+        existing = _request(
+            "GET",
+            f"{AI_BRIEF_TABLE}?brief_date=eq.{brief_date}&user_id=eq.{user_id}&select=brief_date&limit=1",
         )
+        if existing:
+            _request(
+                "PATCH",
+                f"{AI_BRIEF_TABLE}?brief_date=eq.{brief_date}&user_id=eq.{user_id}",
+                body,
+            )
+        else:
+            body["brief_date"] = brief_date
+            _request("POST", AI_BRIEF_TABLE, body)
         return True
     except Exception:
         return False
