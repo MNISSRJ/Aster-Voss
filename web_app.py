@@ -46,6 +46,22 @@ def build_prompt(user_id: str = MEMORY.user_id):
 app = FastAPI(title="Aster Voss")
 
 
+@app.middleware("http")
+async def request_observability(request: Request, call_next):
+    started = time.perf_counter()
+    request_id = request.headers.get("x-request-id") or uuid4().hex
+    try:
+        response = await call_next(request)
+    except Exception:
+        log.error("request_id=%s method=%s path=%s status=500 latency_ms=%.1f", request_id, request.method, request.url.path, (time.perf_counter() - started) * 1000)
+        raise
+    latency_ms = (time.perf_counter() - started) * 1000
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Server-Time"] = str(int(time.time()))
+    log.info("request_id=%s method=%s path=%s status=%s latency_ms=%.1f", request_id, request.method, request.url.path, response.status_code, latency_ms)
+    return response
+
+
 def _message_dicts(messages):
     return [
         {"role": m.role, "content": m.content}
@@ -843,6 +859,9 @@ def chat(body: ChatIn):
             "conversation_id": conversation_id if persisted else None,
             "title": title,
             "conversation_persisted": bool(persisted),
+            "server_time": int(time.time()),
+            "created_at": (CONVERSATIONS.get(conversation_id) or {}).get("created_at") if persisted else None,
+            "updated_at": (CONVERSATIONS.get(conversation_id) or {}).get("updated_at") if persisted else None,
         }
 
     # Development fallback when cloud storage is not configured:
@@ -874,8 +893,9 @@ def reset():
 @app.get("/api/conversations")
 def get_conversations():
     return {
-        "cloud": cloud.enabled(),
-        "conversations": cloud.list_conversations() if cloud.enabled() else [],
+        "cloud": CONVERSATIONS.enabled,
+        "conversations": CONVERSATIONS.list(),
+        "server_time": int(time.time()),
     }
 
 
@@ -913,15 +933,19 @@ def ai_radar_today():
     if stored:
         return stored
     return {
+        "status": "empty",
         "brief_date": time.strftime("%Y-%m-%d", time.gmtime()),
         "generated": False,
         "items": [],
+        "server_time": int(time.time()),
     }
 
 
 @app.post("/api/ai-radar/refresh")
 def ai_radar_refresh():
-    return _generate_ai_brief()
+    payload = _generate_ai_brief()
+    payload["server_time"] = int(time.time())
+    return payload
 
 
 @app.get("/api/ai-radar/history")
