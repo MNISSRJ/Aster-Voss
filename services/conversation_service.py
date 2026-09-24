@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 
 from memory import cloud
 
 
 @dataclass(frozen=True)
 class ConversationService:
-    user_id: str = "mint"
+    user_id: str = (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "mint"
 
     @property
     def enabled(self) -> bool:
