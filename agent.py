@@ -19,6 +19,7 @@ class TaskRouter:
         return (os.getenv(f'{provider.name.upper()}_REASONING_EFFORT') or self.config.default_reasoning or '').strip() or None
 from tools.registry import run_tool,tool_specs
 from memory.persistence import load_history,save_history,clear_history,save_long_term_note
+from memory import brain
 DEFAULT_SYSTEM_PROMPT="You are a helpful personal assistant. Answer normal conversation directly. Use tools for local files and never invent file contents."
 MAX_TOOL_ITERATIONS=5
 @dataclass
@@ -38,7 +39,15 @@ class AsterVoss:
     @property
     def messages(self):return self._messages
     def reset(self):self._messages=[LLMMessage.system(self.system_prompt)];clear_history()
-    def remember(self,note):return save_long_term_note(note)
+    def remember(self,note):return brain.add(note, source="manual")
+
+    def refresh_system_prompt(self, prompt: str):
+        self.system_prompt = prompt
+        system_message = LLMMessage.system(prompt)
+        if self._messages and self._messages[0].role == "system":
+            self._messages[0] = system_message
+        else:
+            self._messages.insert(0, system_message)
     def chat(self,user_input):return self.run(user_input).text
     def run(self,user_input):
         text=(user_input or "").strip()
