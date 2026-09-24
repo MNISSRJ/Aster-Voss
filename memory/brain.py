@@ -1,11 +1,12 @@
 """Aster's durable cloud-brain abstraction."""
 from __future__ import annotations
 from datetime import datetime, timezone
+import os
 from uuid import uuid4
 from .cloud import enabled, load as cloud_load, save as cloud_save
 from aster.memory import get_memory, scrub_secrets
 
-USER_ID = "mint"
+USER_ID = (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "mint"
 
 def _now():
     return datetime.now(timezone.utc).isoformat()
