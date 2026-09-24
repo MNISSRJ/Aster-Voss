@@ -10,6 +10,7 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 TABLE = "aster_memory"
+DEFAULT_USER_ID = (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "mint"
 CONVERSATION_TABLE = "aster_conversations"
 AI_BRIEF_TABLE = "ai_radar_briefs"
 
@@ -41,7 +42,7 @@ def _request(method: str, path: str, body=None):
         raw = r.read().decode("utf-8")
         return json.loads(raw) if raw else None
 
-def ensure_user(user_id: str = "mint"):
+def ensure_user(user_id: str = DEFAULT_USER_ID):
     if not enabled(): return False
     try:
         _request("POST", TABLE, {
@@ -56,7 +57,7 @@ def ensure_user(user_id: str = "mint"):
     except (URLError, OSError, ValueError):
         return False
 
-def load(user_id: str = "mint") -> list[dict]:
+def load(user_id: str = DEFAULT_USER_ID) -> list[dict]:
     if not enabled(): return []
     try:
         rows = _request("GET", f"{TABLE}?user_id=eq.{user_id}&select=memory&limit=1")
@@ -67,7 +68,7 @@ def load(user_id: str = "mint") -> list[dict]:
         pass
     return []
 
-def save(memory: list[dict], user_id: str = "mint") -> bool:
+def save(memory: list[dict], user_id: str = DEFAULT_USER_ID) -> bool:
     if not enabled(): return False
     try:
         _request("POST", TABLE, {"user_id": user_id, "memory": memory})
@@ -79,7 +80,7 @@ def save(memory: list[dict], user_id: str = "mint") -> bool:
 def _utc_now():
     return datetime.now(timezone.utc).isoformat()
 
-def list_conversations(user_id: str = "mint") -> list[dict]:
+def list_conversations(user_id: str = DEFAULT_USER_ID) -> list[dict]:
     if not enabled():
         return []
     try:
@@ -91,7 +92,7 @@ def list_conversations(user_id: str = "mint") -> list[dict]:
     except Exception:
         return []
 
-def load_conversation(conversation_id: str, user_id: str = "mint"):
+def load_conversation(conversation_id: str, user_id: str = DEFAULT_USER_ID):
     if not enabled() or not conversation_id:
         return None
     try:
@@ -111,7 +112,7 @@ def save_conversation(
     conversation_id: str,
     title: str,
     messages: list[dict],
-    user_id: str = "mint",
+    user_id: str = DEFAULT_USER_ID,
     created_at: str | None = None,
 ) -> bool:
     if not enabled() or not conversation_id:
@@ -132,7 +133,7 @@ def save_conversation(
     except Exception:
         return False
 
-def delete_conversation(conversation_id: str, user_id: str = "mint") -> bool:
+def delete_conversation(conversation_id: str, user_id: str = DEFAULT_USER_ID) -> bool:
     if not enabled() or not conversation_id:
         return False
     try:
@@ -145,7 +146,7 @@ def delete_conversation(conversation_id: str, user_id: str = "mint") -> bool:
         return False
 
 
-def save_ai_brief(brief_date: str, payload: dict, user_id: str = "mint") -> bool:
+def save_ai_brief(brief_date: str, payload: dict, user_id: str = DEFAULT_USER_ID) -> bool:
     if not enabled() or not brief_date:
         return False
     try:
@@ -163,7 +164,7 @@ def save_ai_brief(brief_date: str, payload: dict, user_id: str = "mint") -> bool
     except Exception:
         return False
 
-def load_ai_brief(brief_date: str, user_id: str = "mint"):
+def load_ai_brief(brief_date: str, user_id: str = DEFAULT_USER_ID):
     if not enabled() or not brief_date:
         return None
     try:
@@ -177,7 +178,7 @@ def load_ai_brief(brief_date: str, user_id: str = "mint"):
         pass
     return None
 
-def list_ai_briefs(limit: int = 14, user_id: str = "mint") -> list[dict]:
+def list_ai_briefs(limit: int = 14, user_id: str = DEFAULT_USER_ID) -> list[dict]:
     if not enabled():
         return []
     try:
