@@ -7,7 +7,9 @@ from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
 from memory.persistence import long_term_context
 from memory import brain, cloud
-from ai_radar import collect_candidates, curate
+from memory.service import MemoryService
+from services.conversation_service import ConversationService
+from services.radar_service import RadarService
 from pathlib import Path
 import json
 import time
@@ -15,9 +17,12 @@ import os
 from uuid import uuid4
 
 CONFIG = load_config()
+MEMORY = MemoryService()
+CONVERSATIONS = ConversationService()
+RADAR = RadarService()
 
-def build_prompt(user_id: str = "mint"):
-    m = brain.context_block(user_id=user_id) if brain.enabled() else get_memory().context_block(reload=True)
+def build_prompt(user_id: str = MEMORY.user_id):
+    m = MEMORY.context() if brain.enabled() else get_memory().context_block(reload=True)
     growth = ""
     growth_path = Path(__file__).resolve().parent / "memory" / "GROWTH_LOG.md"
     try:
@@ -883,76 +888,23 @@ def remove_conversation(conversation_id: str):
 
 
 def _generate_ai_brief():
-    now = time.gmtime()
-    base = {
-        "brief_date": time.strftime("%Y-%m-%d", now),
-        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", now),
-        "intro_zh": "",
-        "items": [],
-        "source_count": 0,
-        "candidate_count": 0,
-    }
     try:
-        candidates = collect_candidates()
-        base["source_count"] = len({s for item in candidates for s in item.get("source_list", [])})
-        base["candidate_count"] = len(candidates)
-        if not candidates:
-            base["intro_zh"] = "今天暂时没有抓到可用的 AI 热点。"
-        elif CONFIG.active_provider and CONFIG.active_provider.is_available():
-            try:
-                payload = curate(CONFIG.active_provider, candidates)
-                base.update(payload)
-            except Exception:
-                # The radar should remain useful when an external model call fails:
-                # expose the freshest ranked source items instead of breaking the page.
-                base["intro_zh"] = "AI 编辑暂时不可用，以下是按新鲜度与跨来源出现情况整理的实时候选。"
-                base["items"] = [
-                    {
-                        "id": item["id"],
-                        "headline_zh": item["title"],
-                        "summary_zh": item.get("description", "")[:180],
-                        "why_it_matters_zh": "这条信息近期出现且来源较集中。",
-                        "company": "",
-                        "tags": ["AI 热点"],
-                        "url": item["url"],
-                        "source_list": item.get("source_list", []),
-                        "published_at": item["published_at"],
-                        "hot_score": item["hot_score"],
-                    }
-                    for item in candidates[:6]
-                ]
-        else:
-            base["intro_zh"] = "模型尚未配置，先展示抓取到的实时 AI 热点。"
-            base["items"] = [
-                {
-                    "id": item["id"],
-                    "headline_zh": item["title"],
-                    "summary_zh": item.get("description", "")[:180],
-                    "why_it_matters_zh": "按新鲜度与跨来源出现情况排序。",
-                    "company": "",
-                    "tags": ["AI 热点"],
-                    "url": item["url"],
-                    "source_list": item.get("source_list", []),
-                    "published_at": item["published_at"],
-                    "hot_score": item["hot_score"],
-                }
-                for item in candidates[:6]
-            ]
-
-        if cloud.enabled():
-            cloud.save_ai_brief(base["brief_date"], base)
-        return base
+        provider = CONFIG.active_provider if CONFIG.active_provider and CONFIG.active_provider.is_available() else None
+        return RADAR.generate(provider)
     except Exception as exc:
         raise HTTPException(status_code=502, detail="AI 热点抓取失败：" + type(exc).__name__) from exc
 
 
 @app.get("/api/ai-radar/today")
 def ai_radar_today():
-    date_str = time.strftime("%Y-%m-%d", time.gmtime())
-    stored = cloud.load_ai_brief(date_str) if cloud.enabled() else None
-    if stored and isinstance(stored.get("payload"), dict):
-        return stored["payload"]
-    return {"brief_date": date_str, "generated": False, "items": []}
+    stored = RADAR.today()
+    if stored:
+        return stored
+    return {
+        "brief_date": time.strftime("%Y-%m-%d", time.gmtime()),
+        "generated": False,
+        "items": [],
+    }
 
 
 @app.post("/api/ai-radar/refresh")
@@ -981,7 +933,7 @@ def ai_radar_cron(request: Request):
 
 @app.get("/api/memory")
 def get_memories():
-    return {"cloud": brain.enabled(), "memories": brain.load_entries()}
+    return {"cloud": MEMORY.cloud_enabled, "memories": MEMORY.list()}
 
 
 @app.post("/api/memory")
@@ -989,7 +941,7 @@ def add_memory(body: MemoryIn):
     text_value = brain.scrub_secrets(body.text).strip()
     if not text_value:
         raise HTTPException(status_code=400, detail="记忆内容不能为空")
-    if not brain.add(text_value, source="manual"):
+    if not MEMORY.add(text_value, source="manual"):
         raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
     return {"ok": True}
 
@@ -999,12 +951,12 @@ def edit_memory(memory_id: str, body: MemoryEditIn):
     text_value = brain.scrub_secrets(body.text).strip()
     if not text_value:
         raise HTTPException(status_code=400, detail="记忆内容不能为空")
-    memories = brain.load_entries()
+    memories = MEMORY.list()
     for item in memories:
         if str(item.get("id")) == str(memory_id):
             item["text"] = text_value
             item["source"] = item.get("source") or "manual"
-            if not brain.replace(memories):
+            if not MEMORY.replace(memories):
                 raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
             return {"ok": True}
     raise HTTPException(status_code=404, detail="记忆不存在")
@@ -1012,7 +964,7 @@ def edit_memory(memory_id: str, body: MemoryEditIn):
 
 @app.delete("/api/memory/{memory_id}")
 def remove_memory(memory_id: str):
-    if not brain.delete(memory_id):
+    if not MEMORY.delete(memory_id):
         raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
     return {"ok": True}
 
