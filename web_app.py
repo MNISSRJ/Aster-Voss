@@ -225,8 +225,8 @@ html[data-theme="dark"] .settings-panel{background:rgba(246,249,255,.78)}
   <div class="settings-head"><div class="settings-title">设置</div><button class="settings-close" onclick="closeSettings()" aria-label="关闭">×</button></div>
   <div class="settings-body">
     <section class="settings-section">
-      <h2>外观</h2><p>保持简洁、安静的工作空间。主题会保存在当前设备。</p>
-      <div class="settings-theme"><button class="theme-option" data-theme="dark" onclick='setAsterTheme("dark")'>深色</button><button class="theme-option" data-theme="light" onclick='setAsterTheme("light")'>浅色</button></div>
+      <h2>外观</h2><p>默认使用 Aster 的彩色玻璃空间，背景会缓慢流动；也可以切换到纯净浅色。</p>
+      <div class="settings-theme"><button class="theme-option" data-theme="dark" onclick='setAsterTheme("dark")'>彩色玻璃</button><button class="theme-option" data-theme="light" onclick='setAsterTheme("light")'>纯净浅色</button></div>
     </section>
     <section class="settings-section">
       <h2>🧠 长期记忆</h2><p>这里是 Aster 的可编辑长期记忆。记忆会参与后续对话，但不会因为“新对话”而被清空。</p>
