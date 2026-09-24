@@ -48,10 +48,22 @@ def build_prompt(user_id: str = MEMORY.user_id):
 app = FastAPI(title="Aster Voss")
 
 
+app = FastAPI(title="Aster Voss")
+
+
 @app.middleware("http")
-async def request_observability(request: Request, call_next):
+async def access_control_and_observability(request: Request, call_next):
     started = time.perf_counter()
     request_id = request.headers.get("x-request-id") or uuid4().hex
+    if CONFIG.require_auth and request.url.path not in {"/", "/api/status"}:
+        expected = os.getenv("ASTER_ACCESS_TOKEN", "")
+        provided = request.headers.get("authorization", "")
+        if not expected or provided != "Bearer " + expected:
+            from fastapi.responses import JSONResponse
+            response = JSONResponse({"error": "unauthorized", "request_id": request_id}, status_code=401)
+            response.headers["X-Request-ID"] = request_id
+            response.headers["X-Server-Time"] = str(int(time.time()))
+            return response
     try:
         response = await call_next(request)
     except Exception:
