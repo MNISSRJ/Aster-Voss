@@ -815,7 +815,7 @@ loadRadar();
 def chat(body: ChatIn):
     if cloud.enabled():
         conversation_id = (body.conversation_id or "").strip() or str(uuid4())
-        existing = cloud.load_conversation(conversation_id)
+        existing = CONVERSATIONS.get(conversation_id)
         history = existing.get("messages", []) if existing else []
         title = existing.get("title", "新对话") if existing else _conversation_title(body.message)
         created_at = existing.get("created_at") if existing else None
@@ -823,7 +823,7 @@ def chat(body: ChatIn):
         request_agent = _agent_from_messages(history)
         r = request_agent.run(body.message)
 
-        persisted = cloud.save_conversation(
+        persisted = CONVERSATIONS.save(
             conversation_id,
             title,
             _message_dicts(request_agent.messages),
