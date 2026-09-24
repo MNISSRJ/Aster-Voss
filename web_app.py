@@ -177,45 +177,6 @@ def reset():
     return {"ok": True}
 
 
-@app.get("/api/_phase3-test")
-def phase3_test():
-    # Preview-only probe; remove after Phase 3 verification.
-    """Temporary preview-only CRUD probe for Supabase cloud memory."""
-    try:
-        from memory import brain
-
-        test_user = "phase3-test"
-        test_text = "Aster Phase 3 cloud-memory connectivity test"
-        result = {
-            "cloud_enabled": brain.enabled(),
-            "saved": False,
-            "loaded": False,
-            "deleted": False,
-            "remaining": False,
-        }
-        if not result["cloud_enabled"]:
-            return result
-
-        entry = {
-            "id": "phase3-test-entry",
-            "text": test_text,
-            "source": "phase3-test",
-            "created_at": brain._now(),
-        }
-
-        # Exercise the real brain -> cloud -> Supabase path.
-        result["saved"] = bool(brain.save_entries([entry], user_id=test_user))
-        loaded = brain.load_entries(user_id=test_user)
-        result["loaded"] = any(item.get("text") == test_text for item in loaded)
-
-        result["deleted"] = bool(brain.replace([], user_id=test_user))
-        remaining = brain.load_entries(user_id=test_user)
-        result["remaining"] = any(item.get("text") == test_text for item in remaining)
-        return result
-    except Exception as exc:
-        return {"ok": False, "error_type": type(exc).__name__, "error": str(exc)}
-
-
 @app.get("/api/status")
 def status():
     return {
