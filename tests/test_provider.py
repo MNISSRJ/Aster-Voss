@@ -15,3 +15,10 @@ def test_provider_config_shape():
         max_tokens=10,
     )
     assert cfg.is_configured
+
+
+def test_multimodal_content_builder():
+    from llm.content import multimodal_content
+    content = multimodal_content("look at this", ["https://example.com/a.png"])
+    assert content[0]["type"] == "text"
+    assert content[1]["type"] == "image_url"
