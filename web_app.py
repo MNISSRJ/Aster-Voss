@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from agent import AsterVoss
 from llm.base import LLMMessage
+from llm.factory import create_provider
 from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
 from memory.persistence import long_term_context
@@ -194,6 +195,7 @@ body::after{
 .radar-source:hover{text-decoration:underline}
 .radar-empty{padding:32px 16px;text-align:center;border:1px dashed rgba(115,132,176,.22);border-radius:16px;color:#818da2;font-size:12px;grid-column:1/-1}
 .side-item.radar-active{background:rgba(255,255,255,.58);color:#2d3850}
+#radar[hidden]{display:none!important}
 @media(max-width:899px){.radar-view{padding:22px 14px 72px}.radar-head{align-items:flex-start}.radar-title{font-size:25px}.radar-list{grid-template-columns:1fr}.radar-refresh{padding:8px 10px}}
 .side-item{
   width:100%;border:0;background:transparent;color:#6f7d94;border-radius:10px;padding:9px 10px;
@@ -567,23 +569,28 @@ async function resetChat(){
   try{await fetch("/api/reset",{method:"POST"});}catch(error){console.error(error)}
   chat.innerHTML='<div class="msg a welcome">新对话开始。<br>你好，我还是 Aster Voss。长期记忆不会因为新对话而消失。</div>';
   renderConversations([]);
+  setWorkspace("chat");
   input.focus();
   showToast("已开启新对话");
   sidebar.classList.remove("open");
 }
 document.querySelector("#new-chat-side").addEventListener("click",resetChat);
 document.querySelector("#new-chat-top").addEventListener("click",resetChat);
-document.querySelector("#nav-chat").addEventListener("click",()=>{sidebar.classList.remove("open");});
-document.querySelector("#nav-memory").addEventListener("click",openSettings);
-document.querySelector("#settings-side").addEventListener("click",openSettings);
+document.querySelector("#nav-chat").addEventListener("click",()=>{setWorkspace("chat");sidebar.classList.remove("open");});
+document.querySelector("#settings-side").addEventListener("click",event=>{
+  event.preventDefault();
+  event.stopPropagation();
+  openSettings();
+});
 
 function openSettings(){
   settings.classList.add("open");
   overlay.classList.add("open");
+  settings.setAttribute("aria-hidden","false");
   loadMemories();
   sidebar.classList.remove("open");
 }
-function closeSettings(){settings.classList.remove("open");overlay.classList.remove("open")}
+function closeSettings(){settings.classList.remove("open");overlay.classList.remove("open");settings.setAttribute("aria-hidden","true")}
 document.querySelector("#settings-close").addEventListener("click",closeSettings);
 overlay.addEventListener("click",closeSettings);
 window.addEventListener("keydown",event=>{if(event.key==="Escape")closeSettings();});
@@ -889,7 +896,12 @@ def remove_conversation(conversation_id: str):
 
 def _generate_ai_brief():
     try:
-        provider = CONFIG.active_provider if CONFIG.active_provider and CONFIG.active_provider.is_available() else None
+        provider = None
+        provider_config = CONFIG.active_provider
+        if provider_config and provider_config.is_configured:
+            candidate = create_provider(CONFIG.main_provider, CONFIG)
+            if candidate.is_available():
+                provider = candidate
         return RADAR.generate(provider)
     except Exception as exc:
         raise HTTPException(status_code=502, detail="AI 热点抓取失败：" + type(exc).__name__) from exc
