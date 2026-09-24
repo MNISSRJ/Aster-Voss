@@ -24,7 +24,10 @@ def test_radar_route_builds_real_provider(monkeypatch):
     from types import SimpleNamespace
 
     calls = {}
-    fake_provider = object()
+    class FakeProvider:
+        def is_available(self):
+            return True
+    fake_provider = FakeProvider()
     fake_config = SimpleNamespace(
         active_provider=SimpleNamespace(is_configured=True),
         main_provider="deepseek",
