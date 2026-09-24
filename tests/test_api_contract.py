@@ -1,6 +1,12 @@
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
+SOURCE=ROOT/"templates"/"index.html"
+APP_SOURCE=ROOT/"web_app.py"
+
+from pathlib import Path
+
+ROOT=Path(__file__).resolve().parents[1]
 WEB=ROOT/"web_app.py"
 
 def test_enter_to_send_is_wired():
