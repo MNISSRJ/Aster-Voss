@@ -8,6 +8,8 @@ from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
 from memory.persistence import long_term_context
 from memory import brain, cloud
+from memory import extractor
+from automations import list_automations
 from memory.service import MemoryService
 from services.conversation_service import ConversationService
 from services.radar_service import RadarService
@@ -511,6 +513,7 @@ async function sendMessage(){
       currentConversationId=data.conversation_id;
       localStorage.setItem("aster-current-conversation",currentConversationId);
     }
+    if(data.conversation_persisted===false)showToast("回复成功，但历史记录暂时未保存");
     await loadConversations(false);
   }catch(error){
     thinking.remove();
@@ -1012,6 +1015,38 @@ def ai_radar_cron(request: Request):
     if not authorized:
         raise HTTPException(status_code=401, detail="unauthorized")
     return _generate_ai_brief()
+
+
+@app.post("/api/memory/suggestions")
+def memory_suggestions(body: ConversationRefIn):
+    conversation = CONVERSATIONS.get(body.conversation_id or "") if CONVERSATIONS.enabled else None
+    source = conversation.get("messages", []) if conversation else []
+    messages = extractor.messages_for_agent(source)
+    if len(messages) < 2:
+        return {"status": "empty", "suggestions": []}
+    try:
+        reviewer = _agent_from_messages([])
+        decision = reviewer.router.select("Extract durable memory suggestions")
+        provider = reviewer.router.get_provider(decision.provider_name)
+        if not provider.is_available():
+            raise HTTPException(status_code=503, detail="模型当前不可用")
+        result = provider.complete(
+            [LLMMessage.system("You extract durable memories. Return JSON only."), LLMMessage.user(extractor.build_prompt(messages))],
+            temperature=0.1,
+            max_tokens=800,
+            reasoning=None,
+        )
+        suggestions = extractor.parse(result.text or "")
+        return {"status": "ready" if suggestions else "empty", "suggestions": suggestions}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="记忆提取失败：" + type(exc).__name__) from exc
+
+
+@app.get("/api/automations")
+def get_automations():
+    return {"automations": list_automations(), "server_time": int(time.time())}
 
 
 @app.get("/api/memory")
