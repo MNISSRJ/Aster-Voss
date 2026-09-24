@@ -37,13 +37,6 @@ def build_prompt(user_id: str = "mint"):
         )
     return "\\n\\n".join(parts)
 
-agent = AsterVoss(
-    CONFIG,
-    system_prompt=build_prompt(),
-    identity_name=AGENT_IDENTITY.name,
-    identity_tagline=AGENT_TAGLINE,
-)
-
 app = FastAPI(title="Aster Voss")
 
 
@@ -840,21 +833,29 @@ def chat(body: ChatIn):
             "title": title,
         }
 
-    # Development fallback when cloud storage is not configured.
-    agent.refresh_system_prompt(build_prompt())
-    r = agent.run(body.message)
+    # Development fallback when cloud storage is not configured:
+    # create a fresh request-scoped agent instead of sharing global state.
+    request_agent = _agent_from_messages(
+        [
+            {"role": m.role, "content": m.content}
+            for m in load_history()
+            if m.role in {"user", "assistant"} and isinstance(m.content, str)
+        ]
+    )
+    r = request_agent.run(body.message)
     return {
         "text": r.text,
         "provider": r.provider,
         "model": r.model,
         "conversation_id": None,
         "title": "新对话",
+        "conversation_persisted": False,
     }
 
 
 @app.post("/api/reset")
 def reset():
-    agent.reset()
+    # Conversation reset is client/session scoped. Durable memory remains intact.
     return {"ok": True}
 
 
@@ -990,7 +991,6 @@ def add_memory(body: MemoryIn):
         raise HTTPException(status_code=400, detail="记忆内容不能为空")
     if not brain.add(text_value, source="manual"):
         raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
-    agent.refresh_system_prompt(build_prompt())
     return {"ok": True}
 
 
@@ -1015,14 +1015,13 @@ def edit_memory(memory_id: str, body: MemoryEditIn):
 def remove_memory(memory_id: str):
     if not brain.delete(memory_id):
         raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
-    agent.refresh_system_prompt(build_prompt())
     return {"ok": True}
 
 
 @app.post("/api/memory/summarize")
 def summarize_memories(body: ConversationRefIn):
     conversation = cloud.load_conversation(body.conversation_id or "") if cloud.enabled() else None
-    source_messages = conversation.get("messages", []) if conversation else _message_dicts(agent.messages)
+    source_messages = conversation.get("messages", []) if conversation else _message_dicts(load_history())
     messages = [
         LLMMessage(role=item["role"], content=item["content"])
         for item in source_messages[-16:]
@@ -1048,8 +1047,9 @@ def summarize_memories(body: ConversationRefIn):
         + transcript
     )
     try:
-        decision = agent.router.select("Summarize durable user memory")
-        provider = agent.router.get_provider(decision.provider_name)
+        summarizer = _agent_from_messages([])
+        decision = summarizer.router.select("Summarize durable user memory")
+        provider = summarizer.router.get_provider(decision.provider_name)
         if not provider.is_available():
             raise HTTPException(status_code=503, detail="模型当前不可用")
         response = provider.complete(
