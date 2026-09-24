@@ -25,3 +25,18 @@ create index if not exists aster_conversations_user_updated_idx
   on public.aster_conversations (user_id, updated_at desc);
 
 alter table public.aster_conversations enable row level security;
+
+
+-- Aster Voss daily AI radar
+create table if not exists public.ai_radar_briefs (
+  brief_date date not null,
+  user_id text not null default 'mint',
+  payload jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  primary key (brief_date, user_id)
+);
+
+create index if not exists ai_radar_briefs_user_date_idx
+  on public.ai_radar_briefs (user_id, brief_date desc);
+
+alter table public.ai_radar_briefs enable row level security;
