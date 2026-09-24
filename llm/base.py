@@ -117,6 +117,13 @@ class LLMProvider(ABC):
     def is_available(self) -> bool:
         return bool(self.api_key()) and bool(self.model)
 
+    @property
+    def capabilities(self) -> set[str]:
+        return {"chat"}
+
+    def supports(self, capability: str) -> bool:
+        return capability in self.capabilities
+
     def unavailable_reason(self) -> str:
         if not self.api_key():
             return "API key is not set"
