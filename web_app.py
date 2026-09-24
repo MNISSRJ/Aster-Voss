@@ -177,6 +177,7 @@ def chat(body: ChatIn):
             "usage": r.usage,
             "source": r.source,
             "complexity": r.complexity,
+            "usage_logged": bool(cloud.save_usage_event(conversation_id, r.provider, r.model, r.usage)) if r.usage else False,
         }
 
     # Development fallback when cloud storage is not configured:
@@ -427,6 +428,11 @@ def status():
         "server_time": int(time.time()),
         "version": "0.2.0",
     }
+
+
+@app.get("/api/usage")
+def usage():
+    return {"usage": cloud.usage_summary(user_id=MEMORY.user_id), "server_time": int(time.time())}
 
 
 @app.get("/api/capabilities")
