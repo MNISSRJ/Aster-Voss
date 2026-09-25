@@ -16,6 +16,10 @@ class MemoryService:
     def cloud_enabled(self) -> bool:
         return brain.enabled()
 
+    @property
+    def storage_mode(self) -> str:
+        return brain.storage_mode()
+
     def list(self):
         return brain.load_entries(self.user_id)
 
