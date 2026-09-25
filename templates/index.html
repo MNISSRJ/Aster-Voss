@@ -435,7 +435,7 @@ async function loadRadar(){
     const response=await fetch("/api/ai-radar/today",{cache:"no-store"});
     const data=await response.json();
     if(!response.ok)throw new Error(data.detail||"读取失败");
-    const statusLabel=data.status==="ready"?"已生成":data.status==="failed"?"生成失败":"未生成";
+    const statusLabel=data.status==="ready"?"已生成":data.status==="fallback"?"降级展示":data.status==="failed"?"生成失败":"未生成";
     radarDate.textContent=(data.brief_date||"").replace(/-/g,".")+" · "+statusLabel;
     if(data.generated_at){
       radarDate.textContent += " · "+new Date(data.generated_at).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});

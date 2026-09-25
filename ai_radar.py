@@ -35,6 +35,11 @@ MAX_ITEMS = 6
 USER_AGENT = "Aster-Voss-AI-Radar/1.0"
 
 
+class RadarCurationError(ValueError):
+    """Raised when the model response cannot produce usable radar items."""
+
+
+
 def _clean(value: str | None) -> str:
     value = html.unescape(value or "")
     return re.sub(r"<[^>]+>", " ", value).strip()
@@ -159,7 +164,18 @@ def _parse_json_object(raw: str) -> dict[str, Any]:
     except json.JSONDecodeError:
         return {}
     return value if isinstance(value, dict) else {}
-def curate(provider, candidates: list[dict[str, Any]]) -> dict[str, Any]:
+def curate(
+    provider,
+    candidates: list[dict[str, Any]],
+    attempt: int = 1,
+) -> dict[str, Any]:
+    """Curate candidates into a validated, displayable radar brief.
+
+    ``attempt`` is used only to tighten the prompt on the retry path. A
+    successful result must contain at least one item that points to a real
+    candidate; otherwise a RadarCurationError is raised so the service can
+    retry or fall back to the raw candidates.
+    """
     prompt_rows = []
     for idx, item in enumerate(candidates, 1):
         prompt_rows.append(
@@ -167,59 +183,118 @@ def curate(provider, candidates: list[dict[str, Any]]) -> dict[str, Any]:
             f"sources={', '.join(item['source_list'])}\n"
             f"URL: {item['url']}\nSnippet: {item['description']}"
         )
+
+    retry_instruction = ""
+    max_output_items = MAX_ITEMS
+    if attempt > 1:
+        max_output_items = min(4, MAX_ITEMS)
+        retry_instruction = (
+            "\nRetry instruction: the previous attempt did not produce usable items. "
+            f"Select 1 to {max_output_items} valid candidates now. "
+            "Every item MUST use a candidate number from 1 to N. "
+            "Do not return an empty items array when candidates are available."
+        )
+
     prompt = (
-        "You are the editor of Aster Voss's daily AI radar. Select at most 6 important "
-        "developments from the candidates. The ranking is not personalized. Prefer new, "
-        "consequential stories with cross-source support. Treat rumors as rumors and never "
-        "invent facts. Return valid JSON only: "
+        "You are the editor of Aster Voss's daily AI radar. Select at most "
+        f"{max_output_items} important developments from the candidates. "
+        "The ranking is not personalized. Prefer new, consequential stories "
+        "with cross-source support. Treat rumors as rumors and never invent facts. "
+        "Return valid JSON only: "
         '{"intro_zh":"...","items":[{"candidate":1,"company":"...","headline_zh":"...",'
-        '"summary_zh":"...","why_it_matters_zh":"...","tags":["..."]}]}. '
-        "Keep each Chinese summary under 70 characters."
+        '"summary_zh":"...","why_it_matters_zh":"...","tags":["..."]}]}. "',
+        "Keep each Chinese summary under 70 characters. "
+        "When candidates are available, select at least one valid candidate."
+        + retry_instruction
         + "\n\n"
         + "\n\n".join(prompt_rows)
     )
+
     response = provider.complete(
         [
-            LLMMessage.system("Return valid JSON only."),
+            LLMMessage.system(
+                "Return valid JSON only. Never invent candidate numbers."
+            ),
             LLMMessage.user(prompt),
         ],
         temperature=0.2,
-        max_tokens=1400,
+        max_tokens=1800 if attempt > 1 else 1600,
         reasoning=None,
     )
+
+    finish_reason = getattr(response, "finish_reason", None)
+    if finish_reason == "length":
+        raise RadarCurationError("model output was truncated")
+
     raw = (getattr(response, "text", "") or "").strip()
+    if not raw:
+        raise RadarCurationError("model returned empty content")
+
     data = _parse_json_object(raw)
+    if not data:
+        raise RadarCurationError("model response was not a JSON object")
+
+    selected = data.get("items")
+    if not isinstance(selected, list):
+        raise RadarCurationError("model response has no valid items list")
 
     by_index = {i: item for i, item in enumerate(candidates, 1)}
     result_items: list[dict[str, Any]] = []
-    selected = data.get("items", [])
-    if not isinstance(selected, list):
-        selected = []
+    used_candidates: set[int] = set()
+
     for entry in selected[:MAX_ITEMS]:
-        try:
-            source = by_index[int(entry.get("candidate"))]
-        except (TypeError, ValueError, KeyError):
+        if not isinstance(entry, dict):
             continue
+        try:
+            candidate_index = int(entry.get("candidate"))
+        except (TypeError, ValueError):
+            continue
+        if candidate_index in used_candidates:
+            continue
+        source = by_index.get(candidate_index)
+        if source is None:
+            continue
+
+        tags = entry.get("tags")
+        if not isinstance(tags, list):
+            tags = []
+
         result_items.append(
             {
                 "id": source["id"],
-                "headline_zh": str(entry.get("headline_zh") or source["title"]).strip(),
-                "summary_zh": str(entry.get("summary_zh") or "").strip(),
-                "why_it_matters_zh": str(entry.get("why_it_matters_zh") or "").strip(),
+                "headline_zh": str(
+                    entry.get("headline_zh") or source["title"]
+                ).strip(),
+                "summary_zh": str(
+                    entry.get("summary_zh") or source.get("description", "")
+                ).strip(),
+                "why_it_matters_zh": str(
+                    entry.get("why_it_matters_zh") or ""
+                ).strip(),
                 "company": str(entry.get("company") or "").strip(),
-                "tags": [str(x).strip() for x in entry.get("tags", [])][:4],
+                "tags": [str(x).strip() for x in tags][:4],
                 "url": source["url"],
                 "source_list": source["source_list"],
                 "published_at": source["published_at"],
                 "hot_score": source["hot_score"],
             }
         )
+        used_candidates.add(candidate_index)
+
+    if not result_items:
+        raise RadarCurationError(
+            f"model produced no usable radar items from {len(candidates)} candidates"
+        )
 
     return {
         "brief_date": datetime.now(timezone.utc).date().isoformat(),
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "intro_zh": str(data.get("intro_zh") or "Aster 已为你整理今天的 AI 热点。").strip(),
+        "intro_zh": str(
+            data.get("intro_zh") or "Aster 已为你整理今天的 AI 热点。"
+        ).strip(),
         "items": result_items,
-        "source_count": len({s for item in candidates for s in item["source_list"]}),
+        "source_count": len(
+            {s for item in candidates for s in item["source_list"]}
+        ),
         "candidate_count": len(candidates),
     }

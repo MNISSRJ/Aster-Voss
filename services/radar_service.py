@@ -4,6 +4,8 @@ from __future__ import annotations
 import os
 import time
 
+import log
+
 from ai_radar import collect_candidates, curate
 from memory import cloud
 
@@ -16,7 +18,7 @@ class RadarService:
 
     def _fallback_payload(self, candidates):
         return {
-            "status": "ready" if candidates else "empty",
+            "status": "fallback" if candidates else "empty",
             "brief_date": time.strftime("%Y-%m-%d", time.gmtime()),
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "intro_zh": (
@@ -47,16 +49,35 @@ class RadarService:
         if not candidates:
             payload = self._fallback_payload([])
         elif provider and provider.is_available():
-            try:
-                payload = curate(provider, candidates)
-            except Exception:
+            payload = None
+            last_error = None
+            for attempt in (1, 2):
+                try:
+                    payload = curate(provider, candidates, attempt=attempt)
+                    break
+                except Exception as exc:
+                    last_error = exc
+                    log.info(
+                        "radar curation failed attempt=%s error=%s",
+                        attempt,
+                        type(exc).__name__,
+                    )
+            if payload is None:
+                log.error(
+                    "radar curation exhausted attempts error=%s",
+                    type(last_error).__name__ if last_error else "unknown",
+                )
                 payload = self._fallback_payload(candidates)
         else:
             payload = self._fallback_payload(candidates)
-        payload.setdefault("status", "ready" if payload.get("items") else "empty")
-        payload["saved"] = bool(self.repository.save(payload["brief_date"], payload, self.user_id)) if cloud.enabled() else False
-        return payload
 
+        payload.setdefault("status", "ready" if payload.get("items") else "empty")
+        payload["saved"] = (
+            bool(self.repository.save(payload["brief_date"], payload, self.user_id))
+            if cloud.enabled()
+            else False
+        )
+        return payload
     def today(self):
         date_str = time.strftime("%Y-%m-%d", time.gmtime())
         stored = self.repository.get(date_str, self.user_id)

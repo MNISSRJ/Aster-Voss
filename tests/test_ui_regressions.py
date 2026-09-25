@@ -31,3 +31,7 @@ def test_new_chat_does_not_clear_conversation_archive():
     assert 'setWorkspace("chat");' in block
     assert 'loadConversations(false);' in block
     assert 'renderConversations([]);' not in block
+
+
+def test_radar_surfaces_fallback_status():
+    assert 'data.status==="fallback"?"降级展示"' in SOURCE
