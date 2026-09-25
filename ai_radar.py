@@ -202,7 +202,7 @@ def curate(
         "with cross-source support. Treat rumors as rumors and never invent facts. "
         "Return valid JSON only: "
         '{"intro_zh":"...","items":[{"candidate":1,"company":"...","headline_zh":"...",'
-        '"summary_zh":"...","why_it_matters_zh":"...","tags":["..."]}]}. "',
+        '"summary_zh":"...","why_it_matters_zh":"...","tags":["..."]}]}." "'
         "Keep each Chinese summary under 70 characters. "
         "When candidates are available, select at least one valid candidate."
         + retry_instruction
