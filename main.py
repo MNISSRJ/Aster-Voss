@@ -11,9 +11,10 @@ from llm.factory import available_providers,create_provider
 # Vercel FastAPI entrypoint: expose the web application as `app`.
 from web_app import app
 from memory.persistence import memory_stats
+from memory.service import MemoryService
 def build_system_prompt():
     sections=[AGENT_IDENTITY.render_system_prompt()]
-    m=get_memory().context_block()
+    m=MemoryService().context()
     if m:sections.append(m)
     return "\n\n".join(sections)
 def main():
