@@ -150,5 +150,6 @@ class LLMProvider(ABC):
         temperature: float | None = None,
         max_tokens: int | None = None,
         reasoning: str | None = None,
+        response_format: dict[str, Any] | None = None,
     ) -> LLMResponse:
         raise NotImplementedError
