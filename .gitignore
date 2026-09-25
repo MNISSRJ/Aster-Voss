@@ -18,3 +18,12 @@ memory/LONG_TERM_MEMORY.local.md
 # Tooling
 .ruff_cache/
 .pyright/
+
+# Runtime personal data
+memory/CONVERSATION_HISTORY.json
+memory/CONVERSATION_HISTORY.local.json
+memory/LONG_TERM_MEMORY.md
+memory/LONG_TERM_MEMORY.local.md
+memory/USER_PROFILE.md
+memory/USER_PROFILE.local.md
+memory/LOCAL_MEMORY.json
