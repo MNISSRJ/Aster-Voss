@@ -23,3 +23,9 @@
 - Confirm main deployment is READY.
 - Confirm /api/status returns 200 and server_time.
 - Check recent runtime errors after deployment.
+
+## Final hardening gates
+- [ ] Local memory write/read survives a process restart without Supabase.
+- [ ] Serverless/Vercel without Supabase rejects durable memory writes.
+- [ ] Cloud memory/conversation writes fail visibly and are logged.
+- [ ] Preview commit matches the intended release candidate commit.
