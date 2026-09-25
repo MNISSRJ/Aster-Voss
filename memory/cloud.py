@@ -8,6 +8,7 @@ import json, os
 from datetime import datetime, timezone
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import log
 
 TABLE = "aster_memory"
 DEFAULT_USER_ID = (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "mint"
@@ -58,16 +59,18 @@ def ensure_user(user_id: str = DEFAULT_USER_ID):
     except (URLError, OSError, ValueError):
         return False
 
-def load(user_id: str = DEFAULT_USER_ID) -> list[dict]:
-    if not enabled(): return []
+def load(user_id: str = DEFAULT_USER_ID) -> list[dict] | None:
+    if not enabled():
+        return None
     try:
         rows = _request("GET", f"{TABLE}?user_id=eq.{user_id}&select=memory&limit=1")
         if rows and isinstance(rows, list):
             memory = rows[0].get("memory")
             return memory if isinstance(memory, list) else []
-    except Exception:
-        pass
-    return []
+        return []
+    except Exception as exc:
+        log.error("cloud memory read failed user_id=%s error=%s", user_id, type(exc).__name__)
+        return None
 
 def save(memory: list[dict], user_id: str = DEFAULT_USER_ID) -> bool:
     if not enabled():
@@ -79,7 +82,8 @@ def save(memory: list[dict], user_id: str = DEFAULT_USER_ID) -> bool:
         else:
             _request("POST", TABLE, {"user_id": user_id, "memory": memory})
         return True
-    except Exception:
+    except Exception as exc:
+        log.error("cloud memory write failed user_id=%s error=%s", user_id, type(exc).__name__)
         return False
 
 
@@ -169,7 +173,8 @@ def delete_conversation(conversation_id: str, user_id: str = DEFAULT_USER_ID) ->
             f"{CONVERSATION_TABLE}?id=eq.{conversation_id}&user_id=eq.{user_id}",
         )
         return True
-    except Exception:
+    except Exception as exc:
+        log.error("cloud conversation delete failed conversation_id=%s user_id=%s error=%s", conversation_id, user_id, type(exc).__name__)
         return False
 
 
@@ -192,7 +197,8 @@ def save_ai_brief(brief_date: str, payload: dict, user_id: str = DEFAULT_USER_ID
             body["brief_date"] = brief_date
             _request("POST", AI_BRIEF_TABLE, body)
         return True
-    except Exception:
+    except Exception as exc:
+        log.error("cloud radar write failed brief_date=%s user_id=%s error=%s", brief_date, user_id, type(exc).__name__)
         return False
 
 def load_ai_brief(brief_date: str, user_id: str = DEFAULT_USER_ID):
@@ -246,7 +252,8 @@ def save_usage_event(
             },
         )
         return True
-    except Exception:
+    except Exception as exc:
+        log.error("cloud usage write failed user_id=%s error=%s", user_id, type(exc).__name__)
         return False
 
 
