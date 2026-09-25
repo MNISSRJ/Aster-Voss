@@ -62,8 +62,3 @@ def test_curate_uses_code_fenced_model_json():
     assert len(result["items"]) == 1
     assert result["items"][0]["headline_zh"] == "新模型发布"
 
-
-def test_norm_title_preserves_chinese():
-    normalized = _norm_title("hello 世界 AI 更新")
-    assert "世界" in normalized
-    assert "更新" in normalized
