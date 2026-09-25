@@ -5,7 +5,7 @@ from dataclasses import dataclass,field
 from pathlib import Path
 import log
 PROJECT_ROOT=Path(__file__).resolve().parent.parent
-USER_PROFILE_PATH=PROJECT_ROOT/"memory"/"USER_PROFILE.md"
+USER_PROFILE_PATH=PROJECT_ROOT/"memory"/"USER_PROFILE.local.md"
 MEMORY_CONTEXT_ID="<user_memory>"
 MAX_INJECT_CHARS=1500
 _SECRET_PATTERNS=(re.compile(r"sk-[A-Za-z0-9_\-]{8,}"),re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._\-]+"),re.compile(r"(?i)\b(api[_-]?key|authorization|token|secret|password)\b\s*[:=]\s*\S+"))
