@@ -12,3 +12,8 @@
 
 ## Ownership
 Every durable record is scoped by user_id. The single-user development default is controlled by ASTER_DEFAULT_USER_ID.
+
+## Final hardening
+- Runtime personal data is not stored in tracked profile/history files.
+- Local memory uses an ignored runtime JSON file.
+- Serverless deployments without Supabase are read-only for durable memory.
