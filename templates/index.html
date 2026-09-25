@@ -790,7 +790,8 @@ async function deleteMemory(id){
 async function summarizeMemories(){
   const button=document.querySelector("#memory-summary");button.disabled=true;button.textContent="正在整理…";
   try{
-    if(!currentConversationId){showToast("先聊几句，再整理这段对话");button.disabled=false;button.textContent="✨ 从最近对话整理";return;}\n    const response=await fetch("/api/memory/summarize",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conversation_id:currentConversationId})});
+    if(!currentConversationId){showToast("先聊几句，再整理这段对话");button.disabled=false;button.textContent="✨ 从最近对话整理";return;}
+    const response=await fetch("/api/memory/summarize",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conversation_id:currentConversationId})});
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(data.detail||data.error||"整理失败");
     showToast(data.added?("已整理 "+data.added+" 条记忆"):"没有发现新的长期记忆");
