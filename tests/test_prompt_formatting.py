@@ -25,7 +25,9 @@ def test_norm_title_preserves_chinese():
 
 
 def test_radar_prompt_uses_real_newlines():
-    provider = CaptureProvider('{"intro_zh":"ok","items":[]}')
+    provider = CaptureProvider(
+        '{"intro_zh":"ok","items":[{"candidate":1,"company":"Example","headline_zh":"测试标题","summary_zh":"测试摘要","why_it_matters_zh":"值得关注","tags":["AI"]}]}'
+    )
     candidates = [{
         "id": "1",
         "title": "测试标题",
