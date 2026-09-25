@@ -161,7 +161,13 @@ def save_conversation(
                     payload,
                 )
         return True
-    except Exception:
+    except Exception as exc:
+        log.error(
+            "cloud conversation write failed conversation_id=%s user_id=%s error=%s",
+            conversation_id,
+            user_id,
+            type(exc).__name__,
+        )
         return False
 
 def delete_conversation(conversation_id: str, user_id: str = DEFAULT_USER_ID) -> bool:
