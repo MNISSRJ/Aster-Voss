@@ -78,8 +78,8 @@ def test_serverless_memory_api_returns_503(monkeypatch):
 
 def test_cloud_conversation_write_failure_returns_non_success(monkeypatch):
     monkeypatch.setattr(web_app.cloud, "enabled", lambda: True)
-    monkeypatch.setattr(web_app.CONVERSATIONS, "get", lambda conversation_id: None)
-    monkeypatch.setattr(web_app.CONVERSATIONS, "save", lambda *args, **kwargs: False)
+    monkeypatch.setattr(web_app.ConversationService, "get", lambda self, conversation_id: None)
+    monkeypatch.setattr(web_app.ConversationService, "save", lambda self, *args, **kwargs: False)
 
     class FakeAgent:
         messages = []
