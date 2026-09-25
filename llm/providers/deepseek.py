@@ -8,7 +8,7 @@ class DeepSeekProvider(LLMProvider):
     def capabilities(self):
         return {"chat", "tools", "reasoning"}
 
-    def complete(self,messages,tools=None,temperature=None,max_tokens=None,reasoning=None):
+    def complete(self,messages,tools=None,temperature=None,max_tokens=None,reasoning=None,response_format=None):
         if not self.is_available(): raise LLMError(self.unavailable_reason())
         ms=[]
         for m in messages:
@@ -22,6 +22,7 @@ class DeepSeekProvider(LLMProvider):
         if tools: payload["tools"]=list(tools)
         if temperature is not None: payload["temperature"]=temperature
         if reasoning: payload["reasoning_effort"]=reasoning
+        if response_format: payload["response_format"]=response_format
         req=urllib.request.Request(self._config.base_url.rstrip("/")+"/chat/completions",data=json.dumps(payload,ensure_ascii=False).encode(),headers={"Content-Type":"application/json","Authorization":"Bearer "+self.api_key()})
         try:
             with urllib.request.urlopen(req,timeout=self.timeout) as resp: body=json.loads(resp.read().decode())
