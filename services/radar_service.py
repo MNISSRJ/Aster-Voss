@@ -60,7 +60,7 @@ class RadarService:
                     log.info(
                         "radar curation failed attempt=%s error=%s",
                         attempt,
-                        type(exc).__name__,
+                        f"{type(exc).__name__}: {str(exc)[:240]}",
                     )
             if payload is None:
                 log.error(
