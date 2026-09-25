@@ -26,8 +26,15 @@ This branch implements the planned hardening roadmap without merging into produc
 - Vector retrieval is dormant until embedding credentials/schema are provisioned.
 - Multimodal upload UI is intentionally not enabled.
 - Generic user-defined automation scheduling is not enabled; only registered scheduled skills execute.
-- Existing legacy conversation JSON has a migration helper but is not deleted automatically.
+- Legacy tracked conversation/profile files were removed; local runtime files are ignored.
 
 ## Verification
 GitHub Actions test suite is the primary automated gate. Production is not merged from this branch.
 Vercel preview deployment may be unavailable while the project is under Vercel deployment rate limiting; this does not change the production deployment.
+
+## Final Hardening
+- F1: fixed the web runtime import/duplicate app definition defects.
+- F2: enforced explicit Local / Serverless / Supabase memory semantics and failure visibility.
+- F3: removed tracked runtime personal data and isolated local runtime paths.
+- F4: separated runtime and development dependencies; CI installs development requirements.
+- Added regression tests for the three memory storage modes and cloud archive failure behavior.
