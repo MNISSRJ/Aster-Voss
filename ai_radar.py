@@ -163,7 +163,10 @@ def _parse_json_object(raw: str) -> dict[str, Any]:
         value, _ = json.JSONDecoder().raw_decode(text[start:])
     except json.JSONDecodeError:
         return {}
-    return value if isinstance(value, dict) else {}\n\n\ndef curate(
+    return value if isinstance(value, dict) else {}
+
+
+def curate(
     provider,
     candidates: list[dict[str, Any]],
     attempt: int = 1,
