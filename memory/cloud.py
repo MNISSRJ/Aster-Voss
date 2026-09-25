@@ -7,6 +7,7 @@ from __future__ import annotations
 import json, os
 from datetime import datetime, timezone
 from urllib.request import Request, urlopen
+from urllib.parse import quote
 from urllib.error import HTTPError, URLError
 import log
 
@@ -15,6 +16,11 @@ DEFAULT_USER_ID = (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "min
 CONVERSATION_TABLE = "aster_conversations"
 AI_BRIEF_TABLE = "ai_radar_briefs"
 USAGE_TABLE = "aster_usage_events"
+
+
+def _quote_filter_value(value: str) -> str:
+    """Encode a value before interpolating it into a PostgREST filter URL."""
+    return quote(str(value), safe="")
 
 def _cfg():
     url = os.getenv("SUPABASE_URL", "").rstrip("/")
@@ -63,7 +69,7 @@ def load(user_id: str = DEFAULT_USER_ID) -> list[dict] | None:
     if not enabled():
         return None
     try:
-        rows = _request("GET", f"{TABLE}?user_id=eq.{user_id}&select=memory&limit=1")
+        rows = _request("GET", f"{TABLE}?user_id=eq.{_quote_filter_value(user_id)}&select=memory&limit=1")
         if rows and isinstance(rows, list):
             memory = rows[0].get("memory")
             return memory if isinstance(memory, list) else []
@@ -76,9 +82,9 @@ def save(memory: list[dict], user_id: str = DEFAULT_USER_ID) -> bool:
     if not enabled():
         return False
     try:
-        existing = _request("GET", f"{TABLE}?user_id=eq.{user_id}&select=user_id&limit=1")
+        existing = _request("GET", f"{TABLE}?user_id=eq.{_quote_filter_value(user_id)}&select=user_id&limit=1")
         if existing:
-            _request("PATCH", f"{TABLE}?user_id=eq.{user_id}", {"memory": memory})
+            _request("PATCH", f"{TABLE}?user_id=eq.{_quote_filter_value(user_id)}", {"memory": memory})
         else:
             _request("POST", TABLE, {"user_id": user_id, "memory": memory})
         return True
@@ -96,7 +102,7 @@ def list_conversations(user_id: str = DEFAULT_USER_ID) -> list[dict]:
     try:
         rows = _request(
             "GET",
-            f"{CONVERSATION_TABLE}?user_id=eq.{user_id}&select=id,title,created_at,updated_at&order=updated_at.desc",
+            f"{CONVERSATION_TABLE}?user_id=eq.{_quote_filter_value(user_id)}&select=id,title,created_at,updated_at&order=updated_at.desc",
         )
         return rows if isinstance(rows, list) else []
     except Exception:
@@ -108,7 +114,7 @@ def load_conversation(conversation_id: str, user_id: str = DEFAULT_USER_ID):
     try:
         rows = _request(
             "GET",
-            f"{CONVERSATION_TABLE}?id=eq.{conversation_id}&user_id=eq.{user_id}&select=id,title,messages,created_at,updated_at&limit=1",
+            f"{CONVERSATION_TABLE}?id=eq.{_quote_filter_value(conversation_id)}&user_id=eq.{_quote_filter_value(user_id)}&select=id,title,messages,created_at,updated_at&limit=1",
         )
         if rows and isinstance(rows, list):
             row = rows[0]
@@ -140,12 +146,12 @@ def save_conversation(
 
         existing = _request(
             "GET",
-            f"{CONVERSATION_TABLE}?id=eq.{conversation_id}&user_id=eq.{user_id}&select=id&limit=1",
+            f"{CONVERSATION_TABLE}?id=eq.{_quote_filter_value(conversation_id)}&user_id=eq.{_quote_filter_value(user_id)}&select=id&limit=1",
         )
         if existing:
             _request(
                 "PATCH",
-                f"{CONVERSATION_TABLE}?id=eq.{conversation_id}&user_id=eq.{user_id}",
+                f"{CONVERSATION_TABLE}?id=eq.{_quote_filter_value(conversation_id)}&user_id=eq.{_quote_filter_value(user_id)}",
                 payload,
             )
         else:
@@ -157,7 +163,7 @@ def save_conversation(
                     raise
                 _request(
                     "PATCH",
-                    f"{CONVERSATION_TABLE}?id=eq.{conversation_id}&user_id=eq.{user_id}",
+                    f"{CONVERSATION_TABLE}?id=eq.{_quote_filter_value(conversation_id)}&user_id=eq.{_quote_filter_value(user_id)}",
                     payload,
                 )
         return True
@@ -176,7 +182,7 @@ def delete_conversation(conversation_id: str, user_id: str = DEFAULT_USER_ID) ->
     try:
         _request(
             "DELETE",
-            f"{CONVERSATION_TABLE}?id=eq.{conversation_id}&user_id=eq.{user_id}",
+            f"{CONVERSATION_TABLE}?id=eq.{_quote_filter_value(conversation_id)}&user_id=eq.{_quote_filter_value(user_id)}",
         )
         return True
     except Exception as exc:
@@ -191,12 +197,12 @@ def save_ai_brief(brief_date: str, payload: dict, user_id: str = DEFAULT_USER_ID
         body = {"user_id": user_id, "payload": payload, "updated_at": _utc_now()}
         existing = _request(
             "GET",
-            f"{AI_BRIEF_TABLE}?brief_date=eq.{brief_date}&user_id=eq.{user_id}&select=brief_date&limit=1",
+            f"{AI_BRIEF_TABLE}?brief_date=eq.{_quote_filter_value(brief_date)}&user_id=eq.{_quote_filter_value(user_id)}&select=brief_date&limit=1",
         )
         if existing:
             _request(
                 "PATCH",
-                f"{AI_BRIEF_TABLE}?brief_date=eq.{brief_date}&user_id=eq.{user_id}",
+                f"{AI_BRIEF_TABLE}?brief_date=eq.{_quote_filter_value(brief_date)}&user_id=eq.{_quote_filter_value(user_id)}",
                 body,
             )
         else:
@@ -213,7 +219,7 @@ def load_ai_brief(brief_date: str, user_id: str = DEFAULT_USER_ID):
     try:
         rows = _request(
             "GET",
-            f"{AI_BRIEF_TABLE}?brief_date=eq.{brief_date}&user_id=eq.{user_id}&select=brief_date,payload,updated_at&limit=1",
+            f"{AI_BRIEF_TABLE}?brief_date=eq.{_quote_filter_value(brief_date)}&user_id=eq.{_quote_filter_value(user_id)}&select=brief_date,payload,updated_at&limit=1",
         )
         if rows and isinstance(rows, list):
             return rows[0]
@@ -227,7 +233,7 @@ def list_ai_briefs(limit: int = 14, user_id: str = DEFAULT_USER_ID) -> list[dict
     try:
         rows = _request(
             "GET",
-            f"{AI_BRIEF_TABLE}?user_id=eq.{user_id}&select=brief_date,payload,updated_at&order=brief_date.desc&limit={max(1, min(int(limit), 30))}",
+            f"{AI_BRIEF_TABLE}?user_id=eq.{_quote_filter_value(user_id)}&select=brief_date,payload,updated_at&order=brief_date.desc&limit={max(1, min(int(limit), 30))}",
         )
         return rows if isinstance(rows, list) else []
     except Exception:
@@ -267,10 +273,9 @@ def usage_summary(days: int = 30, user_id: str = DEFAULT_USER_ID):
     if not enabled():
         return {"events": 0, "total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
     try:
-        from urllib.parse import quote
         rows = _request(
             "GET",
-            f"{USAGE_TABLE}?user_id=eq.{quote(user_id, safe='')}&select=prompt_tokens,completion_tokens,total_tokens&limit=1000",
+            f"{USAGE_TABLE}?user_id=eq.{_quote_filter_value(user_id)}&select=prompt_tokens,completion_tokens,total_tokens&limit=1000",
         )
         rows = rows if isinstance(rows, list) else []
         return {
