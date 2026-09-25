@@ -166,6 +166,8 @@ def _agent_from_messages(history):
         system_prompt=build_prompt(),
         identity_name=AGENT_IDENTITY.name,
         identity_tagline=AGENT_TAGLINE,
+        restore_history=False,
+        persist_history=False,
     )
     restored = []
     for item in history or []:
