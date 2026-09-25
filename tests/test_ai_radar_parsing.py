@@ -6,9 +6,11 @@ class FakeProvider:
     def __init__(self, text):
         self.text = text
         self.last_messages = None
+        self.last_kwargs = None
 
     def complete(self, messages, **kwargs):
         self.last_messages = list(messages)
+        self.last_kwargs = kwargs
         return LLMResponse(
             text=self.text,
             tool_calls=[],
@@ -50,6 +52,17 @@ def test_parse_json_with_surrounding_text():
 
 def test_parse_invalid_json_returns_empty_object():
     assert _parse_json_object("not json") == {}
+
+
+def test_curate_requests_json_mode_and_sufficient_output_budget():
+    provider = FakeProvider(
+        '{"intro_zh":"今天的简报","items":[{"candidate":1,"company":"Example","headline_zh":"新模型发布","summary_zh":"重要更新","why_it_matters_zh":"值得关注","tags":["模型"]}]}'
+    )
+    result = curate(provider, _candidates())
+
+    assert result["items"]
+    assert provider.last_kwargs["response_format"] == {"type": "json_object"}
+    assert provider.last_kwargs["max_tokens"] == 2200
 
 
 def test_curate_uses_code_fenced_model_json():
