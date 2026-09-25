@@ -119,7 +119,7 @@ def test_constant_time_auth_path_uses_hmac(monkeypatch):
         "compare_digest",
         lambda a, b: calls.append((a, b)) or True,
     )
-    monkeypatch.setattr(web_app.CONVERSATIONS, "list", lambda: [])
+    monkeypatch.setattr(web_app.ConversationService, "list", lambda self: [])
 
     response = TestClient(web_app.app).get(
         "/api/conversations",
