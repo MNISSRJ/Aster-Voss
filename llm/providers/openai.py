@@ -21,6 +21,7 @@ class OpenAIProvider(LLMProvider):
         temperature=None,
         max_tokens=None,
         reasoning=None,
+        response_format=None,
     ):
         if not self.is_available():
             raise LLMError(self.unavailable_reason())
@@ -55,6 +56,8 @@ class OpenAIProvider(LLMProvider):
             payload["temperature"] = temperature
         if reasoning:
             payload["reasoning_effort"] = reasoning
+        if response_format:
+            payload["response_format"] = response_format
 
         request = urllib.request.Request(
             self._config.base_url.rstrip("/") + "/chat/completions",
