@@ -387,7 +387,20 @@ async function sendMessage(){
       body:JSON.stringify({message:value,conversation_id:currentConversationId})
     });
     const data=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(data.detail||data.error||"请求失败");
+    if(!response.ok){
+      if(data.text){
+        thinking.remove();
+        addMessage(data.text||"……","a");
+        if(data.conversation_id){
+          currentConversationId=data.conversation_id;
+          localStorage.setItem("aster-current-conversation",currentConversationId);
+        }
+        showToast(data.error||"回复成功，但历史记录暂时未保存");
+        await loadConversations(false);
+        return;
+      }
+      throw new Error(data.detail||data.error||"请求失败");
+    }
     thinking.remove();
     addMessage(data.text||"……","a");
     if(data.conversation_id){
