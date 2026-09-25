@@ -14,15 +14,19 @@ from llm.base import LLMMessage
 ROOT = Path(__file__).resolve().parent
 HISTORY_PATH = ROOT / "CONVERSATION_HISTORY.json"
 LONG_TERM_PATH = ROOT / "LONG_TERM_MEMORY.md"
+LOCAL_MEMORY_PATH = ROOT / "LOCAL_MEMORY.json"
 MAX_HISTORY_MESSAGES = 80
 
 
 def local_persistence_enabled() -> bool:
+    # Local files are durable only for local development. A serverless/Vercel
+    # filesystem, including /tmp, must never be treated as durable memory.
+    if os.getenv("VERCEL"):
+        return False
     raw = os.getenv("ASTER_LOCAL_PERSISTENCE")
     if raw is not None:
         return raw.strip().lower() in {"1", "true", "yes", "on"}
-    # Vercel filesystem writes are ephemeral/read-only in serverless functions.
-    return not bool(os.getenv("VERCEL"))
+    return True
 
 
 def _atomic_write(path: Path, text: str) -> bool:
@@ -34,6 +38,39 @@ def _atomic_write(path: Path, text: str) -> bool:
         return True
     except OSError:
         return False
+
+
+def load_local_memory():
+    """Load the local durable memory store, if it exists."""
+    if not local_persistence_enabled() or not LOCAL_MEMORY_PATH.exists():
+        return None
+    try:
+        data = json.loads(LOCAL_MEMORY_PATH.read_text(encoding="utf-8"))
+        if not isinstance(data, list):
+            return []
+        return [x for x in data if isinstance(x, dict) and str(x.get("text", "")).strip()]
+    except (OSError, ValueError, TypeError):
+        return []
+
+
+def save_local_memory(entries) -> bool:
+    """Persist durable memory only on a local development filesystem."""
+    if not local_persistence_enabled():
+        return False
+    data = [
+        {
+            "id": str(item.get("id", "")),
+            "text": str(item.get("text", "")).strip(),
+            "source": str(item.get("source", "manual")),
+            "created_at": item.get("created_at"),
+        }
+        for item in entries
+        if isinstance(item, dict) and str(item.get("text", "")).strip()
+    ]
+    return _atomic_write(
+        LOCAL_MEMORY_PATH,
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+    )
 
 
 def load_history():
