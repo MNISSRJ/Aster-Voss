@@ -135,6 +135,30 @@ def collect_candidates() -> list[dict[str, Any]]:
     return items[:MAX_CANDIDATES]
 
 
+
+
+def _parse_json_object(raw: str) -> dict[str, Any]:
+    """Parse a JSON object from plain JSON, a markdown code fence, or text around JSON."""
+    text = (raw or "").strip()
+    fenced = re.search(r"```(?:json)?\s*(.*?)\s*```", text, re.IGNORECASE | re.DOTALL)
+    if fenced:
+        text = fenced.group(1).strip()
+
+    try:
+        value = json.loads(text)
+        return value if isinstance(value, dict) else {}
+    except json.JSONDecodeError:
+        pass
+
+    start = text.find("{")
+    if start < 0:
+        return {}
+
+    try:
+        value, _ = json.JSONDecoder().raw_decode(text[start:])
+    except json.JSONDecodeError:
+        return {}
+    return value if isinstance(value, dict) else {}
 def curate(provider, candidates: list[dict[str, Any]]) -> dict[str, Any]:
     prompt_rows = []
     for idx, item in enumerate(candidates, 1):
@@ -164,12 +188,7 @@ def curate(provider, candidates: list[dict[str, Any]]) -> dict[str, Any]:
         reasoning=None,
     )
     raw = (getattr(response, "text", "") or "").strip()
-    cleaned = raw.replace("\\x60\\x60\\x60json", "").replace("\\x60\\x60\\x60", "").strip()
-    match = re.search(r"\\{.*\\}", cleaned, re.S)
-    try:
-        data = json.loads(match.group(0) if match else cleaned)
-    except Exception:
-        data = {}
+    data = _parse_json_object(raw)
 
     by_index = {i: item for i, item in enumerate(candidates, 1)}
     result_items: list[dict[str, Any]] = []
