@@ -38,13 +38,13 @@ def build_prompt(user_id: str = MEMORY.user_id):
         parts.append(m)
     if growth:
         parts.append(
-            "<shared_growth_history>\\n"
+            "<shared_growth_history>\n"
             "These are a few curated milestones in Aster and Mint's shared history. "
-            "Use them naturally when relevant; never recite the log unless asked.\\n"
+            "Use them naturally when relevant; never recite the log unless asked.\n"
             + growth
-            + "\\n</shared_growth_history>"
+            + "\n</shared_growth_history>"
         )
-    return "\\n\\n".join(parts)
+    return "\n\n".join(parts)
 
 app = FastAPI(title="Aster Voss")
 
