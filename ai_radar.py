@@ -220,8 +220,9 @@ def curate(
             LLMMessage.user(prompt),
         ],
         temperature=0.2,
-        max_tokens=1800 if attempt > 1 else 1600,
+        max_tokens=2400 if attempt > 1 else 2200,
         reasoning=None,
+        response_format={"type": "json_object"},
     )
 
     finish_reason = getattr(response, "finish_reason", None)
