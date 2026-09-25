@@ -206,6 +206,8 @@ def curate(
         '{"intro_zh":"...","items":[{"candidate":1,"company":"...","headline_zh":"...",'
         '"summary_zh":"...","why_it_matters_zh":"...","tags":["..."]}]}."'
         "Keep each Chinese summary under 70 characters. "
+        "Keep why_it_matters_zh concise and tags to at most 3. "
+        "Do not add extra commentary outside the JSON object. "
         "When candidates are available, select at least one valid candidate."
         + retry_instruction
         + "\n\n"
@@ -220,7 +222,7 @@ def curate(
             LLMMessage.user(prompt),
         ],
         temperature=0.2,
-        max_tokens=2400 if attempt > 1 else 2200,
+        max_tokens=3200,
         reasoning=None,
         response_format={"type": "json_object"},
     )
