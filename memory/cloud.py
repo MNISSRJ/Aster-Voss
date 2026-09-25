@@ -93,6 +93,37 @@ def save(memory: list[dict], user_id: str = DEFAULT_USER_ID) -> bool:
         return False
 
 
+def consume_rate_limit(
+    key: str,
+    window_seconds: int,
+    limit: int,
+):
+    """Atomically consume one serverless rate-limit slot through Supabase RPC."""
+    if not enabled() or not key or window_seconds < 1 or limit < 1:
+        return None
+    try:
+        rows = _request(
+            "POST",
+            "rpc/consume_aster_rate_limit",
+            {
+                "p_key": key,
+                "p_window_seconds": int(window_seconds),
+                "p_limit": int(limit),
+            },
+        )
+        if isinstance(rows, list) and rows and isinstance(rows[0], dict):
+            return rows[0]
+        if isinstance(rows, dict):
+            return rows
+    except Exception as exc:
+        log.error(
+            "cloud rate-limit consume failed key=%s error=%s",
+            key,
+            type(exc).__name__,
+        )
+    return None
+
+
 def _utc_now():
     return datetime.now(timezone.utc).isoformat()
 

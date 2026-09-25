@@ -6,7 +6,7 @@ from llm.base import LLMMessage
 from llm.factory import create_provider, available_providers
 from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
-from memory.persistence import long_term_context, load_history
+from memory.persistence import long_term_context, load_history, save_history
 from memory import brain, cloud
 from memory import extractor
 from automations import list_automations
@@ -14,16 +14,24 @@ from memory.service import MemoryService
 from services.conversation_service import ConversationService
 from services.radar_service import RadarService
 from pathlib import Path
+import hashlib
+import hmac
 import json
-import time
 import os
+import threading
+import time
 from uuid import uuid4
+
 import log
+from rate_limit import RateLimiter, rate_limit_rule
 
 CONFIG = load_config()
+log.configure(CONFIG.log_level)
 MEMORY = MemoryService()
 CONVERSATIONS = ConversationService()
 RADAR = RadarService()
+RATE_LIMITER = RateLimiter()
+_LOCAL_CHAT_LOCK = threading.Lock()
 
 def build_prompt(user_id: str = MEMORY.user_id):
     m = MEMORY.context()
@@ -49,6 +57,18 @@ def build_prompt(user_id: str = MEMORY.user_id):
 app = FastAPI(title="Aster Voss")
 
 
+def _rate_limit_client_identity(request: Request) -> str:
+    if CONFIG.require_auth:
+        authorization = request.headers.get("authorization", "")
+        return "token:" + hashlib.sha256(authorization.encode("utf-8")).hexdigest()
+    forwarded = request.headers.get("x-real-ip") or request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        raw = forwarded.split(",", 1)[0].strip()
+    else:
+        raw = request.client.host if request.client else "unknown"
+    return "ip:" + raw
+
+
 @app.middleware("http")
 async def access_control_and_observability(request: Request, call_next):
     started = time.perf_counter()
@@ -56,12 +76,43 @@ async def access_control_and_observability(request: Request, call_next):
     if CONFIG.require_auth and request.url.path not in {"/", "/api/status"}:
         expected = os.getenv("ASTER_ACCESS_TOKEN", "")
         provided = request.headers.get("authorization", "")
-        if not expected or provided != "Bearer " + expected:
-            from fastapi.responses import JSONResponse
+        expected_header = "Bearer " + expected
+        if not expected or not hmac.compare_digest(provided, expected_header):
             response = JSONResponse({"error": "unauthorized", "request_id": request_id}, status_code=401)
             response.headers["X-Request-ID"] = request_id
             response.headers["X-Server-Time"] = str(int(time.time()))
             return response
+
+    rule = rate_limit_rule(request.method.upper(), request.url.path)
+    if rule:
+        scope, limit, window_seconds = rule
+        decision = RATE_LIMITER.check(
+            scope,
+            RATE_LIMITER.client_key(_rate_limit_client_identity(request)),
+            limit,
+            window_seconds,
+        )
+        if not decision.allowed:
+            status_code = 503 if decision.backend in {"supabase-unavailable", "disabled-serverless"} else 429
+            response = JSONResponse(
+                {
+                    "ok": False,
+                    "error": decision.error or "请求过于频繁，请稍后再试。",
+                    "request_id": request_id,
+                    "rate_limit_backend": decision.backend,
+                },
+                status_code=status_code,
+            )
+            response.headers["X-Request-ID"] = request_id
+            response.headers["X-Server-Time"] = str(int(time.time()))
+            if decision.retry_after:
+                response.headers["Retry-After"] = str(decision.retry_after)
+            response.headers["X-RateLimit-Limit"] = str(decision.limit)
+            if decision.remaining is not None:
+                response.headers["X-RateLimit-Remaining"] = str(decision.remaining)
+            response.headers["X-Aster-RateLimit-Backend"] = decision.backend
+            return response
+
     try:
         response = await call_next(request)
     except Exception:
@@ -70,6 +121,8 @@ async def access_control_and_observability(request: Request, call_next):
     latency_ms = (time.perf_counter() - started) * 1000
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Server-Time"] = str(int(time.time()))
+    if rule:
+        response.headers["X-Aster-RateLimit-Backend"] = RATE_LIMITER.backend_status
     log.info("request_id=%s method=%s path=%s status=%s latency_ms=%.1f", request_id, request.method, request.url.path, response.status_code, latency_ms)
     return response
 
@@ -82,6 +135,22 @@ def _message_dicts(messages):
         and isinstance(m.content, str)
         and m.content.strip()
     ][-80:]
+
+
+def _run_local_chat(message: str):
+    # Local file history requires one transaction lock across read -> model -> write.
+    # Atomic replacement prevents partial files, but not lost updates from
+    # concurrent read/modify/write requests.
+    with _LOCAL_CHAT_LOCK:
+        history = [
+            {"role": m.role, "content": m.content}
+            for m in load_history()
+            if m.role in {"user", "assistant"} and isinstance(m.content, str)
+        ]
+        request_agent = _agent_from_messages(history)
+        result = request_agent.run(message)
+        save_history(request_agent.messages)
+        return result
 
 
 def _conversation_title(text: str) -> str:
@@ -200,14 +269,7 @@ def chat(body: ChatIn):
 
     # Development fallback when cloud storage is not configured:
     # create a fresh request-scoped agent instead of sharing global state.
-    request_agent = _agent_from_messages(
-        [
-            {"role": m.role, "content": m.content}
-            for m in load_history()
-            if m.role in {"user", "assistant"} and isinstance(m.content, str)
-        ]
-    )
-    r = request_agent.run(body.message)
+    r = _run_local_chat(body.message)
     return {
         "text": r.text,
         "provider": r.provider,
@@ -445,6 +507,8 @@ def status():
         "memory": MEMORY.storage_mode,
         "server_time": int(time.time()),
         "version": "0.2.0",
+        "rate_limit": RATE_LIMITER.backend_status,
+        "rate_limit_strict": RATE_LIMITER.strict,
     }
 
 
