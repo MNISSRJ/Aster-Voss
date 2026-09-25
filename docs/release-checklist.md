@@ -29,3 +29,11 @@
 - [ ] Serverless/Vercel without Supabase rejects durable memory writes.
 - [ ] Cloud memory/conversation writes fail visibly and are logged.
 - [ ] Preview commit matches the intended release candidate commit.
+
+
+## Request protection gate
+- [ ] Apply the rate-limit table and `consume_aster_rate_limit` RPC from `supabase_schema.sql`.
+- [ ] Verify cost-bearing Preview requests report `X-Aster-RateLimit-Backend: supabase`.
+- [ ] Enable `ASTER_RATE_LIMIT_STRICT=true` only after the Supabase RPC is confirmed available.
+- [ ] Verify limit exhaustion returns HTTP 429.
+- [ ] Verify a missing strict Supabase rate-limit backend returns HTTP 503 instead of silently claiming protection.
