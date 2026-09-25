@@ -9,7 +9,10 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, Sequence, TypeAlias
+
+
+MessageContent: TypeAlias = str | list[dict[str, Any]]
 
 
 class LLMError(Exception):
@@ -24,7 +27,7 @@ class LLMMessage:
     """One conversation turn in the vendor-neutral format."""
 
     role: str
-    content: str | None = None
+    content: MessageContent | None = None
     tool_calls: list["ToolCall"] = field(default_factory=list)
     tool_call_id: str | None = None
     name: str | None = None
@@ -117,6 +120,18 @@ class LLMProvider(ABC):
     def is_available(self) -> bool:
         return bool(self.api_key()) and bool(self.model)
 
+    @property
+    def capabilities(self) -> set[str]:
+        return {"chat"}
+
+    def supports(self, capability: str) -> bool:
+        return capability in self.capabilities
+
+    def supports_content(self, content: Any) -> bool:
+        if isinstance(content, list):
+            return self.supports("vision")
+        return True
+
     def unavailable_reason(self) -> str:
         if not self.api_key():
             return "API key is not set"
@@ -135,5 +150,6 @@ class LLMProvider(ABC):
         temperature: float | None = None,
         max_tokens: int | None = None,
         reasoning: str | None = None,
+        response_format: dict[str, Any] | None = None,
     ) -> LLMResponse:
         raise NotImplementedError

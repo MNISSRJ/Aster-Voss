@@ -11,8 +11,53 @@ class RouteDecision:
     def __init__(self,provider_name,source='configured',complexity=1):
         self.provider_name=provider_name; self.source=source; self.complexity=complexity
 class TaskRouter:
-    def __init__(self,config,jev_client=None): self.config=config; self.jev=jev_client
-    def select(self,text): return RouteDecision(self.config.main_provider or 'deepseek')
+    _REASONING_HINTS = (
+        "证明", "推导", "数学", "微积分", "线性代数", "debug", "报错",
+        "重构", "架构", "分析", "比较", "规划", "代码", "python",
+    )
+    _TOOL_HINTS = (
+        "读取文件", "打开文件", "项目", "仓库", "github", "文件", "查看代码",
+        "搜索项目", "读取", "修改代码",
+    )
+
+    def __init__(self, config, jev_client=None):
+        self.config = config
+        self.jev = jev_client
+
+    def _classify(self, text: str) -> tuple[int, str]:
+        normalized = (text or "").strip().lower()
+        reasoning = any(token.lower() in normalized for token in self._REASONING_HINTS)
+        tools = any(token.lower() in normalized for token in self._TOOL_HINTS)
+        if tools and reasoning:
+            return 3, "rules:reasoning+tools"
+        if reasoning:
+            return 2, "rules:reasoning"
+        if tools:
+            return 2, "rules:tools"
+        return 1, "rules:chat"
+
+    def select(self, text):
+        complexity, source = self._classify(text)
+        provider_name = self.config.main_provider or "deepseek"
+
+        # Explicit configuration remains the default. AUTO_ROUTING enables the
+        # lightweight policy layer without making an external router mandatory.
+        if self.config.auto_routing and self.jev is not None:
+            try:
+                decision = self.jev.decide(
+                    text=text,
+                    providers=list(self.config.providers.keys()),
+                    complexity=complexity,
+                )
+                if decision and decision.provider in self.config.providers:
+                    provider_name = decision.provider
+                    source = "jev"
+                    complexity = decision.complexity or complexity
+            except Exception:
+                source += ":jev-fallback"
+
+        return RouteDecision(provider_name, source=source, complexity=complexity)
+
     def get_provider(self,name): return create_provider(name,self.config)
     def reasoning_for(self,provider):
         import os
@@ -27,18 +72,24 @@ class TurnResult:
     text:str;provider:str;model:str;source:str;complexity:int
     tool_calls:list[str]=field(default_factory=list);usage:dict[str,Any]=field(default_factory=dict);error:str|None=None
 class AsterVoss:
-    def __init__(self,config,provider:LLMProvider|None=None,router:TaskRouter|None=None,jev_client=None,system_prompt=DEFAULT_SYSTEM_PROMPT,identity_name="",identity_tagline=""):
+    def __init__(self,config,provider:LLMProvider|None=None,router:TaskRouter|None=None,jev_client=None,system_prompt=DEFAULT_SYSTEM_PROMPT,identity_name="",identity_tagline="",restore_history=True,persist_history=True):
         self.config=config;self.system_prompt=system_prompt;self.identity_name=identity_name;self.identity_tagline=identity_tagline
         self.jev=jev_client if jev_client is not None else create_jev_client(config)
         self.router=router or TaskRouter(config,jev_client=self.jev)
-        self._fixed_provider=provider;self._messages=[LLMMessage.system(system_prompt)];self._messages.extend(load_history())
+        self._fixed_provider=provider;self.persist_history=persist_history;self._messages=[LLMMessage.system(system_prompt)]
+        if restore_history:
+            self._messages.extend(load_history())
     @property
     def identity_display(self):return f"{self.identity_name} - {self.identity_tagline}" if self.identity_name and self.identity_tagline else (self.identity_name or "Personal AI Agent")
     @property
     def display_name(self):return self.identity_name or "Personal AI Agent"
     @property
     def messages(self):return self._messages
-    def reset(self):self._messages=[LLMMessage.system(self.system_prompt)];clear_history()
+    def reset(self):
+        self._messages=[LLMMessage.system(self.system_prompt)]
+        if self.persist_history:
+            clear_history()
+
     def remember(self,note):return brain.add(note, source="manual")
 
     def refresh_system_prompt(self, prompt: str):
@@ -55,7 +106,9 @@ class AsterVoss:
         for prefix in ("记住：","记住:","请记住：","请记住:","以后记住：","以后记住:"):
             if text.startswith(prefix):
                 note=text[len(prefix):].strip();ok=self.remember(note);reply="好，我已经把这条写进长期记忆了。" if ok else "我没能保存这条记忆。"
-                self._messages += [LLMMessage.user(text),LLMMessage.assistant(reply)];save_history(self._messages)
+                self._messages += [LLMMessage.user(text),LLMMessage.assistant(reply)]
+                if self.persist_history:
+                    save_history(self._messages)
                 return TurnResult(reply,"memory","local","memory",0)
         decision=self.router.select(text)
         try:provider=self._fixed_provider or self.router.get_provider(decision.provider_name)
@@ -74,11 +127,15 @@ class AsterVoss:
                 return TurnResult(f"The model call failed: {exc}",provider.name,provider.model,decision.source,decision.complexity,used,usage,str(exc))
             usage=r.usage or usage
             if not r.has_tool_calls:
-                final=r.text or "";self._messages.append(LLMMessage.assistant(final,reasoning_content=r.reasoning_content));save_history(self._messages)
+                final=r.text or "";self._messages.append(LLMMessage.assistant(final,reasoning_content=r.reasoning_content))
+                if self.persist_history:
+                    save_history(self._messages)
                 return TurnResult(final,r.provider,r.model,decision.source,decision.complexity,used,usage)
             self._messages.append(LLMMessage.assistant(r.text,tool_calls=r.tool_calls,reasoning_content=r.reasoning_content))
             for call in r.tool_calls:
                 used.append(call.name);self._messages.append(LLMMessage.tool_result(call.id,run_tool(call.name,call.arguments)))
-        final="I stopped after several tool calls without reaching a final answer.";self._messages.append(LLMMessage.assistant(final));save_history(self._messages)
+        final="I stopped after several tool calls without reaching a final answer.";self._messages.append(LLMMessage.assistant(final))
+        if self.persist_history:
+            save_history(self._messages)
         return TurnResult(final,provider.name,provider.model,decision.source,decision.complexity,used,usage,"tool loop limit")
 MintAgent=AsterVoss

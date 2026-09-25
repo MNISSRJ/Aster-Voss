@@ -1,8 +1,8 @@
-"""Small persistence layer for Aster Voss.
+"""Persistence helpers with explicit local/serverless semantics.
 
-Local development writes to the project memory directory. Vercel/serverless
-filesystems are not persistent, so writes there are best-effort and must never
-turn a successful chat request into a 500 error.
+Local development may use ignored filesystem files as durable local state.
+Serverless/Vercel filesystems are never treated as durable memory; durable
+memory writes must use Supabase or fail explicitly.
 """
 from __future__ import annotations
 import json
@@ -12,9 +12,26 @@ from typing import Any
 from llm.base import LLMMessage
 
 ROOT = Path(__file__).resolve().parent
-HISTORY_PATH = ROOT / "CONVERSATION_HISTORY.json"
-LONG_TERM_PATH = ROOT / "LONG_TERM_MEMORY.md"
+HISTORY_PATH = ROOT / "CONVERSATION_HISTORY.local.json"
+LONG_TERM_PATH = ROOT / "LONG_TERM_MEMORY.local.md"
+LOCAL_MEMORY_PATH = ROOT / "LOCAL_MEMORY.json"
 MAX_HISTORY_MESSAGES = 80
+
+
+def is_serverless_environment() -> bool:
+    """Return the single project-wide serverless/Vercel environment signal."""
+    return bool(os.getenv("VERCEL"))
+
+
+def local_persistence_enabled() -> bool:
+    # Local files are durable only for local development. A serverless/Vercel
+    # filesystem, including /tmp, must never be treated as durable memory.
+    if is_serverless_environment():
+        return False
+    raw = os.getenv("ASTER_LOCAL_PERSISTENCE")
+    if raw is not None:
+        return raw.strip().lower() in {"1", "true", "yes", "on"}
+    return True
 
 
 def _atomic_write(path: Path, text: str) -> bool:
@@ -26,6 +43,39 @@ def _atomic_write(path: Path, text: str) -> bool:
         return True
     except OSError:
         return False
+
+
+def load_local_memory():
+    """Load the local durable memory store, if it exists."""
+    if not local_persistence_enabled() or not LOCAL_MEMORY_PATH.exists():
+        return None
+    try:
+        data = json.loads(LOCAL_MEMORY_PATH.read_text(encoding="utf-8"))
+        if not isinstance(data, list):
+            return []
+        return [x for x in data if isinstance(x, dict) and str(x.get("text", "")).strip()]
+    except (OSError, ValueError, TypeError):
+        return []
+
+
+def save_local_memory(entries) -> bool:
+    """Persist durable memory only on a local development filesystem."""
+    if not local_persistence_enabled():
+        return False
+    data = [
+        {
+            "id": str(item.get("id", "")),
+            "text": str(item.get("text", "")).strip(),
+            "source": str(item.get("source", "manual")),
+            "created_at": item.get("created_at"),
+        }
+        for item in entries
+        if isinstance(item, dict) and str(item.get("text", "")).strip()
+    ]
+    return _atomic_write(
+        LOCAL_MEMORY_PATH,
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+    )
 
 
 def load_history():
@@ -46,6 +96,8 @@ def load_history():
 
 
 def save_history(messages: list[LLMMessage]):
+    if not local_persistence_enabled():
+        return
     data = [
         {"role": m.role, "content": m.content}
         for m in messages
@@ -62,10 +114,14 @@ def save_history(messages: list[LLMMessage]):
 
 
 def clear_history():
+    if not local_persistence_enabled():
+        return
     _atomic_write(HISTORY_PATH, "[]\n")
 
 
 def save_long_term_note(note: str) -> bool:
+    if not local_persistence_enabled():
+        return False
     note = note.strip()
     if not note:
         return False

@@ -8,6 +8,6 @@ services:
       - key: MAIN_PROVIDER
         value: deepseek
       - key: DEEPSEEK_MODEL
-        value: deepseek-chat
+        value: deepseek-flash
       - key: DEEPSEEK_API_KEY
         sync: false

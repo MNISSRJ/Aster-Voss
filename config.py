@@ -39,7 +39,7 @@ class ProviderConfig:
 class AgentConfig:
     main_provider:str; auto_routing:bool; providers:dict; jev_enabled:bool
     jev_api_key:str; jev_base_url:str; jev_timeout:float
-    default_reasoning:str|None; log_level:str
+    default_reasoning:str|None; log_level:str; require_auth:bool
     def provider(self,name): return self.providers.get(name)
     @property
     def active_provider(self): return self.providers.get(self.main_provider)
@@ -50,7 +50,10 @@ def load_config():
       "deepseek":ProviderConfig("deepseek",_get("DEEPSEEK_API_KEY"),_get("DEEPSEEK_MODEL","deepseek-flash"),_get("DEEPSEEK_BASE_URL","https://api.deepseek.com"),_float("DEEPSEEK_TIMEOUT",timeout),_int("DEEPSEEK_MAX_TOKENS",tokens)),
       "openai":ProviderConfig("openai",_get("OPENAI_API_KEY"),_get("OPENAI_MODEL"),_get("OPENAI_BASE_URL","https://api.openai.com/v1"),_float("OPENAI_TIMEOUT",timeout),_int("OPENAI_MAX_TOKENS",tokens)),
     }
-    return AgentConfig(_get("MAIN_PROVIDER","deepseek").lower(),_bool("AUTO_ROUTING",False),providers,bool(_get("JEV_API_KEY")), _get("JEV_API_KEY"),_get("JEV_BASE_URL","https://www.jevai.org"),_float("JEV_TIMEOUT",8),_get("DEFAULT_REASONING_EFFORT") or None,_get("LOG_LEVEL","INFO").upper())
+    main_provider = _get("MAIN_PROVIDER","deepseek").lower()
+    if main_provider not in providers:
+        main_provider = "deepseek"
+    return AgentConfig(main_provider,_bool("AUTO_ROUTING",False),providers,bool(_get("JEV_API_KEY")), _get("JEV_API_KEY"),_get("JEV_BASE_URL","https://www.jevai.org"),_float("JEV_TIMEOUT",8),_get("DEFAULT_REASONING_EFFORT") or None,_get("LOG_LEVEL","INFO").upper(),_bool("ASTER_REQUIRE_AUTH",False))
 
 DEEPSEEK_EFFORTS={"low","high","max"}
 OPENAI_EFFORTS={"none","minimal","low","medium","high","xhigh"}

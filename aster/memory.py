@@ -5,7 +5,7 @@ from dataclasses import dataclass,field
 from pathlib import Path
 import log
 PROJECT_ROOT=Path(__file__).resolve().parent.parent
-USER_PROFILE_PATH=PROJECT_ROOT/"memory"/"USER_PROFILE.md"
+USER_PROFILE_PATH=PROJECT_ROOT/"memory"/"USER_PROFILE.local.md"
 MEMORY_CONTEXT_ID="<user_memory>"
 MAX_INJECT_CHARS=1500
 _SECRET_PATTERNS=(re.compile(r"sk-[A-Za-z0-9_\-]{8,}"),re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._\-]+"),re.compile(r"(?i)\b(api[_-]?key|authorization|token|secret|password)\b\s*[:=]\s*\S+"))
@@ -19,7 +19,9 @@ class MemoryStore:
         if self._cached_text is not None and not reload:return self._cached_text
         if not self.exists(): self._cached_text=""; return ""
         try:self._cached_text=self.path.read_text(encoding="utf-8",errors="replace")
-        except OSError as exc: log.error("could not read user memory",exc); self._cached_text=""
+        except OSError as exc:
+            log.error("could not read user memory: %s", exc)
+            self._cached_text=""
         return self._cached_text
     def entries(self,reload=False):
         return [x.strip() for x in strip_html_comments(self.raw_text(reload)).splitlines() if x.strip()]
