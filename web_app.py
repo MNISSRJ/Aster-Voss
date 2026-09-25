@@ -357,9 +357,10 @@ def ai_radar_cron(request: Request):
     user_agent = request.headers.get("user-agent", "")
     authorization = request.headers.get("authorization", "")
     secret = os.getenv("CRON_SECRET", "")
+    is_production = os.getenv("VERCEL_ENV", "").strip().lower() == "production"
     authorized = (
-        "vercel-cron/1.0" in user_agent
-        or (secret and authorization == "Bearer " + secret)
+        (secret and hmac.compare_digest(authorization, "Bearer " + secret))
+        or (not is_production and "vercel-cron/1.0" in user_agent)
     )
     if not authorized:
         raise HTTPException(status_code=401, detail="unauthorized")
