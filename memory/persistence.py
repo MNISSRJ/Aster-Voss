@@ -12,8 +12,8 @@ from typing import Any
 from llm.base import LLMMessage
 
 ROOT = Path(__file__).resolve().parent
-HISTORY_PATH = ROOT / "CONVERSATION_HISTORY.json"
-LONG_TERM_PATH = ROOT / "LONG_TERM_MEMORY.md"
+HISTORY_PATH = ROOT / "CONVERSATION_HISTORY.local.json"
+LONG_TERM_PATH = ROOT / "LONG_TERM_MEMORY.local.md"
 LOCAL_MEMORY_PATH = ROOT / "LOCAL_MEMORY.json"
 MAX_HISTORY_MESSAGES = 80
 
