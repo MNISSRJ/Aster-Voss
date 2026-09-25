@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from agent import AsterVoss
 from llm.base import LLMMessage
@@ -26,7 +26,7 @@ CONVERSATIONS = ConversationService()
 RADAR = RadarService()
 
 def build_prompt(user_id: str = MEMORY.user_id):
-    m = MEMORY.context() if brain.enabled() else get_memory().context_block(reload=True)
+    m = MEMORY.context()
     growth = ""
     growth_path = Path(__file__).resolve().parent / "memory" / "GROWTH_LOG.md"
     try:
@@ -159,22 +159,43 @@ def chat(body: ChatIn):
             _message_dicts(request_agent.messages),
             created_at=created_at,
         )
-        saved_record = CONVERSATIONS.get(conversation_id) if persisted else None
+        usage_logged = bool(cloud.save_usage_event(conversation_id, r.provider, r.model, r.usage)) if r.usage else False
+        if not persisted:
+            log.error("conversation persistence failed conversation_id=%s", conversation_id)
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "ok": False,
+                    "error": "回复已生成，但对话暂时无法保存。",
+                    "text": r.text,
+                    "provider": r.provider,
+                    "model": r.model,
+                    "conversation_id": conversation_id,
+                    "title": title,
+                    "conversation_persisted": False,
+                    "server_time": int(time.time()),
+                    "usage": r.usage,
+                    "source": r.source,
+                    "complexity": r.complexity,
+                    "usage_logged": usage_logged,
+                },
+            )
+        saved_record = CONVERSATIONS.get(conversation_id)
         return {
             "ok": True,
             "text": r.text,
             "provider": r.provider,
             "model": r.model,
-            "conversation_id": conversation_id if persisted else None,
+            "conversation_id": conversation_id,
             "title": title,
-            "conversation_persisted": bool(persisted),
+            "conversation_persisted": True,
             "server_time": int(time.time()),
             "created_at": saved_record.get("created_at") if saved_record else None,
             "updated_at": saved_record.get("updated_at") if saved_record else None,
             "usage": r.usage,
             "source": r.source,
             "complexity": r.complexity,
-            "usage_logged": bool(cloud.save_usage_event(conversation_id, r.provider, r.model, r.usage)) if r.usage else False,
+            "usage_logged": usage_logged,
         }
 
     # Development fallback when cloud storage is not configured:
@@ -421,7 +442,7 @@ def status():
         "provider": CONFIG.main_provider,
         "providers": available_providers(CONFIG),
         "configured": bool(CONFIG.active_provider and CONFIG.active_provider.is_configured),
-        "memory": "supabase" if MEMORY.cloud_enabled else "local-fallback",
+        "memory": MEMORY.storage_mode,
         "server_time": int(time.time()),
         "version": "0.2.0",
     }
