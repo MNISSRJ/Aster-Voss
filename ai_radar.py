@@ -42,7 +42,7 @@ def _clean(value: str | None) -> str:
 
 def _norm_title(value: str) -> str:
     value = _clean(value).lower()
-    value = re.sub(r"[^a-z0-9\\u4e00-\\u9fff]+", " ", value)
+    value = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", " ", value)
     return " ".join(value.split())
 
 
@@ -164,8 +164,8 @@ def curate(provider, candidates: list[dict[str, Any]]) -> dict[str, Any]:
     for idx, item in enumerate(candidates, 1):
         prompt_rows.append(
             f"[{idx}] {item['title']} | hot={item['hot_score']} | "
-            f"sources={', '.join(item['source_list'])}\\n"
-            f"URL: {item['url']}\\nSnippet: {item['description']}"
+            f"sources={', '.join(item['source_list'])}\n"
+            f"URL: {item['url']}\nSnippet: {item['description']}"
         )
     prompt = (
         "You are the editor of Aster Voss's daily AI radar. Select at most 6 important "
@@ -175,8 +175,8 @@ def curate(provider, candidates: list[dict[str, Any]]) -> dict[str, Any]:
         '{"intro_zh":"...","items":[{"candidate":1,"company":"...","headline_zh":"...",'
         '"summary_zh":"...","why_it_matters_zh":"...","tags":["..."]}]}. '
         "Keep each Chinese summary under 70 characters."
-        + "\\n\\n"
-        + "\\n\\n".join(prompt_rows)
+        + "\n\n"
+        + "\n\n".join(prompt_rows)
     )
     response = provider.complete(
         [
