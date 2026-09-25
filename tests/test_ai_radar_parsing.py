@@ -62,7 +62,7 @@ def test_curate_requests_json_mode_and_sufficient_output_budget():
 
     assert result["items"]
     assert provider.last_kwargs["response_format"] == {"type": "json_object"}
-    assert provider.last_kwargs["max_tokens"] == 2200
+    assert provider.last_kwargs["max_tokens"] == 3200
 
 
 def test_curate_uses_code_fenced_model_json():
