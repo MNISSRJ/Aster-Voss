@@ -18,10 +18,15 @@ LOCAL_MEMORY_PATH = ROOT / "LOCAL_MEMORY.json"
 MAX_HISTORY_MESSAGES = 80
 
 
+def is_serverless_environment() -> bool:
+    """Return the single project-wide serverless/Vercel environment signal."""
+    return bool(os.getenv("VERCEL"))
+
+
 def local_persistence_enabled() -> bool:
     # Local files are durable only for local development. A serverless/Vercel
     # filesystem, including /tmp, must never be treated as durable memory.
-    if os.getenv("VERCEL"):
+    if is_serverless_environment():
         return False
     raw = os.getenv("ASTER_LOCAL_PERSISTENCE")
     if raw is not None:

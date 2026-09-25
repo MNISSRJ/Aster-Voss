@@ -19,7 +19,9 @@ class MemoryStore:
         if self._cached_text is not None and not reload:return self._cached_text
         if not self.exists(): self._cached_text=""; return ""
         try:self._cached_text=self.path.read_text(encoding="utf-8",errors="replace")
-        except OSError as exc: log.error("could not read user memory",exc); self._cached_text=""
+        except OSError as exc:
+            log.error("could not read user memory: %s", exc)
+            self._cached_text=""
         return self._cached_text
     def entries(self,reload=False):
         return [x.strip() for x in strip_html_comments(self.raw_text(reload)).splitlines() if x.strip()]

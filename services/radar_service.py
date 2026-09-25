@@ -1,6 +1,7 @@
 """AI Radar business service."""
 from __future__ import annotations
 
+import os
 import time
 
 from ai_radar import collect_candidates, curate
@@ -8,10 +9,10 @@ from memory import cloud
 
 
 class RadarService:
-    def __init__(self, repository=None, user_id: str = "mint"):
+    def __init__(self, repository=None, user_id: str | None = None):
         from .radar_repository import RadarRepository
         self.repository = repository or RadarRepository()
-        self.user_id = user_id
+        self.user_id = user_id or (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "mint"
 
     def _fallback_payload(self, candidates):
         return {
