@@ -1,4 +1,4 @@
-"""Optional migration helper for the legacy local history file.
+"""Optional migration helper for the local history file.
 Run only locally after backing up the JSON file and configuring Supabase.
 """
 from __future__ import annotations
@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from memory import cloud
 
-HISTORY = Path(__file__).resolve().parents[1] / "memory" / "CONVERSATION_HISTORY.json"
+HISTORY = Path(__file__).resolve().parents[1] / "memory" / "CONVERSATION_HISTORY.local.json"
 
 
 def migrate():
