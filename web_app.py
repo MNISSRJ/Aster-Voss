@@ -6,7 +6,7 @@ from llm.base import LLMMessage
 from llm.factory import create_provider, available_providers
 from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
-from memory.persistence import long_term_context
+from memory.persistence import long_term_context, load_history
 from memory import brain, cloud
 from memory import extractor
 from automations import list_automations
@@ -45,9 +45,6 @@ def build_prompt(user_id: str = MEMORY.user_id):
             + "\\n</shared_growth_history>"
         )
     return "\\n\\n".join(parts)
-
-app = FastAPI(title="Aster Voss")
-
 
 app = FastAPI(title="Aster Voss")
 
