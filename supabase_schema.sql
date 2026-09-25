@@ -73,13 +73,13 @@ returns table (
 language sql stable
 as $$
   select
-    memory_id,
-    content,
-    1 - (embedding <=> query_embedding) as similarity
-  from public.aster_memory_embeddings
-  where user_id = target_user_id
-    and 1 - (embedding <=> query_embedding) >= match_threshold
-  order by embedding <=> query_embedding
+    e.memory_id,
+    e.content,
+    1 - (e.embedding <=> query_embedding) as similarity
+  from public.aster_memory_embeddings as e
+  where e.user_id = target_user_id
+    and 1 - (e.embedding <=> query_embedding) >= match_threshold
+  order by e.embedding <=> query_embedding
   limit match_count;
 $$;
 
