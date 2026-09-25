@@ -1,8 +1,8 @@
-"""Small persistence layer for Aster Voss.
+"""Persistence helpers with explicit local/serverless semantics.
 
-Local development writes to the project memory directory. Vercel/serverless
-filesystems are not persistent, so writes there are best-effort and must never
-turn a successful chat request into a 500 error.
+Local development may use ignored filesystem files as durable local state.
+Serverless/Vercel filesystems are never treated as durable memory; durable
+memory writes must use Supabase or fail explicitly.
 """
 from __future__ import annotations
 import json
@@ -115,6 +115,8 @@ def clear_history():
 
 
 def save_long_term_note(note: str) -> bool:
+    if not local_persistence_enabled():
+        return False
     note = note.strip()
     if not note:
         return False
