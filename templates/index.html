@@ -160,7 +160,7 @@ body::after{
 .thinking-step-label{font-size:11.5px;color:#5d6a82;line-height:18px}
 .thinking-step-detail{font-size:10.5px;color:#8994a8;line-height:1.45;margin-top:1px}
 @keyframes thinkingPulse{0%,100%{opacity:.45;transform:scale(.88)}50%{opacity:1;transform:scale(1.08)}}
-.thinking-summary.is-collapsed{width:max-content;padding:8px 11px;border-radius:12px}
+.thinking-summary.is-collapsed{width:max-content;padding:8px 11px;border-radius:12px;cursor:pointer}
 .thinking-summary.is-collapsed .thinking-summary-head{margin:0}
 .thinking-summary.is-collapsed .thinking-steps{display:none}
 .thinking-summary.is-collapsed .thinking-summary-time{display:none}
@@ -424,6 +424,11 @@ function finishThinking(el,steps,durationMs){
   title.textContent="已思考";
   time.textContent=(Math.max(0,durationMs)/1000).toFixed(1)+"s";
   el.classList.add("is-collapsed");
+  el.title="点击展开思考摘要";
+  el.addEventListener("click",()=>{
+    el.classList.toggle("is-collapsed");
+    el.title=el.classList.contains("is-collapsed")?"点击展开思考摘要":"点击收起思考摘要";
+  });
 }
 function showToast(message){
   toast.textContent=message;
