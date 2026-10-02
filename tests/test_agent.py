@@ -32,3 +32,5 @@ def test_agent_returns_model_text(monkeypatch, tmp_path):
     agent._messages = [LLMMessage.system("test")]
     result = agent.run("ping")
     assert result.text == "pong"
+    assert [step["id"] for step in result.thinking] == ["understand","memory","analyze","generate"]
+    assert all(step["status"] == "done" for step in result.thinking)
