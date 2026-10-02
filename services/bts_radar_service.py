@@ -28,10 +28,18 @@ class BTSRadarService:
         }
 
     def today(self):
-        items = self.repository.today(self.user_id)
-        if not items:
-            # First visit and an empty day still attempt to surface recent posts.
-            items = summarize(None, collect_candidates())
+        cached = self.repository.today(self.user_id)
+        # Refresh on each visit so a cache containing notices cannot hide newer
+        # member posts. Stable item IDs let fresh source data replace stale rows.
+        fresh = summarize(None, collect_candidates())
+        by_id = {str(item.get("id")): item for item in cached if item.get("id")}
+        by_id.update({str(item.get("id")): item for item in fresh if item.get("id")})
+        items = list(by_id.values())
+        items.sort(
+            key=lambda item: item.get("published_at") or item.get("discovered_at") or "",
+            reverse=True,
+        )
+        items = items[:30]
         if items:
             return {
                 "status": "ready",

@@ -92,3 +92,16 @@ def test_weverse_artist_and_live_items_keep_direct_original_links():
         assert rows[0]["source_type"] == source["source_type"]
         assert rows[0]["published_at"].startswith("2026-10-02")
         assert rows[0]["provenance_url"]
+
+
+def test_today_merges_fresh_member_activity_with_cached_notices(monkeypatch):
+    class Repo:
+        def today(self, user_id):
+            return [{"id": "notice-1", "source_type": "weverse_shop", "discovered_at": "2026-10-01T00:00:00Z"}]
+    monkeypatch.setattr("services.bts_radar_service.collect_candidates", lambda: [
+        {"id": "member-1", "source_type": "instagram", "member": "RM", "discovered_at": "2026-10-02T00:00:00Z"}
+    ])
+    service = BTSRadarService(repository=Repo(), user_id="test")
+    result = service.today()
+    assert result["item_count"] == 2
+    assert [item["id"] for item in result["items"]] == ["member-1", "notice-1"]
