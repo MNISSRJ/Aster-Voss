@@ -103,14 +103,14 @@ class AsterVoss:
     def chat(self,user_input):return self.run(user_input).text
 
     def _thinking_summary(self, decision, provider, used=None):
-        tool_names = list(used or [])
+        unique_tools = list(dict.fromkeys(used or []))
+        tool_detail = "已读取相关项目文件。" if "read_project_file" in unique_tools else (
+            f"已执行：{'、'.join(unique_tools)}。" if unique_tools else "已完成任务分析。"
+        )
         return [
             {"id":"understand","label":"理解问题","status":"done","detail":"已识别问题类型与任务范围。"},
             {"id":"memory","label":"检查相关记忆","status":"done","detail":"已加载当前对话上下文与可用长期记忆。"},
-            {"id":"analyze","label":"分析问题","status":"done","detail":(
-                "已完成任务分析。"
-                + (f" 已执行工具：{'、'.join(tool_names)}。" if tool_names else "")
-            )},
+            {"id":"analyze","label":"分析问题","status":"done","detail":tool_detail},
             {"id":"generate","label":"组织回答","status":"done","detail":f"已生成回答（{provider.name}）。"},
         ]
 
@@ -148,9 +148,14 @@ class AsterVoss:
         self._messages.append(LLMMessage.user(text))
         return self._tool_loop(provider,decision,self.router.reasoning_for(provider))
     def _tool_loop(self,provider,decision,reasoning):
-        used=[];usage={}
+        used=[];usage={};executed_signatures=set();force_final=False
         for _ in range(MAX_TOOL_ITERATIONS):
-            try:r=provider.complete(self._messages,tools=tool_specs(),reasoning=reasoning)
+            try:
+                r=provider.complete(
+                    self._messages,
+                    tools=[] if force_final else tool_specs(),
+                    reasoning=reasoning,
+                )
             except LLMError as exc:
                 if self._messages and self._messages[-1].role=="user":self._messages.pop()
                 return TurnResult(
@@ -167,9 +172,22 @@ class AsterVoss:
                     thinking=self._thinking_summary(decision,provider,used)
                 )
             self._messages.append(LLMMessage.assistant(r.text,tool_calls=r.tool_calls,reasoning_content=r.reasoning_content))
+            duplicate_found=False
             for call in r.tool_calls:
-                used.append(call.name);self._messages.append(LLMMessage.tool_result(call.id,run_tool(call.name,call.arguments)))
-        final="I stopped after several tool calls without reaching a final answer.";self._messages.append(LLMMessage.assistant(final))
+                signature=(call.name,tuple(sorted((str(k),repr(v)) for k,v in call.arguments.items())))
+                if signature in executed_signatures:
+                    duplicate_found=True
+                    self._messages.append(LLMMessage.tool_result(
+                        call.id,
+                        "This exact tool call was already executed. Do not call it again; use the existing result and provide the final answer."
+                    ))
+                    continue
+                executed_signatures.add(signature)
+                used.append(call.name)
+                self._messages.append(LLMMessage.tool_result(call.id,run_tool(call.name,call.arguments)))
+            if duplicate_found:
+                force_final=True
+        final="I couldn't complete the requested task within the tool-call limit.";self._messages.append(LLMMessage.assistant(final))
         if self.persist_history:
             save_history(self._messages)
         return TurnResult(
