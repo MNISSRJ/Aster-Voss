@@ -124,15 +124,17 @@ def test_weverse_artist_and_live_items_keep_direct_original_links():
         assert rows[0]["provenance_url"]
 
 
-def test_today_serves_cache_without_scraping_and_filters_legacy_social_posts(monkeypatch):
+def test_today_refreshes_feed_and_filters_legacy_social_posts(monkeypatch):
     class Repo:
         def today(self, user_id):
             return [
                 {"id": "notice-1", "source_type": "weverse_shop", "discovered_at": "2026-10-01T00:00:00Z"},
                 {"id": "old-social", "source_type": "instagram", "member": "RM"},
             ]
-    monkeypatch.setattr("services.bts_radar_service.collect_candidates", lambda: (_ for _ in ()).throw(AssertionError("today must not scrape")))
+    monkeypatch.setattr("services.bts_radar_service.collect_candidates", lambda: [
+        {"id": "member-1", "source_type": "weverse_artist", "member": "RM", "discovered_at": "2026-10-02T00:00:00Z"}
+    ])
     service = BTSRadarService(repository=Repo(), user_id="test")
     result = service.today()
-    assert result["item_count"] == 1
-    assert [item["id"] for item in result["items"]] == ["notice-1"]
+    assert result["item_count"] == 2
+    assert [item["id"] for item in result["items"]] == ["member-1", "notice-1"]
