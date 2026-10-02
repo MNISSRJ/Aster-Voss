@@ -151,6 +151,9 @@ def _extract(source: dict[str, Any], body: str) -> list[dict[str, Any]]:
         if not key or key in seen:
             continue
         seen.add(key)
+        preferred_url = url
+        if source["source_type"] == "weverse" and "hl=" not in preferred_url:
+            preferred_url += ("&" if "?" in preferred_url else "?") + "hl=zh-cn"
         rows.append(
             {
                 "id": _id(title, url),
