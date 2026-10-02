@@ -17,12 +17,13 @@ from typing import Any, Callable
 USER_AGENT = "Aster-Voss-BTS-Radar/1.0"
 MAX_ITEMS = 30
 MEDIA_FEED_URL = "https://news.google.com/rss/search?" + urllib.parse.urlencode(
-    {"q": 'BTS OR Jungkook OR Jimin OR J-Hope OR SUGA OR RM OR Jin OR Taehyung', "hl": "zh-CN", "gl": "CN", "ceid": "CN:zh-Hans"}
+    {"q": 'BTS OR Jungkook OR Jimin OR J-Hope OR SUGA OR RM OR Jin OR Taehyung', "hl": "en-US", "gl": "US", "ceid": "US:en"}
 )
 TRUSTED_MEDIA_DOMAINS = (
     "reuters.com", "apnews.com", "bbc.com", "bbc.co.uk", "yonhapnews.co.kr",
     "koreaherald.com", "koreatimes.co.kr", "soompi.com", "billboard.com",
     "variety.com", "rollingstone.com", "nme.com", "kpopherald.com", "theguardian.com",
+    "allkpop.com", "koreaboo.com", "kstartrend.com",
 )
 
 MEMBERS = {
