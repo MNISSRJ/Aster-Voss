@@ -13,6 +13,7 @@ from automations import list_automations
 from memory.service import MemoryService
 from services.conversation_service import ConversationService
 from services.radar_service import RadarService
+from services.bts_radar_service import BTSRadarService
 from pathlib import Path
 import hashlib
 import hmac
@@ -30,6 +31,7 @@ log.configure(CONFIG.log_level)
 MEMORY = MemoryService()
 CONVERSATIONS = ConversationService()
 RADAR = RadarService()
+BTS_RADAR = BTSRadarService()
 RATE_LIMITER = RateLimiter()
 _LOCAL_CHAT_LOCK = threading.Lock()
 
@@ -324,6 +326,51 @@ def _generate_ai_brief():
         return RADAR.generate(provider)
     except Exception as exc:
         raise HTTPException(status_code=502, detail="AI 热点抓取失败：" + type(exc).__name__) from exc
+
+
+def _generate_bts_brief():
+    try:
+        provider = None
+        provider_config = CONFIG.active_provider
+        if provider_config and provider_config.is_configured:
+            candidate = create_provider(CONFIG.main_provider, CONFIG)
+            if candidate.is_available():
+                provider = candidate
+        return BTS_RADAR.generate(provider)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="BTS 信息抓取失败：" + type(exc).__name__) from exc
+
+
+@app.get("/api/bts-radar/today")
+def bts_radar_today():
+    return BTS_RADAR.today()
+
+
+@app.post("/api/bts-radar/refresh")
+def bts_radar_refresh():
+    payload = _generate_bts_brief()
+    payload["server_time"] = int(time.time())
+    return payload
+
+
+@app.get("/api/bts-radar/sources")
+def bts_radar_sources():
+    return {"sources": BTS_RADAR.repository.sources(), "server_time": int(time.time())}
+
+
+@app.get("/api/cron/bts-radar")
+def bts_radar_cron(request: Request):
+    user_agent = request.headers.get("user-agent", "")
+    authorization = request.headers.get("authorization", "")
+    secret = os.getenv("CRON_SECRET", "")
+    is_production = os.getenv("VERCEL_ENV", "").strip().lower() == "production"
+    authorized = (
+        (secret and hmac.compare_digest(authorization, "Bearer " + secret))
+        or (not is_production and "vercel-cron/1.0" in user_agent)
+    )
+    if not authorized:
+        raise HTTPException(status_code=401, detail="unauthorized")
+    return _generate_bts_brief()
 
 
 @app.get("/api/ai-radar/today")

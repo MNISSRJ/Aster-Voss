@@ -15,6 +15,8 @@ TABLE = "aster_memory"
 DEFAULT_USER_ID = (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "mint"
 CONVERSATION_TABLE = "aster_conversations"
 AI_BRIEF_TABLE = "ai_radar_briefs"
+BTS_ITEM_TABLE = "bts_radar_items"
+BTS_SOURCE_TABLE = "bts_radar_sources"
 USAGE_TABLE = "aster_usage_events"
 
 
@@ -337,6 +339,66 @@ def match_memory_vectors(
                 "match_count": max(1, min(limit, 20)),
                 "target_user_id": user_id,
             },
+        )
+        return rows if isinstance(rows, list) else []
+    except Exception:
+        return []
+
+
+def save_bts_radar_items(items: list[dict], user_id: str = DEFAULT_USER_ID) -> bool:
+    if not enabled() or not items:
+        return False
+    try:
+        now = _utc_now()
+        sources = []
+        for item in items:
+            sources.append({
+                "id": item["source_id"],
+                "name": item["source_name"],
+                "url": item["original_url"].split("/bts/notice/")[0] if "/bts/notice/" in item["original_url"] else "https://shop.weverse.io/zh-cn/shop/CNY/artists/2/notices",
+                "source_type": item["source_type"],
+                "language": "zh-CN",
+                "official": bool(item["official"]),
+                "official_account": item["official_account"],
+                "preferred_region": item["preferred_url_region"],
+                "accessibility_score": item["accessibility_score"],
+                "accessibility_confidence": item["accessibility_confidence"],
+                "updated_at": now,
+            })
+        _request("POST", BTS_SOURCE_TABLE, sources)
+        rows = []
+        for item in items:
+            row = dict(item)
+            row["user_id"] = user_id
+            row["updated_at"] = now
+            rows.append(row)
+        _request("POST", BTS_ITEM_TABLE, rows)
+        return True
+    except Exception as exc:
+        log.error("cloud BTS radar write failed user_id=%s error=%s", user_id, type(exc).__name__)
+        return False
+
+
+def list_bts_radar_items(limit: int = 30, user_id: str = DEFAULT_USER_ID) -> list[dict]:
+    if not enabled():
+        return []
+    try:
+        rows = _request(
+            "GET",
+            f"{BTS_ITEM_TABLE}?user_id=eq.{_quote_filter_value(user_id)}&select=id,title,summary_zh,category,source_id,source_name,source_type,original_url,preferred_url,preferred_url_region,published_at,discovered_at,official,official_account,accessibility_score,accessibility_confidence,importance,status,dedupe_hash&order=discovered_at.desc&limit={max(1, min(int(limit), 50))}",
+        )
+        return rows if isinstance(rows, list) else []
+    except Exception:
+        return []
+
+
+def list_bts_radar_sources(limit: int = 20) -> list[dict]:
+    if not enabled():
+        return []
+    try:
+        rows = _request(
+            "GET",
+            f"{BTS_SOURCE_TABLE}?select=id,name,url,source_type,language,official,official_account,preferred_region,accessibility_score,accessibility_confidence,enabled,updated_at&order=updated_at.desc&limit={max(1, min(int(limit), 50))}",
         )
         return rows if isinstance(rows, list) else []
     except Exception:

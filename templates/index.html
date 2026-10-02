@@ -244,6 +244,11 @@ body::after{
   .composer-wrap{left:0;right:0;padding:9px 10px calc(10px + env(safe-area-inset-bottom))}
   .composer{width:100%}.settings{width:94vw}
 }
+
+.bts-view{height:calc(100vh - 64px);overflow-y:auto;padding:34px min(7vw,92px) 86px;scrollbar-width:none}.bts-view::-webkit-scrollbar{display:none}
+.bts-head{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;margin-bottom:18px}.bts-kicker{font-size:10px;font-weight:800;letter-spacing:.16em;color:#8a78a6;text-transform:uppercase}.bts-title{font-size:31px;letter-spacing:-.8px;margin-top:5px;color:#293650}.bts-date{font-size:12px;color:#7b879d;margin-top:5px}.bts-refresh{border:1px solid rgba(125,103,176,.20);background:rgba(255,255,255,.60);color:#51466a;border-radius:12px;padding:9px 13px;font-size:12px;box-shadow:0 5px 18px rgba(88,103,157,.06)}.bts-refresh:hover{background:rgba(255,255,255,.80);transform:translateY(-1px)}
+.bts-intro{padding:13px 15px;border:1px solid rgba(255,255,255,.72);background:rgba(255,255,255,.38);border-radius:14px;color:#66728a;font-size:12px;line-height:1.65;margin-bottom:15px}.bts-list{display:flex;flex-direction:column;gap:11px}.bts-card{padding:16px 17px;border:1px solid rgba(255,255,255,.78);background:rgba(255,255,255,.48);border-radius:17px;box-shadow:0 8px 24px rgba(88,103,157,.05);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}.bts-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.bts-badges{display:flex;gap:6px;flex-wrap:wrap}.bts-badge{font-size:9px;border-radius:999px;padding:4px 7px;background:rgba(111,91,151,.10);color:#66537e}.bts-badge.official{background:rgba(89,139,111,.10);color:#4e775f}.bts-time{font-size:9px;color:#8b96aa;white-space:nowrap}.bts-headline{font-size:15px;font-weight:720;line-height:1.5;color:#34405a}.bts-summary{font-size:11.5px;line-height:1.65;color:#758198;margin-top:6px}.bts-source-row{display:flex;align-items:center;gap:10px;margin-top:11px}.bts-source{font-size:10px;color:#667aff;text-decoration:none}.bts-source:hover{text-decoration:underline}.bts-original{font-size:9px;color:#98a1b1}.bts-empty{padding:40px 12px;text-align:center;color:#96a0b1;font-size:11px}
+@media(max-width:899px){.bts-view{padding:22px 14px 86px}.bts-head{align-items:flex-start}.bts-title{font-size:26px}.bts-card{padding:14px}.bts-card-top{align-items:flex-start}.bts-time{white-space:normal;text-align:right}}
 </style>
 </head>
 <body>
@@ -256,7 +261,7 @@ body::after{
     <button class="side-new" id="new-chat-side">＋ 新对话</button>
     <nav class="side-nav">
       <button class="side-item active" id="nav-chat">⌂ <span>对话</span></button>
-      <button class="side-item" id="nav-radar">✦ <span>AI Radar</span></button>
+      <button class="side-item" id="nav-radar">✦ <span>AI Radar</span></button>\n      <button class="side-item" id="nav-bts">🐨 <span>BTS Radar</span></button>
     </nav>
     <div class="conversation-list" id="conversation-list">
       <div class="conversation-empty">还没有过去的对话</div>
@@ -291,7 +296,20 @@ body::after{
       <div class="radar-list" id="radar-list"><div class="radar-empty">正在读取今日简报…</div></div>
     </section>
 
-    <div class="composer-wrap">
+
+    <section id="bts-radar" class="bts-view" hidden>
+      <div class="bts-head">
+        <div>
+          <div class="bts-kicker">BTS OFFICIAL RADAR</div>
+          <div class="bts-title">BTS 最新动态</div>
+          <div class="bts-date" id="bts-date">正在加载…</div>
+        </div>
+        <button class="bts-refresh" id="bts-refresh" type="button">↻ 刷新</button>
+      </div>
+      <div class="bts-intro" id="bts-intro">只收集已确认的官方 BTS / Weverse 信息，并优先提供中文页面直达链接。</div>
+      <div class="bts-list" id="bts-list"><div class="bts-empty">正在读取 BTS 官方动态…</div></div>
+    </section>
+\n    <div class="composer-wrap">
       <form class="composer" id="chat-form">
         <textarea id="input" rows="1" placeholder="和 Aster 说点什么…"></textarea>
         <button class="send" id="send" type="submit" aria-label="发送">↑</button>
@@ -345,7 +363,7 @@ const memorySuggestions=document.querySelector("#memory-suggestions");
 const radarView=document.querySelector("#radar");
 const radarList=document.querySelector("#radar-list");
 const radarIntro=document.querySelector("#radar-intro");
-const radarDate=document.querySelector("#radar-date");
+const radarDate=document.querySelector("#radar-date");\nconst btsRadarView=document.querySelector("#bts-radar");\nconst btsList=document.querySelector("#bts-list");\nconst btsIntro=document.querySelector("#bts-intro");\nconst btsDate=document.querySelector("#bts-date");
 
 function scrollChat(){
   requestAnimationFrame(()=>{chat.scrollTo({top:chat.scrollHeight,behavior:"smooth"});});
@@ -422,14 +440,65 @@ form.addEventListener("submit",event=>{event.preventDefault();sendMessage();});
 
 function setWorkspace(view){
   const showingRadar=view==="radar";
+  const showingBts=view==="bts";
   radarView.hidden=!showingRadar;
-  chat.style.display=showingRadar?"none":"flex";
-  document.querySelector(".composer-wrap").style.display=showingRadar?"none":"block";
-  document.querySelector("#nav-chat").classList.toggle("active",!showingRadar);
+  btsRadarView.hidden=!showingBts;
+  chat.style.display=(showingRadar||showingBts)?"none":"flex";
+  document.querySelector(".composer-wrap").style.display=(showingRadar||showingBts)?"none":"block";
+  document.querySelector("#nav-chat").classList.toggle("active",!showingRadar&&!showingBts);
   document.querySelector("#nav-radar").classList.toggle("radar-active",showingRadar);
+  document.querySelector("#nav-bts").classList.toggle("radar-active",showingBts);
   if(showingRadar)loadRadar();
+  if(showingBts)loadBtsRadar();
 }
-async function loadRadar(){
+
+
+function formatBtsDate(value){
+  if(!value)return "刚刚发现";
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return "刚刚发现";
+  return date.toLocaleDateString("zh-CN",{year:"numeric",month:"2-digit",day:"2-digit"});
+}
+function renderBtsCard(item){
+  const card=document.createElement("article");card.className="bts-card";
+  const top=document.createElement("div");top.className="bts-card-top";
+  const badges=document.createElement("div");badges.className="bts-badges";
+  const official=document.createElement("span");official.className="bts-badge official";official.textContent="✓ 官方";
+  const category=document.createElement("span");category.className="bts-badge";category.textContent=item.category||"官宣";
+  const source=document.createElement("span");source.className="bts-badge";source.textContent=item.source_name||"Weverse";
+  badges.append(official,category,source);
+  const time=document.createElement("span");time.className="bts-time";time.textContent=formatBtsDate(item.published_at||item.discovered_at);
+  top.append(badges,time);
+  const headline=document.createElement("div");headline.className="bts-headline";headline.textContent=item.title||"";
+  const summary=document.createElement("div");summary.className="bts-summary";summary.textContent=item.summary_zh||"官方公告，点击直达原页面查看完整内容。";
+  const links=document.createElement("div");links.className="bts-source-row";
+  const preferred=document.createElement("a");preferred.className="bts-source";preferred.textContent="中文页面 ↗";preferred.href=item.preferred_url||item.original_url||"#";preferred.target="_blank";preferred.rel="noopener noreferrer";
+  links.appendChild(preferred);
+  if(item.original_url && item.original_url!==item.preferred_url){
+    const original=document.createElement("a");original.className="bts-original";original.textContent="原始页面";original.href=item.original_url;original.target="_blank";original.rel="noopener noreferrer";links.appendChild(original);
+  }
+  card.append(top,headline,summary,links);btsList.appendChild(card);
+}
+async function loadBtsRadar(){
+  btsList.innerHTML='<div class="bts-empty">正在读取 BTS 官方动态…</div>';
+  try{
+    const response=await fetch("/api/bts-radar/today",{cache:"no-store"});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.detail||"读取失败");
+    btsDate.textContent=data.generated_at?("更新于 "+new Date(data.generated_at).toLocaleString("zh-CN")):"尚未生成";
+    btsIntro.textContent=data.item_count
+      ? "已收集 "+data.item_count+" 条官方动态。优先展示中文 Weverse / Weverse Shop 页面，避免把粉丝传言混进来。"
+      : "还没有缓存到 BTS 官方动态，可以点击“刷新”立即抓取。";
+    if(!data.items||!data.items.length){
+      btsList.innerHTML='<div class="bts-empty">暂无官方动态</div>';return;
+    }
+    data.items.forEach(renderBtsCard);
+  }catch(error){
+    btsList.innerHTML='<div class="bts-empty">BTS Radar 暂时无法读取，请点击刷新。</div>';
+    console.error(error);
+  }
+}
+\nasync function loadRadar(){
   radarList.innerHTML='<div class="radar-empty">正在读取今日简报…</div>';
   try{
     const response=await fetch("/api/ai-radar/today",{cache:"no-store"});
