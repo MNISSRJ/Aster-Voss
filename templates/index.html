@@ -141,6 +141,33 @@ body::after{
 .welcome{
   max-width:min(650px,90%);color:#60708b;background:rgba(255,255,255,.52)
 }
+.thinking-summary{
+  align-self:flex-start;width:min(620px,88%);padding:13px 15px;border-radius:17px;
+  color:#4b5870;background:rgba(255,255,255,.46);border:1px solid rgba(255,255,255,.78);
+  box-shadow:0 8px 24px rgba(88,103,157,.06);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  animation:msgIn .18s ease
+}
+.thinking-summary-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.thinking-summary-title{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:750;color:#4b5870}
+.thinking-summary-title::before{content:"✦";color:#667aff;font-size:13px}
+.thinking-summary-time{font-size:10px;color:#8b96aa}
+.thinking-steps{display:flex;flex-direction:column;gap:7px}
+.thinking-step{display:grid;grid-template-columns:18px 1fr;gap:8px;align-items:start}
+.thinking-step-mark{width:18px;height:18px;display:grid;place-items:center;font-size:10px;color:#8793a8}
+.thinking-step.done .thinking-step-mark{color:#667aff}
+.thinking-step.active .thinking-step-mark{color:#667aff;animation:thinkingPulse 1s ease-in-out infinite}
+.thinking-step-copy{min-width:0}
+.thinking-step-label{font-size:11.5px;color:#5d6a82;line-height:18px}
+.thinking-step-detail{font-size:10.5px;color:#8994a8;line-height:1.45;margin-top:1px}
+@keyframes thinkingPulse{0%,100%{opacity:.45;transform:scale(.88)}50%{opacity:1;transform:scale(1.08)}}
+.thinking-summary.is-collapsed{width:max-content;padding:8px 11px;border-radius:12px}
+.thinking-summary.is-collapsed .thinking-summary-head{margin:0}
+.thinking-summary.is-collapsed .thinking-steps{display:none}
+.thinking-summary.is-collapsed .thinking-summary-time{display:none}
+.thinking-summary.is-collapsed .thinking-summary-title{font-size:11px}
+@media(max-width:899px){
+  .thinking-summary{width:min(94%,620px)}
+}
 .thinking{
   display:flex!important;align-items:center;gap:12px;width:max-content;max-width:none;
   position:relative;overflow:hidden
@@ -360,11 +387,43 @@ function addMessage(text,kind){
 }
 function addThinking(){
   const el=document.createElement("div");
-  el.className="msg a thinking";
-  el.innerHTML='<span class="thinking-name">Aster</span><span class="liquid"><i class="drop"></i><i class="drop"></i><i class="drop"></i><i class="drop"></i><i class="drop"></i></span>';
-  chat.appendChild(el);
-  scrollChat();
-  return el;
+  el.className="thinking-summary";
+  el.innerHTML='<div class="thinking-summary-head"><div class="thinking-summary-title">正在思考</div><div class="thinking-summary-time">处理中…</div></div><div class="thinking-steps"></div>';
+  const steps=[
+    ["understand","理解问题"],
+    ["memory","检查相关记忆"],
+    ["analyze","分析问题"],
+    ["generate","组织回答"]
+  ];
+  const list=el.querySelector(".thinking-steps");
+  steps.forEach(([id,label],index)=>{
+    const row=document.createElement("div");row.className="thinking-step"+(index===0?" active":"");row.dataset.stepId=id;
+    row.innerHTML='<span class="thinking-step-mark">'+(index===0?"◌":"·")+'</span><div class="thinking-step-copy"><div class="thinking-step-label"></div><div class="thinking-step-detail"></div></div>';
+    row.querySelector(".thinking-step-label").textContent=label;
+    list.appendChild(row);
+  });
+  chat.appendChild(el);scrollChat();return el;
+}
+function updateThinking(el,steps){
+  if(!el || !Array.isArray(steps))return;
+  const byId=new Map(steps.map(step=>[step.id,step]));
+  el.querySelectorAll(".thinking-step").forEach(row=>{
+    const step=byId.get(row.dataset.stepId);
+    if(!step)return;
+    row.classList.toggle("done",step.status==="done");
+    row.classList.toggle("active",step.status==="active");
+    const mark=row.querySelector(".thinking-step-mark");
+    mark.textContent=step.status==="done"?"✓":step.status==="active"?"◌":"·";
+    row.querySelector(".thinking-step-detail").textContent=step.detail||"";
+  });
+}
+function finishThinking(el,steps,durationMs){
+  updateThinking(el,steps);
+  const title=el.querySelector(".thinking-summary-title");
+  const time=el.querySelector(".thinking-summary-time");
+  title.textContent="已思考";
+  time.textContent=(Math.max(0,durationMs)/1000).toFixed(1)+"s";
+  el.classList.add("is-collapsed");
 }
 function showToast(message){
   toast.textContent=message;
@@ -380,6 +439,7 @@ async function sendMessage(){
   input.style.height="44px";
   sendButton.disabled=true;
   const thinking=addThinking();
+  const thinkingStarted=performance.now();
   try{
     const response=await fetch("/api/chat",{
       method:"POST",
@@ -389,7 +449,7 @@ async function sendMessage(){
     const data=await response.json().catch(()=>({}));
     if(!response.ok){
       if(data.text){
-        thinking.remove();
+        finishThinking(thinking,data.thinking||[],performance.now()-thinkingStarted);
         addMessage(data.text||"……","a");
         if(data.conversation_id){
           currentConversationId=data.conversation_id;
@@ -401,7 +461,7 @@ async function sendMessage(){
       }
       throw new Error(data.detail||data.error||"请求失败");
     }
-    thinking.remove();
+    finishThinking(thinking,data.thinking||[],performance.now()-thinkingStarted);
     addMessage(data.text||"……","a");
     if(data.conversation_id){
       currentConversationId=data.conversation_id;
@@ -410,7 +470,9 @@ async function sendMessage(){
     if(data.conversation_persisted===false)showToast("回复成功，但历史记录暂时未保存");
     await loadConversations(false);
   }catch(error){
-    thinking.remove();
+    thinking.classList.add("is-collapsed");
+    thinking.querySelector(".thinking-summary-title").textContent="思考中断";
+    thinking.querySelector(".thinking-summary-time").textContent="请求失败";
     addMessage("刚才没有成功收到回复，请再试一次。","a");
     console.error(error);
   }finally{
