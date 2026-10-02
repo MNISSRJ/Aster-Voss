@@ -161,7 +161,7 @@ def _extract(source: dict[str, Any], body: str) -> list[dict[str, Any]]:
                 "source_name": source["name"],
                 "source_type": source["source_type"],
                 "original_url": url,
-                "preferred_url": url,
+                "preferred_url": preferred_url,
                 "preferred_url_region": source["preferred_region"],
                 "published_at": _parse_date(title),
                 "official": True,
