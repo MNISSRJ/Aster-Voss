@@ -261,7 +261,8 @@ body::after{
     <button class="side-new" id="new-chat-side">＋ 新对话</button>
     <nav class="side-nav">
       <button class="side-item active" id="nav-chat">⌂ <span>对话</span></button>
-      <button class="side-item" id="nav-radar">✦ <span>AI Radar</span></button>\n      <button class="side-item" id="nav-bts">🐨 <span>BTS Radar</span></button>
+      <button class="side-item" id="nav-radar">✦ <span>AI Radar</span></button>
+      <button class="side-item" id="nav-bts">🐨 <span>BTS Radar</span></button>
     </nav>
     <div class="conversation-list" id="conversation-list">
       <div class="conversation-empty">还没有过去的对话</div>
@@ -309,7 +310,8 @@ body::after{
       <div class="bts-intro" id="bts-intro">只收集已确认的官方 BTS / Weverse 信息，并优先提供中文页面直达链接。</div>
       <div class="bts-list" id="bts-list"><div class="bts-empty">正在读取 BTS 官方动态…</div></div>
     </section>
-\n    <div class="composer-wrap">
+
+    <div class="composer-wrap">
       <form class="composer" id="chat-form">
         <textarea id="input" rows="1" placeholder="和 Aster 说点什么…"></textarea>
         <button class="send" id="send" type="submit" aria-label="发送">↑</button>
@@ -363,7 +365,11 @@ const memorySuggestions=document.querySelector("#memory-suggestions");
 const radarView=document.querySelector("#radar");
 const radarList=document.querySelector("#radar-list");
 const radarIntro=document.querySelector("#radar-intro");
-const radarDate=document.querySelector("#radar-date");\nconst btsRadarView=document.querySelector("#bts-radar");\nconst btsList=document.querySelector("#bts-list");\nconst btsIntro=document.querySelector("#bts-intro");\nconst btsDate=document.querySelector("#bts-date");
+const radarDate=document.querySelector("#radar-date");
+const btsRadarView=document.querySelector("#bts-radar");
+const btsList=document.querySelector("#bts-list");
+const btsIntro=document.querySelector("#bts-intro");
+const btsDate=document.querySelector("#bts-date");
 
 function scrollChat(){
   requestAnimationFrame(()=>{chat.scrollTo({top:chat.scrollHeight,behavior:"smooth"});});
@@ -498,7 +504,8 @@ async function loadBtsRadar(){
     console.error(error);
   }
 }
-\nasync function loadRadar(){
+
+async function loadRadar(){
   radarList.innerHTML='<div class="radar-empty">正在读取今日简报…</div>';
   try{
     const response=await fetch("/api/ai-radar/today",{cache:"no-store"});
