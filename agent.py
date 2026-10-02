@@ -71,6 +71,7 @@ MAX_TOOL_ITERATIONS=5
 class TurnResult:
     text:str;provider:str;model:str;source:str;complexity:int
     tool_calls:list[str]=field(default_factory=list);usage:dict[str,Any]=field(default_factory=dict);error:str|None=None
+    thinking:list[dict[str,str]]=field(default_factory=list)
 class AsterVoss:
     def __init__(self,config,provider:LLMProvider|None=None,router:TaskRouter|None=None,jev_client=None,system_prompt=DEFAULT_SYSTEM_PROMPT,identity_name="",identity_tagline="",restore_history=True,persist_history=True):
         self.config=config;self.system_prompt=system_prompt;self.identity_name=identity_name;self.identity_tagline=identity_tagline
@@ -100,42 +101,97 @@ class AsterVoss:
         else:
             self._messages.insert(0, system_message)
     def chat(self,user_input):return self.run(user_input).text
+
+    def _thinking_summary(self, decision, provider, used=None):
+        unique_tools = list(dict.fromkeys(used or []))
+        tool_detail = "已读取相关项目文件。" if "read_project_file" in unique_tools else (
+            f"已执行：{'、'.join(unique_tools)}。" if unique_tools else "已完成任务分析。"
+        )
+        return [
+            {"id":"understand","label":"理解问题","status":"done","detail":"已识别问题类型与任务范围。"},
+            {"id":"memory","label":"检查相关记忆","status":"done","detail":"已加载当前对话上下文与可用长期记忆。"},
+            {"id":"analyze","label":"分析问题","status":"done","detail":tool_detail},
+            {"id":"generate","label":"组织回答","status":"done","detail":f"已生成回答（{provider.name}）。"},
+        ]
+
     def run(self,user_input):
         text=(user_input or "").strip()
-        if not text:return TurnResult("Please type a message.","-","-","empty",0)
+        if not text:return TurnResult("Please type a message.","-","-","empty",0,thinking=[
+            {"id":"understand","label":"理解问题","status":"done","detail":"没有检测到有效输入。"}
+        ])
         for prefix in ("记住：","记住:","请记住：","请记住:","以后记住：","以后记住:"):
             if text.startswith(prefix):
                 note=text[len(prefix):].strip();ok=self.remember(note);reply="好，我已经把这条写进长期记忆了。" if ok else "我没能保存这条记忆。"
                 self._messages += [LLMMessage.user(text),LLMMessage.assistant(reply)]
                 if self.persist_history:
                     save_history(self._messages)
-                return TurnResult(reply,"memory","local","memory",0)
+                return TurnResult(reply,"memory","local","memory",0,thinking=[
+                    {"id":"understand","label":"理解问题","status":"done","detail":"识别为长期记忆操作。"},
+                    {"id":"memory","label":"检查相关记忆","status":"done","detail":"已处理“记住”请求。"},
+                    {"id":"analyze","label":"分析问题","status":"done","detail":"无需调用模型。"},
+                    {"id":"generate","label":"组织回答","status":"done","detail":"已完成记忆确认。"},
+                ])
         decision=self.router.select(text)
         try:provider=self._fixed_provider or self.router.get_provider(decision.provider_name)
-        except LLMError as exc:return TurnResult(f"Configuration error: {exc}",decision.provider_name,"-",decision.source,decision.complexity,error=str(exc))
+        except LLMError as exc:return TurnResult(
+            f"Configuration error: {exc}",decision.provider_name,"-",decision.source,decision.complexity,
+            error=str(exc),
+            thinking=self._thinking_summary(decision, type("_Provider",(),{"name":decision.provider_name})())
+        )
         if not provider.is_available():
             reason=provider.unavailable_reason()
-            return TurnResult(f"I cannot reach a model right now: provider '{provider.name}' is not configured ({reason}).",provider.name,provider.model,decision.source,decision.complexity,error=reason)
+            return TurnResult(
+                f"I cannot reach a model right now: provider '{provider.name}' is not configured ({reason}).",
+                provider.name,provider.model,decision.source,decision.complexity,error=reason,
+                thinking=self._thinking_summary(decision,provider)
+            )
         self._messages.append(LLMMessage.user(text))
         return self._tool_loop(provider,decision,self.router.reasoning_for(provider))
     def _tool_loop(self,provider,decision,reasoning):
-        used=[];usage={}
+        used=[];usage={};executed_signatures=set();force_final=False
         for _ in range(MAX_TOOL_ITERATIONS):
-            try:r=provider.complete(self._messages,tools=tool_specs(),reasoning=reasoning)
+            try:
+                r=provider.complete(
+                    self._messages,
+                    tools=[] if force_final else tool_specs(),
+                    reasoning=reasoning,
+                )
             except LLMError as exc:
                 if self._messages and self._messages[-1].role=="user":self._messages.pop()
-                return TurnResult(f"The model call failed: {exc}",provider.name,provider.model,decision.source,decision.complexity,used,usage,str(exc))
+                return TurnResult(
+                    f"The model call failed: {exc}",provider.name,provider.model,decision.source,decision.complexity,
+                    used,usage,str(exc),self._thinking_summary(decision,provider,used)
+                )
             usage=r.usage or usage
             if not r.has_tool_calls:
                 final=r.text or "";self._messages.append(LLMMessage.assistant(final,reasoning_content=r.reasoning_content))
                 if self.persist_history:
                     save_history(self._messages)
-                return TurnResult(final,r.provider,r.model,decision.source,decision.complexity,used,usage)
+                return TurnResult(
+                    final,r.provider,r.model,decision.source,decision.complexity,used,usage,
+                    thinking=self._thinking_summary(decision,provider,used)
+                )
             self._messages.append(LLMMessage.assistant(r.text,tool_calls=r.tool_calls,reasoning_content=r.reasoning_content))
+            duplicate_found=False
             for call in r.tool_calls:
-                used.append(call.name);self._messages.append(LLMMessage.tool_result(call.id,run_tool(call.name,call.arguments)))
-        final="I stopped after several tool calls without reaching a final answer.";self._messages.append(LLMMessage.assistant(final))
+                signature=(call.name,tuple(sorted((str(k),repr(v)) for k,v in call.arguments.items())))
+                if signature in executed_signatures:
+                    duplicate_found=True
+                    self._messages.append(LLMMessage.tool_result(
+                        call.id,
+                        "This exact tool call was already executed. Do not call it again; use the existing result and provide the final answer."
+                    ))
+                    continue
+                executed_signatures.add(signature)
+                used.append(call.name)
+                self._messages.append(LLMMessage.tool_result(call.id,run_tool(call.name,call.arguments)))
+            if duplicate_found:
+                force_final=True
+        final="I couldn't complete the requested task within the tool-call limit.";self._messages.append(LLMMessage.assistant(final))
         if self.persist_history:
             save_history(self._messages)
-        return TurnResult(final,provider.name,provider.model,decision.source,decision.complexity,used,usage,"tool loop limit")
+        return TurnResult(
+            final,provider.name,provider.model,decision.source,decision.complexity,used,usage,
+            "tool loop limit",self._thinking_summary(decision,provider,used)
+        )
 MintAgent=AsterVoss

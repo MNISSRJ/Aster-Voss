@@ -35,3 +35,18 @@ def test_new_chat_does_not_clear_conversation_archive():
 
 def test_radar_surfaces_fallback_status():
     assert 'data.status==="fallback"?"降级展示"' in SOURCE
+
+
+def test_thinking_summary_has_four_stages_and_api_binding():
+    assert 'function addThinking(){' in SOURCE
+    assert '["understand","理解问题"]' in SOURCE
+    assert '["memory","检查相关记忆"]' in SOURCE
+    assert '["analyze","分析问题"]' in SOURCE
+    assert '["generate","组织回答"]' in SOURCE
+    assert 'finishThinking(thinking,data.thinking||[]' in SOURCE
+    assert '"thinking": r.thinking' in APP_SOURCE
+
+
+def test_thinking_summary_does_not_render_raw_reasoning_content():
+    assert "reasoning_content" not in SOURCE
+    assert "r.reasoning_content" not in APP_SOURCE

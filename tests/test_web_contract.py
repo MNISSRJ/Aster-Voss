@@ -18,4 +18,4 @@ def test_status_contains_server_time_and_version():
     assert response.status_code == 200
     body = response.json()
     assert isinstance(body["server_time"], int)
-    assert body["version"] == "0.2.0"
+    assert body["version"] == "0.3.0-alpha.1"

@@ -248,6 +248,7 @@ def chat(body: ChatIn):
                     "usage": r.usage,
                     "source": r.source,
                     "complexity": r.complexity,
+                    "thinking": r.thinking,
                     "usage_logged": usage_logged,
                 },
             )
@@ -266,6 +267,7 @@ def chat(body: ChatIn):
             "usage": r.usage,
             "source": r.source,
             "complexity": r.complexity,
+            "thinking": r.thinking,
             "usage_logged": usage_logged,
         }
 
@@ -279,6 +281,7 @@ def chat(body: ChatIn):
         "conversation_id": None,
         "title": "新对话",
         "conversation_persisted": False,
+        "thinking": r.thinking,
     }
 
 
@@ -509,7 +512,7 @@ def status():
         "configured": bool(CONFIG.active_provider and CONFIG.active_provider.is_configured),
         "memory": MEMORY.storage_mode,
         "server_time": int(time.time()),
-        "version": "0.2.0",
+        "version": "0.3.0-alpha.1",
         "rate_limit": RATE_LIMITER.backend_status,
         "rate_limit_strict": RATE_LIMITER.strict,
     }
