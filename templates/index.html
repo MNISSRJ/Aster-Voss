@@ -546,6 +546,7 @@ function renderRadarCard(item){
   card.append(top,headline,summary,why,tags,link);radarList.appendChild(card);
 }
 document.querySelector("#nav-radar").addEventListener("click",()=>{setWorkspace("radar");sidebar.classList.remove("open");});
+document.querySelector("#nav-bts").addEventListener("click",()=>{setWorkspace("bts");sidebar.classList.remove("open");});
 document.querySelector("#nav-chat").addEventListener("click",()=>{setWorkspace("chat");sidebar.classList.remove("open");});
 document.querySelector("#radar-refresh").addEventListener("click",async()=>{
   const btn=document.querySelector("#radar-refresh");btn.disabled=true;btn.textContent="整理中…";
