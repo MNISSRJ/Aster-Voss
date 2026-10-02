@@ -1,6 +1,7 @@
 """Persistence boundary for BTS Radar."""
 from __future__ import annotations
 
+from bts_radar import SOURCES
 from memory import cloud
 import os
 
@@ -17,4 +18,4 @@ class BTSRadarRepository:
         return cloud.list_bts_radar_items(limit=30, user_id=user_id or self.default_user_id)
 
     def sources(self):
-        return cloud.list_bts_radar_sources(limit=20)
+        return cloud.list_bts_radar_sources(limit=20) or SOURCES

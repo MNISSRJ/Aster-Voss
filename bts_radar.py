@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import html
+import json
 import re
 import urllib.parse
 import urllib.request
@@ -12,6 +13,16 @@ from typing import Any, Callable
 
 USER_AGENT = "Aster-Voss-BTS-Radar/1.0"
 MAX_ITEMS = 30
+
+MEMBERS = {
+    "rm": {"name": "RM", "instagram": "rkive"},
+    "jin": {"name": "Jin", "instagram": "jin"},
+    "suga": {"name": "SUGA", "instagram": "agustd"},
+    "jhope": {"name": "j-hope", "instagram": "uarmyhope", "tiktok": "iamurhope"},
+    "jimin": {"name": "Jimin", "instagram": "j.m"},
+    "v": {"name": "V", "instagram": "thv"},
+    "jungkook": {"name": "Jung Kook", "instagram": "mnijungkook"},
+}
 
 SOURCES = [
     {
@@ -37,6 +48,67 @@ SOURCES = [
         "preferred_region": "CN",
         "accessibility_score": 0.90,
         "accessibility_confidence": 0.85,
+    },
+    {
+        "id": "weverse-bts-live",
+        "name": "Weverse BTS LIVE",
+        "url": "https://weverse.io/bts/live",
+        "source_type": "weverse_live",
+        "language": "ko",
+        "official": True,
+        "official_account": "BTS Official Weverse community",
+        "provenance_url": "https://weverse.io/bts/notice/288",
+        "preferred_region": "global",
+        "accessibility_score": 0.55,
+        "accessibility_confidence": 0.65,
+    },
+    {
+        "id": "weverse-bts-artist",
+        "name": "Weverse BTS Artist",
+        "url": "https://weverse.io/bts/artist",
+        "source_type": "weverse_artist",
+        "language": "ko",
+        "official": True,
+        "official_account": "BTS members on official Weverse community",
+        "provenance_url": "https://weverse.io/bts/notice/288",
+        "preferred_region": "global",
+        "accessibility_score": 0.55,
+        "accessibility_confidence": 0.65,
+    },
+    *[
+        {
+            "id": f"instagram-{key}",
+            "name": f"Instagram · {member['name']}",
+            "url": f"https://www.instagram.com/{member['instagram']}/",
+            "source_type": "instagram",
+            "member": member["name"],
+            "language": "und",
+            "official": True,
+            "official_account": f"@{member['instagram']} (member account)",
+            "provenance_url": (
+                "https://www.khaleejtimes.com/entertainment/bts-jungkook-returns-instagram-v-rm"
+                if key == "jungkook"
+                else "https://www.soompi.com/article/1502417wpp/bts-"
+            ),
+            "preferred_region": "global",
+            "accessibility_score": 0.35,
+            "accessibility_confidence": 0.8,
+        }
+        for key, member in MEMBERS.items()
+    ],
+    {
+        "id": "tiktok-jhope",
+        "name": "TikTok · j-hope",
+        "url": "https://www.tiktok.com/@iamurhope",
+        "source_type": "tiktok",
+        "member": "j-hope",
+        "language": "und",
+        "official": True,
+        "official_account": "@iamurhope (verified artist account)",
+        "provenance_url": "https://newsroom.tiktok.com/vi-VN/j-hope-sweet-dream",
+        "preferred_region": "global",
+        "accessibility_score": 0.35,
+        "accessibility_confidence": 0.95,
     },
 ]
 
@@ -113,6 +185,14 @@ def _allowed_link(source: dict[str, Any], url: str) -> bool:
         return "/bts/notice/" in url
     if source["source_type"] == "weverse_shop":
         return "/artists/2/notices/" in url
+    if source["source_type"] == "weverse_live":
+        return "/bts/live/" in url
+    if source["source_type"] == "weverse_artist":
+        return "/bts/artist/" in url
+    if source["source_type"] == "instagram":
+        return bool(re.match(r"https://(?:www\.)?instagram\.com/(?:p|reel)/[A-Za-z0-9_-]+/?$", url))
+    if source["source_type"] == "tiktok":
+        return bool(re.match(r"https://(?:www\.)?tiktok\.com/@iamurhope/video/\d+/?$", url))
     return False
 
 
@@ -129,6 +209,25 @@ def _category(title: str) -> str:
     return "官宣"
 
 
+def _member_from_title(title: str, source: dict[str, Any]) -> str | None:
+    if source.get("member"):
+        return source["member"]
+    value = title.casefold()
+    aliases = {
+        "RM": ("rm", "namjoon", "nam jun"),
+        "Jin": ("jin", "seokjin"),
+        "SUGA": ("suga", "yoongi", "agust d"),
+        "j-hope": ("j-hope", "jhope", "hoseok"),
+        "Jimin": ("jimin",),
+        "V": ("taehyung", "tae-hyung"),
+        "Jung Kook": ("jungkook", "jung kook"),
+    }
+    for name, keys in aliases.items():
+        if any(re.search(r"(?<![a-z])" + re.escape(key) + r"(?![a-z])", value) for key in keys):
+            return name
+    return None
+
+
 def _fetch(url: str) -> str:
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.7"})
     with urllib.request.urlopen(req, timeout=12) as response:
@@ -138,9 +237,65 @@ def _fetch(url: str) -> str:
 def _extract(source: dict[str, Any], body: str) -> list[dict[str, Any]]:
     parser = _AnchorParser()
     parser.feed(body)
+    return _extract_rows(source, parser.rows)
+
+
+def _extract_social_posts(source: dict[str, Any], body: str) -> list[dict[str, Any]]:
+    """Accept only post permalinks and captions rendered by a verified profile page."""
+    parser = _AnchorParser()
+    parser.feed(body)
+    platform = source["source_type"]
+    if platform == "instagram":
+        pattern = re.compile(r"^https?://(?:www\.)?instagram\.com/(?:p|reel)/[A-Za-z0-9_-]+/?$")
+    else:
+        pattern = re.compile(r"^https?://(?:www\.)?tiktok\.com/@iamurhope/video/\d+/?$")
+    rows = []
+    published_by_url = {}
+    for title, href in parser.rows:
+        url = _absolute_url(source["url"], href).split("?", 1)[0]
+        if not pattern.match(url) or not _clean(title):
+            continue
+        rows.append((title, url))
+    if platform == "instagram":
+        for match in re.finditer(r'"shortcode"\s*:\s*"([A-Za-z0-9_-]+)"', body):
+            shortcode = match.group(1)
+            url = f"https://www.instagram.com/p/{shortcode}/"
+            context = body[match.start():match.start() + 8000]
+            caption_match = re.search(r'"text"\s*:\s*"((?:\\.|[^"\\])*)"', context)
+            if caption_match and url not in {href for _, href in rows}:
+                try:
+                    caption = _clean(json.loads('"' + caption_match.group(1) + '"'))
+                except (ValueError, TypeError):
+                    caption = ""
+                if caption:
+                    rows.append((caption[:240], url))
+            timestamp = re.search(r'"taken_at_timestamp"\s*:\s*(\d{9,12})', context)
+            if timestamp:
+                published_by_url[url] = datetime.fromtimestamp(int(timestamp.group(1)), timezone.utc).isoformat()
+    else:
+        for match in re.finditer(r'"id"\s*:\s*"(\d{15,25})"\s*,\s*"desc"\s*:\s*"((?:\\.|[^"\\])*)"', body):
+            video_id = match.group(1)
+            try:
+                caption = _clean(json.loads('"' + match.group(2) + '"'))
+            except (ValueError, TypeError):
+                caption = ""
+            url = f"https://www.tiktok.com/@iamurhope/video/{video_id}"
+            if caption and url not in {href for _, href in rows}:
+                rows.append((caption[:240], url))
+            context = body[match.start():match.start() + 1000]
+            timestamp = re.search(r'"createTime"\s*:\s*(\d{9,12})', context)
+            if timestamp:
+                published_by_url[url] = datetime.fromtimestamp(int(timestamp.group(1)), timezone.utc).isoformat()
+    items = _extract_rows(source, rows)
+    for item in items:
+        item["published_at"] = published_by_url.get(item["original_url"], item["published_at"])
+    return items
+
+
+def _extract_rows(source: dict[str, Any], anchors: list[tuple[str, str]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for title, href in parser.rows:
+    for title, href in anchors:
         url = _absolute_url(source["url"], href)
         if not _allowed_link(source, url):
             continue
@@ -158,17 +313,22 @@ def _extract(source: dict[str, Any], body: str) -> list[dict[str, Any]]:
             {
                 "id": _id(title, url),
                 "title": title,
-                "summary_zh": "",
+                "summary_zh": f"来自{source['name']}的已核验动态，查看原帖了解详情。",
                 "category": _category(title),
                 "source_id": source["id"],
                 "source_name": source["name"],
                 "source_type": source["source_type"],
+                "source_url": source["url"],
+                "language": source.get("language", "und"),
                 "original_url": url,
                 "preferred_url": preferred_url,
                 "preferred_url_region": source["preferred_region"],
                 "published_at": _parse_date(title),
                 "official": True,
                 "official_account": source["official_account"],
+                "member": _member_from_title(title, source) or "BTS",
+                "provenance_url": source.get("provenance_url", "https://weverse.io/bts/notice/288"),
+                "verification_status": "verified_official",
                 "accessibility_score": source["accessibility_score"],
                 "accessibility_confidence": source["accessibility_confidence"],
                 "importance": 1.0,
@@ -184,9 +344,13 @@ def collect_candidates(fetcher: Callable[[str], str] = _fetch) -> list[dict[str,
     grouped: dict[str, dict[str, Any]] = {}
     for source in SOURCES:
         try:
-            rows = _extract(source, fetcher(source["url"]))
+            body = fetcher(source["url"])
         except Exception:
             continue
+        if source["source_type"] in {"instagram", "tiktok"}:
+            rows = _extract_social_posts(source, body)
+        else:
+            rows = _extract(source, body)
         for row in rows:
             key = row["dedupe_hash"]
             existing = grouped.get(key)
@@ -214,7 +378,7 @@ def summarize(provider, candidates: list[dict[str, Any]]) -> list[dict[str, Any]
         for i, item in enumerate(candidates[:12], 1)
     )
     prompt = (
-        "你是 Aster Voss 的 BTS Radar 编辑。只处理已确认来自官方 BTS/Weverse 来源的内容。"
+        "你是 Aster Voss 的 BTS Radar 编辑。只处理来自已核验官方账号或 BTS 官方社区的内容。"
         "请为每条候选生成一句简洁中文摘要，并保持事实，不补充候选中不存在的信息。"
         '返回 JSON：{"items":[{"candidate":1,"summary_zh":"..."}]}。'
         "只返回 JSON，不要解释。\n\n" + rows

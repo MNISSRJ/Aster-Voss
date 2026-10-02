@@ -29,10 +29,13 @@ class BTSRadarService:
 
     def today(self):
         items = self.repository.today(self.user_id)
+        if not items:
+            # First visit and an empty day still attempt to surface recent posts.
+            items = summarize(None, collect_candidates())
         if items:
             return {
                 "status": "ready",
-                "generated_at": items[0].get("discovered_at"),
+                "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "source_count": len({item.get("source_id") for item in items}),
                 "item_count": len(items),
                 "items": items,

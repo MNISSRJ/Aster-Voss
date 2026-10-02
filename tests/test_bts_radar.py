@@ -1,4 +1,4 @@
-from bts_radar import SOURCES, _extract, collect_candidates
+from bts_radar import SOURCES, _extract, _extract_social_posts, collect_candidates
 from services.bts_radar_service import BTSRadarService
 
 
@@ -38,3 +38,55 @@ def test_service_empty_without_cloud(monkeypatch):
     result = service.generate()
     assert result["status"] == "empty"
     assert result["item_count"] == 0
+
+
+def test_member_sources_only_include_curated_verified_profiles():
+    instagram = [source for source in SOURCES if source["source_type"] == "instagram"]
+    assert len(instagram) == 7
+    assert {source["member"] for source in instagram} == {"RM", "Jin", "SUGA", "j-hope", "Jimin", "V", "Jung Kook"}
+    assert all(source["official"] and source["provenance_url"] for source in instagram)
+    tiktok = [source for source in SOURCES if source["source_type"] == "tiktok"]
+    assert [(source["member"], source["url"]) for source in tiktok] == [
+        ("j-hope", "https://www.tiktok.com/@iamurhope")
+    ]
+
+
+def test_social_extractor_accepts_only_post_links_from_curated_profile():
+    source = next(source for source in SOURCES if source["id"] == "instagram-rm")
+    body = """
+    <a href="https://www.instagram.com/p/AbCdEf123/">RM photo caption</a>
+    <a href="https://www.instagram.com/fan_repost/p/AbCdEf123/">fan copy</a>
+    <a href="https://example.com/p/AbCdEf123">external repost</a>
+    """
+    rows = _extract_social_posts(source, body)
+    assert len(rows) == 1
+    assert rows[0]["member"] == "RM"
+    assert rows[0]["source_type"] == "instagram"
+    assert rows[0]["official"] is True
+    assert rows[0]["verification_status"] == "verified_official"
+    assert rows[0]["provenance_url"] == source["provenance_url"]
+    assert rows[0]["original_url"] == "https://www.instagram.com/p/AbCdEf123/"
+
+
+def test_social_json_payload_produces_original_permalink_and_published_at():
+    source = next(source for source in SOURCES if source["id"] == "tiktok-jhope")
+    body = r'''{"id":"1234567890123456789","desc":"A verified post","createTime":1790928000}'''
+    rows = _extract_social_posts(source, body)
+    assert len(rows) == 1
+    assert rows[0]["title"] == "A verified post"
+    assert rows[0]["original_url"] == "https://www.tiktok.com/@iamurhope/video/1234567890123456789"
+    assert rows[0]["published_at"]
+
+
+def test_weverse_artist_and_live_items_keep_direct_original_links():
+    for source_id, path in (
+        ("weverse-bts-live", "/bts/live/4-216221564"),
+        ("weverse-bts-artist", "/bts/artist/3-224457001"),
+    ):
+        source = next(source for source in SOURCES if source["id"] == source_id)
+        rows = _extract(source, f'<a href="{path}">member update 2026.10.02</a>')
+        assert len(rows) == 1
+        assert rows[0]["original_url"].endswith(path)
+        assert rows[0]["source_type"] == source["source_type"]
+        assert rows[0]["published_at"].startswith("2026-10-02")
+        assert rows[0]["provenance_url"]

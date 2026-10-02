@@ -350,25 +350,28 @@ def save_bts_radar_items(items: list[dict], user_id: str = DEFAULT_USER_ID) -> b
         return False
     try:
         now = _utc_now()
-        sources = []
+        sources_by_id = {}
         for item in items:
-            sources.append({
+            sources_by_id[item["source_id"]] = {
                 "id": item["source_id"],
                 "name": item["source_name"],
-                "url": item["original_url"].split("/bts/notice/")[0] if "/bts/notice/" in item["original_url"] else "https://shop.weverse.io/zh-cn/shop/CNY/artists/2/notices",
+                "url": item.get("source_url") or item["original_url"],
                 "source_type": item["source_type"],
-                "language": "zh-CN",
+                "language": item.get("language") or "und",
                 "official": bool(item["official"]),
                 "official_account": item["official_account"],
+                "provenance_url": item.get("provenance_url") or "",
                 "preferred_region": item["preferred_url_region"],
                 "accessibility_score": item["accessibility_score"],
                 "accessibility_confidence": item["accessibility_confidence"],
                 "updated_at": now,
-            })
-        _request("POST", BTS_SOURCE_TABLE, sources)
+            }
+        _request("POST", BTS_SOURCE_TABLE, list(sources_by_id.values()))
         rows = []
         for item in items:
             row = dict(item)
+            row.pop("source_url", None)
+            row.pop("language", None)
             row["user_id"] = user_id
             row["updated_at"] = now
             rows.append(row)
@@ -385,7 +388,7 @@ def list_bts_radar_items(limit: int = 30, user_id: str = DEFAULT_USER_ID) -> lis
     try:
         rows = _request(
             "GET",
-            f"{BTS_ITEM_TABLE}?user_id=eq.{_quote_filter_value(user_id)}&select=id,title,summary_zh,category,source_id,source_name,source_type,original_url,preferred_url,preferred_url_region,published_at,discovered_at,official,official_account,accessibility_score,accessibility_confidence,importance,status,dedupe_hash&order=discovered_at.desc&limit={max(1, min(int(limit), 50))}",
+            f"{BTS_ITEM_TABLE}?user_id=eq.{_quote_filter_value(user_id)}&select=id,title,summary_zh,category,member,source_id,source_name,source_type,original_url,preferred_url,preferred_url_region,published_at,discovered_at,official,official_account,provenance_url,verification_status,accessibility_score,accessibility_confidence,importance,status,dedupe_hash&order=discovered_at.desc&limit={max(1, min(int(limit), 50))}",
         )
         return rows if isinstance(rows, list) else []
     except Exception:
@@ -398,7 +401,7 @@ def list_bts_radar_sources(limit: int = 20) -> list[dict]:
     try:
         rows = _request(
             "GET",
-            f"{BTS_SOURCE_TABLE}?select=id,name,url,source_type,language,official,official_account,preferred_region,accessibility_score,accessibility_confidence,enabled,updated_at&order=updated_at.desc&limit={max(1, min(int(limit), 50))}",
+            f"{BTS_SOURCE_TABLE}?select=id,name,url,source_type,language,official,official_account,provenance_url,preferred_region,accessibility_score,accessibility_confidence,enabled,updated_at&order=updated_at.desc&limit={max(1, min(int(limit), 50))}",
         )
         return rows if isinstance(rows, list) else []
     except Exception:
