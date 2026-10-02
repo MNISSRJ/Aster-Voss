@@ -7,13 +7,23 @@ import json
 import re
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from typing import Any, Callable
 
 USER_AGENT = "Aster-Voss-BTS-Radar/1.0"
 MAX_ITEMS = 30
+MEDIA_FEED_URL = "https://news.google.com/rss/search?" + urllib.parse.urlencode(
+    {"q": 'BTS OR Jungkook OR Jimin OR J-Hope OR SUGA OR RM OR Jin OR Taehyung', "hl": "zh-CN", "gl": "CN", "ceid": "CN:zh-Hans"}
+)
+TRUSTED_MEDIA_DOMAINS = (
+    "reuters.com", "apnews.com", "bbc.com", "bbc.co.uk", "yonhapnews.co.kr",
+    "koreaherald.com", "koreatimes.co.kr", "soompi.com", "billboard.com",
+    "variety.com", "rollingstone.com", "nme.com", "kpopherald.com", "theguardian.com",
+)
 
 MEMBERS = {
     "rm": {"name": "RM", "instagram": "rkive"},
@@ -62,6 +72,7 @@ SOURCES = [
         "preferred_region": "global",
         "accessibility_score": 0.55,
         "accessibility_confidence": 0.65,
+        "automatic": True,
     },
     {
         "id": "weverse-bts-artist",
@@ -75,6 +86,7 @@ SOURCES = [
         "preferred_region": "global",
         "accessibility_score": 0.55,
         "accessibility_confidence": 0.65,
+        "automatic": True,
     },
     *[
         {
@@ -86,14 +98,13 @@ SOURCES = [
             "language": "und",
             "official": True,
             "official_account": f"@{member['instagram']} (member account)",
-            "provenance_url": (
-                "https://www.khaleejtimes.com/entertainment/bts-jungkook-returns-instagram-v-rm"
-                if key == "jungkook"
-                else "https://www.soompi.com/article/1502417wpp/bts-"
-            ),
+            # Use the curated member profile itself as the first-party identity
+            # reference; the app must not imply it can read the account's feed.
+            "provenance_url": f"https://www.instagram.com/{member['instagram']}/",
             "preferred_region": "global",
             "accessibility_score": 0.35,
             "accessibility_confidence": 0.8,
+            "automatic": False,
         }
         for key, member in MEMBERS.items()
     ],
@@ -110,6 +121,20 @@ SOURCES = [
         "preferred_region": "global",
         "accessibility_score": 0.35,
         "accessibility_confidence": 0.95,
+        "automatic": False,
+    },
+    {
+        "id": "bts-media-news",
+        "name": "BTS 媒体报道",
+        "url": MEDIA_FEED_URL,
+        "source_type": "media",
+        "language": "zh-CN",
+        "official": False,
+        "official_account": "Google News 聚合的可信媒体",
+        "preferred_region": "global",
+        "accessibility_score": 0.75,
+        "accessibility_confidence": 0.7,
+        "automatic": True,
     },
 ]
 
@@ -161,6 +186,11 @@ def _id(title: str, url: str) -> str:
 def _parse_date(value: str | None) -> str | None:
     if not value:
         return None
+    try:
+        parsed = parsedate_to_datetime(value)
+        return parsed.astimezone(timezone.utc).isoformat()
+    except (TypeError, ValueError, OverflowError):
+        pass
     patterns = (
         (r"(20\d{2})[./-](\d{1,2})[./-](\d{1,2})", "%Y-%m-%d"),
         (r"(20\d{2})年(\d{1,2})月(\d{1,2})日", "%Y-%m-%d"),
@@ -239,6 +269,47 @@ def _extract(source: dict[str, Any], body: str) -> list[dict[str, Any]]:
     parser = _AnchorParser()
     parser.feed(body)
     return _extract_rows(source, parser.rows)
+
+
+def _extract_media(source: dict[str, Any], body: str) -> list[dict[str, Any]]:
+    """Collect recent coverage from an allowlist of established news outlets."""
+    try:
+        root = ET.fromstring(body)
+    except ET.ParseError:
+        return []
+    member_pattern = re.compile(r"\b(?:BTS|Jung\s*Kook|Jungkook|Jimin|Jin|SUGA|Yoongi|RM|Namjoon|j-hope|Hoseok|Taehyung)\b", re.I)
+    rows = []
+    for entry in root.findall(".//item"):
+        title = _clean(entry.findtext("title"))
+        link = _clean(entry.findtext("link"))
+        if not title or not link or not member_pattern.search(title):
+            continue
+        publisher = entry.find("source")
+        source_name = _clean(publisher.text if publisher is not None else "")
+        publisher_url = _clean(publisher.get("url") if publisher is not None else "")
+        host = (urllib.parse.urlparse(publisher_url or link).hostname or "").lower()
+        if not any(host == domain or host.endswith("." + domain) for domain in TRUSTED_MEDIA_DOMAINS):
+            continue
+        summary = _clean(entry.findtext("description"))
+        published_at = _parse_date(entry.findtext("pubDate"))
+        if published_at:
+            published_dt = datetime.fromisoformat(published_at)
+            if published_dt < datetime.now(timezone.utc) - timedelta(days=7):
+                continue
+        rows.append({
+            "id": _id(title, link), "title": title,
+            "summary_zh": summary[:240] or "媒体报道，详情以原文为准。",
+            "category": "热门报道", "source_id": source["id"], "source_name": source_name or host,
+            "source_type": "media", "source_url": source["url"], "language": source["language"],
+            "original_url": link, "preferred_url": link, "preferred_url_region": "global",
+            "published_at": published_at, "official": False, "official_account": source_name or host,
+            "member": _member_from_title(title, {}) or "BTS", "provenance_url": link,
+            "verification_status": "reported_by_media", "accessibility_score": source["accessibility_score"],
+            "accessibility_confidence": source["accessibility_confidence"], "importance": 0.7,
+            "status": "reported", "dedupe_hash": hashlib.sha256(_normalize_title(title).encode("utf-8")).hexdigest(),
+            "discovered_at": datetime.now(timezone.utc).isoformat(),
+        })
+    return rows
 
 
 def _extract_social_posts(source: dict[str, Any], body: str) -> list[dict[str, Any]]:
@@ -347,10 +418,14 @@ def _extract_rows(source: dict[str, Any], anchors: list[tuple[str, str]]) -> lis
 def collect_candidates(fetcher: Callable[[str], str] = _fetch) -> list[dict[str, Any]]:
     grouped: dict[str, dict[str, Any]] = {}
     def collect_source(source):
+        if not source.get("automatic", True):
+            return []
         try:
             body = fetcher(source["url"])
         except Exception:
             return []
+        if source["source_type"] == "media":
+            return _extract_media(source, body)
         if source["source_type"] in {"instagram", "tiktok"}:
             return _extract_social_posts(source, body)
         return _extract(source, body)

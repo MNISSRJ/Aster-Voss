@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import time
+from datetime import datetime, timedelta, timezone
 
 from bts_radar import SOURCES, collect_candidates, summarize
 from memory import cloud
@@ -29,12 +30,22 @@ class BTSRadarService:
 
     def today(self):
         cached = self.repository.today(self.user_id)
-        # Refresh on each visit so a cache containing notices cannot hide newer
-        # member posts. Stable item IDs let fresh source data replace stale rows.
-        fresh = summarize(None, collect_candidates())
-        by_id = {str(item.get("id")): item for item in cached if item.get("id")}
-        by_id.update({str(item.get("id")): item for item in fresh if item.get("id")})
-        items = list(by_id.values())
+        # Serve the saved feed immediately. Collection remains on the refresh and
+        # cron paths so a slow external platform cannot block the page on entry.
+        media_cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        def recent_media(item):
+            if item.get("source_type") != "media" or not item.get("published_at"):
+                return True
+            try:
+                published = datetime.fromisoformat(item["published_at"].replace("Z", "+00:00"))
+                return published >= media_cutoff
+            except (TypeError, ValueError):
+                return False
+        items = [
+            item for item in cached
+            if item.get("id") and item.get("source_type") not in {"instagram", "tiktok"}
+            and recent_media(item)
+        ]
         items.sort(
             key=lambda item: item.get("published_at") or item.get("discovered_at") or "",
             reverse=True,
@@ -43,7 +54,7 @@ class BTSRadarService:
         if items:
             return {
                 "status": "ready",
-                "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "generated_at": max((item.get("discovered_at") or "" for item in items), default=None) or None,
                 "source_count": len({item.get("source_id") for item in items}),
                 "item_count": len(items),
                 "items": items,

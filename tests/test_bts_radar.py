@@ -1,4 +1,4 @@
-from bts_radar import SOURCES, _extract, _extract_social_posts, collect_candidates
+from bts_radar import SOURCES, _extract, _extract_media, _extract_social_posts, collect_candidates
 from services.bts_radar_service import BTSRadarService
 
 
@@ -80,6 +80,36 @@ def test_social_json_payload_produces_original_permalink_and_published_at():
     assert rows[0]["published_at"]
 
 
+def test_media_feed_marks_coverage_as_reported_not_official_and_rejects_fan_sites():
+    source = next(source for source in SOURCES if source["source_type"] == "media")
+    body = """<?xml version="1.0"?><rss><channel>
+      <item><title>BTS announces new project - Soompi</title><link>https://news.google.com/rss/articles/abc</link>
+        <source url="https://www.soompi.com">Soompi</source><pubDate>Fri, 02 Oct 2026 00:00:00 GMT</pubDate></item>
+      <item><title>BTS update - Fan Blog</title><link>https://fan.example.com/bts</link>
+        <source url="https://fan.example.com">Fan Blog</source></item>
+    </channel></rss>"""
+    rows = _extract_media(source, body)
+    assert len(rows) == 1
+    assert rows[0]["source_type"] == "media"
+    assert rows[0]["official"] is False
+    assert rows[0]["verification_status"] == "reported_by_media"
+    assert rows[0]["original_url"].startswith("https://news.google.com/")
+    assert rows[0]["published_at"].startswith("2026-10-02")
+
+
+def test_collection_skips_member_social_profiles():
+    requested = []
+    def fetcher(url):
+        requested.append(url)
+        if url == SOURCES[0]["url"]:
+            return HTML
+        if url == SOURCES[1]["url"]:
+            return ""
+        raise ValueError("not needed")
+    collect_candidates(fetcher)
+    assert all("instagram.com" not in url and "tiktok.com" not in url for url in requested)
+
+
 def test_weverse_artist_and_live_items_keep_direct_original_links():
     for source_id, path in (
         ("weverse-bts-live", "/bts/live/4-216221564"),
@@ -94,14 +124,15 @@ def test_weverse_artist_and_live_items_keep_direct_original_links():
         assert rows[0]["provenance_url"]
 
 
-def test_today_merges_fresh_member_activity_with_cached_notices(monkeypatch):
+def test_today_serves_cache_without_scraping_and_filters_legacy_social_posts(monkeypatch):
     class Repo:
         def today(self, user_id):
-            return [{"id": "notice-1", "source_type": "weverse_shop", "discovered_at": "2026-10-01T00:00:00Z"}]
-    monkeypatch.setattr("services.bts_radar_service.collect_candidates", lambda: [
-        {"id": "member-1", "source_type": "instagram", "member": "RM", "discovered_at": "2026-10-02T00:00:00Z"}
-    ])
+            return [
+                {"id": "notice-1", "source_type": "weverse_shop", "discovered_at": "2026-10-01T00:00:00Z"},
+                {"id": "old-social", "source_type": "instagram", "member": "RM"},
+            ]
+    monkeypatch.setattr("services.bts_radar_service.collect_candidates", lambda: (_ for _ in ()).throw(AssertionError("today must not scrape")))
     service = BTSRadarService(repository=Repo(), user_id="test")
     result = service.today()
-    assert result["item_count"] == 2
-    assert [item["id"] for item in result["items"]] == ["member-1", "notice-1"]
+    assert result["item_count"] == 1
+    assert [item["id"] for item in result["items"]] == ["notice-1"]
