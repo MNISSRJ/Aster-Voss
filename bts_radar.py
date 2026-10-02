@@ -7,6 +7,7 @@ import json
 import re
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from typing import Any, Callable
@@ -309,6 +310,9 @@ def _extract_rows(source: dict[str, Any], anchors: list[tuple[str, str]]) -> lis
         preferred_url = url
         if source["source_type"] == "weverse" and "hl=" not in preferred_url:
             preferred_url += ("&" if "?" in preferred_url else "?") + "hl=zh-cn"
+        elif source["source_type"] == "weverse_shop":
+            notice_id = url.rstrip("/").rsplit("/", 1)[-1].split("?", 1)[0]
+            preferred_url = source["url"].rstrip("/") + "/" + notice_id
         rows.append(
             {
                 "id": _id(title, url),
@@ -342,15 +346,18 @@ def _extract_rows(source: dict[str, Any], anchors: list[tuple[str, str]]) -> lis
 
 def collect_candidates(fetcher: Callable[[str], str] = _fetch) -> list[dict[str, Any]]:
     grouped: dict[str, dict[str, Any]] = {}
-    for source in SOURCES:
+    def collect_source(source):
         try:
             body = fetcher(source["url"])
         except Exception:
-            continue
+            return []
         if source["source_type"] in {"instagram", "tiktok"}:
-            rows = _extract_social_posts(source, body)
-        else:
-            rows = _extract(source, body)
+            return _extract_social_posts(source, body)
+        return _extract(source, body)
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        source_rows = list(executor.map(collect_source, SOURCES))
+    for rows in source_rows:
         for row in rows:
             key = row["dedupe_hash"]
             existing = grouped.get(key)

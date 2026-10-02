@@ -25,6 +25,8 @@ def test_collect_candidates_deduplicates_titles_across_sources():
     rows = collect_candidates(lambda url: bodies[url])
     assert len(rows) == 3
     assert len({row["dedupe_hash"] for row in rows}) == 3
+    shop_item = next(item for item in rows if item["source_type"] == "weverse_shop")
+    assert "/zh-cn/shop/CNY/" in shop_item["preferred_url"]
 
 
 def test_service_empty_without_cloud(monkeypatch):
