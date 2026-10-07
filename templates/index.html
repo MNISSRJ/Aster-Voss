@@ -486,7 +486,7 @@ function formatBtsDate(value){
 }
 function radarItemId(item){return String(item.id||item.url||item.original_url||item.headline_zh||item.title||"unknown").slice(0,160)}
 function radarEvent(item,type,radarType){
-  if(!window.RADAR_2_ENABLED)return;
+  if(!window.RADAR_2_ENABLED||!window.RADAR_2_EVENTS_ENABLED)return;
   const key="aster-radar-view:"+radarType+":"+radarItemId(item);
   if(type==="item_view"){try{if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,"1")}catch(e){}}
   fetch("/api/radar/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({item_id:radarItemId(item),event_type:type,metadata:{radar:radarType,source:String(item.source_name||item.company||item.source||"").slice(0,80)}})}).catch(()=>{});

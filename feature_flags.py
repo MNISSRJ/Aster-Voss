@@ -13,3 +13,10 @@ def radar_2_enabled() -> bool:
     return (os.getenv("RADAR_2_ENABLED", "false") or "false").strip().lower() in {
         "1", "true", "yes", "y", "on"
     }
+
+
+def radar_2_events_enabled() -> bool:
+    """Require a separate opt-in before Radar event data can be written."""
+    return (os.getenv("RADAR_2_EVENTS_ENABLED", "false") or "false").strip().lower() in {
+        "1", "true", "yes", "y", "on"
+    }

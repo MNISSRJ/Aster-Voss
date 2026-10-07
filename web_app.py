@@ -25,7 +25,7 @@ from uuid import uuid4
 
 import log
 from rate_limit import RateLimiter, rate_limit_rule
-from feature_flags import radar_2_enabled
+from feature_flags import radar_2_enabled, radar_2_events_enabled
 
 CONFIG = load_config()
 log.configure(CONFIG.log_level)
@@ -219,7 +219,9 @@ def home():
     try:
         html = template.read_text(encoding="utf-8")
         if radar_2_enabled():
-            html = html.replace("</head>", "<script>window.RADAR_2_ENABLED=true;</script></head>", 1)
+            events_enabled = "true" if radar_2_events_enabled() else "false"
+            flag_script = f"<script>window.RADAR_2_ENABLED=true;window.RADAR_2_EVENTS_ENABLED={events_enabled};</script>"
+            html = html.replace("</head>", flag_script + "</head>", 1)
         return HTMLResponse(html)
     except OSError as exc:
         return HTMLResponse(
@@ -394,7 +396,7 @@ def bts_radar_archive(limit: int = 50):
 @app.post("/api/radar/events")
 def radar_event(body: RadarEventIn):
     allowed = {"item_view", "item_click", "item_favorite", "item_dislike", "ask_aster", "open_original"}
-    if not radar_2_enabled():
+    if not radar_2_enabled() or not radar_2_events_enabled():
         return {"ok": True, "recorded": False, "disabled": True}
     if body.event_type not in allowed or not body.item_id.strip():
         raise HTTPException(status_code=422, detail="invalid Radar event")
