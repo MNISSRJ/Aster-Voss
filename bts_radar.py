@@ -207,7 +207,10 @@ class _AnchorParser(HTMLParser):
 
 
 def _clean(value: str | None) -> str:
-    return re.sub(r"\s+", " ", html.unescape(value or "")).strip()
+    value = html.unescape(value or "")
+    value = re.sub(r"(?is)<(script|style)\b[^>]*>.*?</\1\s*>", " ", value)
+    value = re.sub(r"(?s)<[^>]*>", " ", value)
+    return re.sub(r"\s+", " ", value).strip()
 
 
 def _normalize_title(value: str) -> str:
@@ -320,7 +323,8 @@ def _extract_media(source: dict[str, Any], body: str) -> list[dict[str, Any]]:
     for entry in root.findall(".//item"):
         title = _clean(entry.findtext("title"))
         link = _clean(entry.findtext("link"))
-        if not title or not link or not member_pattern.search(title):
+        searchable_title = re.sub(r"\bMin\s+Jin\s+Lee\b", " ", title, flags=re.I)
+        if not title or not link or not member_pattern.search(searchable_title):
             continue
         publisher = entry.find("source")
         source_name = _clean(publisher.text if publisher is not None else "")

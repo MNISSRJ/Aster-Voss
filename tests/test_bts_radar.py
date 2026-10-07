@@ -84,9 +84,12 @@ def test_media_feed_marks_coverage_as_reported_not_official_and_rejects_fan_site
     source = next(source for source in SOURCES if source["source_type"] == "media")
     body = """<?xml version="1.0"?><rss><channel>
       <item><title>BTS announces new project - Soompi</title><link>https://news.google.com/rss/articles/abc</link>
+        <description>&amp;lt;a href=&amp;quot;https://soompi.com/bts&amp;quot;&amp;gt;BTS returns&amp;lt;/a&amp;gt; with news</description>
         <source url="https://www.soompi.com">Soompi</source><pubDate>Fri, 02 Oct 2026 00:00:00 GMT</pubDate></item>
       <item><title>BTS update - Fan Blog</title><link>https://fan.example.com/bts</link>
         <source url="https://fan.example.com">Fan Blog</source></item>
+      <item><title>‘I thought, if I’m going to die, I’m going to write a book first’: Pachinko author Min Jin Lee</title>
+        <link>https://www.soompi.com/article/irrelevant</link><source url="https://www.soompi.com">Soompi</source></item>
     </channel></rss>"""
     rows = _extract_media(source, body)
     assert len(rows) == 1
@@ -95,6 +98,7 @@ def test_media_feed_marks_coverage_as_reported_not_official_and_rejects_fan_site
     assert rows[0]["verification_status"] == "reported_by_media"
     assert rows[0]["original_url"].startswith("https://news.google.com/")
     assert rows[0]["published_at"].startswith("2026-10-02")
+    assert rows[0]["summary_zh"] == "BTS returns with news"
 
 
 def test_collection_skips_member_social_profiles():
