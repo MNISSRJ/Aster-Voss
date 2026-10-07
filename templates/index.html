@@ -90,12 +90,23 @@ body::after{
 .radar-score{font-size:10px;color:#637190;background:rgba(225,231,249,.68);padding:4px 7px;border-radius:999px}
 .radar-headline{font-size:16px;line-height:1.45;font-weight:720;color:#293650;margin-top:8px}
 .radar-summary{font-size:12.5px;line-height:1.65;color:#5f6d85;margin-top:7px}
+.radar-ai-badge{display:inline-flex;align-self:flex-start;margin-top:6px;padding:3px 7px;border-radius:999px;background:rgba(222,239,233,.65);color:#4c7865;font-size:10px}
+.radar-one-liner{font-size:12px;line-height:1.55;color:#514b7f;font-weight:600;margin:8px 0 0}
+.radar-time{font-size:10px;color:#8791a4;margin-top:8px}
+.radar-story{margin-top:12px;padding:12px;border:1px solid rgba(109,119,167,.18);border-radius:12px;background:rgba(255,255,255,.65);font-size:12px;line-height:1.7;color:#59658a;white-space:normal}
+.radar-story p{white-space:pre-wrap}.radar-story strong{color:#4c5272}.radar-story button{margin:5px;padding:6px 9px;border:1px solid rgba(109,119,167,.2);border-radius:8px;background:#fff;color:#59658a}
 .radar-why{font-size:11.5px;line-height:1.55;color:#7b879c;margin-top:9px;padding-top:9px;border-top:1px solid rgba(128,142,184,.14)}
 .radar-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
 .radar-tag{font-size:10px;color:#657390;background:rgba(238,242,252,.72);padding:4px 7px;border-radius:7px}
 .radar-source{display:block;margin-top:auto;padding-top:12px;font-size:10px;color:#687895;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none}
 .radar-source:hover{text-decoration:underline}
 .radar-empty{padding:32px 16px;text-align:center;border:1px dashed rgba(115,132,176,.22);border-radius:16px;color:#818da2;font-size:12px;grid-column:1/-1}
+.research-controls{margin:12px 0 18px;padding:14px 16px;border:1px solid rgba(255,255,255,.82);background:rgba(255,255,255,.48);border-radius:15px;color:#596780;font-size:12px}
+.research-ask{align-self:flex-start;margin-top:10px;padding:7px 10px;border:1px solid rgba(103,121,176,.2);border-radius:9px;background:rgba(255,255,255,.75);color:#596780;font-size:11px}
+#nav-research[hidden]{display:none!important}
+.research-controls form{display:flex;gap:8px;margin-top:8px}.research-controls input{flex:1;min-width:0;padding:10px 12px;border:1px solid rgba(103,121,176,.2);border-radius:10px;background:rgba(255,255,255,.8);color:#293650}.research-controls form button,.research-budget button{padding:8px 11px;border:1px solid rgba(103,121,176,.2);border-radius:9px;background:#fff;color:#44516a}.research-budget{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:11px;color:#7d879b}.research-budget button.selected{background:#e9edfb;border-color:#cbd5f2}.research-paper-meta{font-size:10px;color:#7f8ba0;margin-top:8px}.research-original-title{font-size:11px;color:#78849a;margin-top:5px;line-height:1.5}.research-card .radar-tags{margin-top:8px}
+.research-ask{align-self:flex-start;margin-top:10px;padding:7px 10px;border:1px solid rgba(103,121,176,.2);border-radius:9px;background:rgba(255,255,255,.75);color:#596780;font-size:11px}
+#nav-research[hidden]{display:none!important}
 .side-item.radar-active{background:rgba(255,255,255,.58);color:#2d3850}
 #radar[hidden]{display:none!important}
 @media(max-width:899px){.radar-view{padding:22px 14px 72px}.radar-head{align-items:flex-start}.radar-title{font-size:25px}.radar-list{grid-template-columns:1fr}.radar-refresh{padding:8px 10px}}
@@ -244,6 +255,15 @@ body::after{
   .composer-wrap{left:0;right:0;padding:9px 10px calc(10px + env(safe-area-inset-bottom))}
   .composer{width:100%}.settings{width:94vw}
 }
+
+.bts-view{height:calc(100vh - 64px);overflow-y:auto;padding:34px min(7vw,92px) 86px;scrollbar-width:none}.bts-view::-webkit-scrollbar{display:none}
+.bts-head{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;margin-bottom:18px}.bts-kicker{font-size:10px;font-weight:800;letter-spacing:.16em;color:#8a78a6;text-transform:uppercase}.bts-title{font-size:31px;letter-spacing:-.8px;margin-top:5px;color:#293650}.bts-date{font-size:12px;color:#7b879d;margin-top:5px}.bts-refresh{border:1px solid rgba(125,103,176,.20);background:rgba(255,255,255,.60);color:#51466a;border-radius:12px;padding:9px 13px;font-size:12px;box-shadow:0 5px 18px rgba(88,103,157,.06)}.bts-refresh:hover{background:rgba(255,255,255,.80);transform:translateY(-1px)}
+.bts-intro{padding:13px 15px;border:1px solid rgba(255,255,255,.72);background:rgba(255,255,255,.38);border-radius:14px;color:#66728a;font-size:12px;line-height:1.65;margin-bottom:15px}.bts-list{display:flex;flex-direction:column;gap:11px}.bts-card{padding:16px 17px;border:1px solid rgba(255,255,255,.78);background:rgba(255,255,255,.48);border-radius:17px;box-shadow:0 8px 24px rgba(88,103,157,.05);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}.bts-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.bts-badges{display:flex;gap:6px;flex-wrap:wrap}.bts-badge{font-size:9px;border-radius:999px;padding:4px 7px;background:rgba(111,91,151,.10);color:#66537e}.bts-badge.official{background:rgba(89,139,111,.10);color:#4e775f}.bts-time{font-size:9px;color:#8b96aa;white-space:nowrap}.bts-headline{font-size:15px;font-weight:720;line-height:1.5;color:#34405a}.bts-summary{font-size:11.5px;line-height:1.65;color:#758198;margin-top:6px}.bts-source-row{display:flex;align-items:center;gap:10px;margin-top:11px}.bts-source{font-size:10px;color:#667aff;text-decoration:none}.bts-source:hover{text-decoration:underline}.bts-original{font-size:9px;color:#98a1b1}.bts-empty{padding:40px 12px;text-align:center;color:#96a0b1;font-size:11px}
+.bts-filters{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}.bts-filter{border:1px solid rgba(125,103,176,.18);background:rgba(255,255,255,.42);color:#66728a;border-radius:999px;padding:7px 11px;font-size:11px}.bts-filter.active{background:#66537e;color:#fff}.bts-provenance{font-size:9px;color:#8b96aa}
+.bts-card.importance-a{border-left:3px solid #6c5dd3}.bts-card.importance-b{padding:13px 15px}.bts-product-details{margin-top:8px;padding:9px 11px;border-radius:10px;background:rgba(111,91,151,.06);color:#758198;font-size:10px;line-height:1.8}.bts-product-details summary{cursor:pointer;color:#66537e;font-weight:650}.bts-product-details a{display:inline-block;margin-top:5px;color:#667aff;text-decoration:none}
+.bts-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 16px}.bts-tab{border:1px solid rgba(125,103,176,.18);background:rgba(255,255,255,.42);color:#66728a;border-radius:999px;padding:8px 13px;font-size:11px}.bts-tab.active{background:#66537e;color:#fff}.bts-social-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:11px}.bts-social-card{padding:16px;border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.48);border-radius:16px}.bts-social-name{font-weight:750;color:#34405a;margin-bottom:10px}.bts-social-links{display:flex;gap:8px;flex-wrap:wrap}.bts-social-link{font-size:11px;text-decoration:none;color:#66537e;padding:7px 9px;border-radius:9px;background:rgba(111,91,151,.09)}.bts-social-note{font-size:10px;color:#929caf;line-height:1.5;margin-top:9px}.bts-hot-links{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 14px}
+@media(max-width:899px){.bts-view{padding:22px 14px 86px}.bts-head{align-items:flex-start}.bts-title{font-size:26px}.bts-card{padding:14px}.bts-card-top{align-items:flex-start}.bts-time{white-space:normal;text-align:right}}
+.radar-card.importance-c:not(.expanded) .radar-summary,.radar-card.importance-c:not(.expanded) .radar-one-liner,.radar-card.importance-c:not(.expanded) .radar-tags{display:none}
 </style>
 </head>
 <body>
@@ -257,6 +277,8 @@ body::after{
     <nav class="side-nav">
       <button class="side-item active" id="nav-chat">⌂ <span>对话</span></button>
       <button class="side-item" id="nav-radar">✦ <span>AI Radar</span></button>
+      <button class="side-item" id="nav-bts">🐨 <span>BTS 信息中心</span></button>
+      <button class="side-item" id="nav-research">📚 <span>Research</span></button>
     </nav>
     <div class="conversation-list" id="conversation-list">
       <div class="conversation-empty">还没有过去的对话</div>
@@ -289,6 +311,41 @@ body::after{
       </div>
       <div class="radar-intro" id="radar-intro">Aster 正在整理多源 AI 热点。</div>
       <div class="radar-list" id="radar-list"><div class="radar-empty">正在读取今日简报…</div></div>
+    </section>
+
+
+    <section id="research" class="radar-view" hidden>
+      <div class="radar-head">
+        <div><div class="radar-kicker">RESEARCH DISCOVERY</div><div class="radar-title">Research · 今日推荐</div><div class="radar-date" id="research-date">正在读取论文池…</div></div>
+        <button class="radar-refresh" id="research-refresh" type="button">↻ 更新候选</button>
+      </div>
+      <div class="radar-intro" id="research-intro">从 arXiv 论文候选中筛选近期值得了解的研究。这里没有未读任务、排行榜或连续阅读要求。</div>
+      <div class="research-controls">
+        <label for="research-query">在论文候选池中搜索</label>
+        <form id="research-search-form"><input id="research-query" type="search" placeholder="例如：Agent Memory、RAG" autocomplete="off"><button type="submit">搜索</button></form>
+        <div class="research-budget" aria-label="阅读时间偏好"><span>我现在有</span><button type="button" data-minutes="10">10 分钟</button><button type="button" class="selected" data-minutes="20">20 分钟</button><button type="button" data-minutes="30">30 分钟</button><span>· 软预算，可随时停止</span></div>
+      </div>
+      <div class="radar-list" id="research-list"><div class="radar-empty">正在读取 Research Pool…</div></div>
+    </section>
+
+
+    <section id="bts-radar" class="bts-view" hidden>
+      <div class="bts-head">
+        <div>
+          <div class="bts-kicker">BTS INFORMATION CENTER</div>
+          <div class="bts-title">BTS 信息中心</div>
+          <div class="bts-date" id="bts-date">正在加载…</div>
+        </div>
+        <button class="bts-refresh" id="bts-refresh" type="button">↻ 刷新</button>
+      </div>
+      <div class="bts-intro" id="bts-intro">自动时间线只收录官方与 Weverse 来源；Instagram / TikTok 提供本人账号入口，热门报道会标明媒体出处。</div>
+      <nav class="bts-tabs" id="bts-tabs" aria-label="信息中心分区">
+        <button class="bts-tab active" data-section="timeline">Timeline</button><button class="bts-tab" data-section="weverse">Weverse</button><button class="bts-tab" data-section="social">Social</button><button class="bts-tab" data-section="archive">Archive</button>
+      </nav>
+      <div class="bts-hot-links" id="bts-hot-links" hidden><span class="bts-social-note">自动收录近期媒体报道；微博和 X 提供站外搜索入口，不代表实时热度榜。</span><a class="bts-social-link" href="https://s.weibo.com/weibo?q=BTS" target="_blank" rel="noopener noreferrer">微博搜索 BTS ↗</a><a class="bts-social-link" href="https://x.com/search?q=BTS&src=typed_query" target="_blank" rel="noopener noreferrer">X 搜索 BTS ↗</a></div>
+      <div class="bts-hot-links" id="bts-weverse-links" hidden><a class="bts-social-link" href="https://weverse.io/bts/notice?hl=zh-cn" target="_blank" rel="noopener noreferrer">官方公告 ↗</a><a class="bts-social-link" href="https://shop.weverse.io/zh-cn/shop/CNY/artists/2/notices" target="_blank" rel="noopener noreferrer">Weverse Shop ↗</a><a class="bts-social-link" href="https://weverse.io/bts/artist" target="_blank" rel="noopener noreferrer">成员帖子 ↗</a><a class="bts-social-link" href="https://weverse.io/bts/live" target="_blank" rel="noopener noreferrer">LIVE ↗</a></div>
+      <div class="bts-social-grid" id="bts-social-grid" hidden></div>
+      <div class="bts-list" id="bts-list"><div class="bts-empty">正在读取 BTS 官方动态…</div></div>
     </section>
 
     <div class="composer-wrap">
@@ -346,6 +403,14 @@ const radarView=document.querySelector("#radar");
 const radarList=document.querySelector("#radar-list");
 const radarIntro=document.querySelector("#radar-intro");
 const radarDate=document.querySelector("#radar-date");
+const btsRadarView=document.querySelector("#bts-radar");
+const btsList=document.querySelector("#bts-list");
+const btsIntro=document.querySelector("#bts-intro");
+const btsDate=document.querySelector("#bts-date");
+const btsSocialGrid=document.querySelector("#bts-social-grid");
+const btsHotLinks=document.querySelector("#bts-hot-links");
+const btsWeverseLinks=document.querySelector("#bts-weverse-links");
+let btsItems=[];let btsArchiveItems=[];let btsSources=[];let btsSection="timeline";
 
 function scrollChat(){
   requestAnimationFrame(()=>{chat.scrollTo({top:chat.scrollHeight,behavior:"smooth"});});
@@ -372,10 +437,10 @@ function showToast(message){
   clearTimeout(window._asterToast);
   window._asterToast=setTimeout(()=>toast.classList.remove("show"),1800);
 }
-async function sendMessage(){
-  const value=input.value.trim();
+async function sendMessage(overrideValue=null,radarContext=null){
+  const value=(overrideValue??input.value).trim();
   if(!value || sendButton.disabled)return;
-  addMessage(value,"u");
+  addMessage(radarContext?"正在询问："+(radarContext.title_zh||radarContext.title||"Radar 条目")+"\n"+value:value,"u");
   input.value="";
   input.style.height="44px";
   sendButton.disabled=true;
@@ -384,7 +449,7 @@ async function sendMessage(){
     const response=await fetch("/api/chat",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({message:value,conversation_id:currentConversationId})
+      body:JSON.stringify({message:value,conversation_id:currentConversationId,...(radarContext?{radar_context:radarContext}:{})})
     });
     const data=await response.json().catch(()=>({}));
     if(!response.ok){
@@ -422,13 +487,143 @@ form.addEventListener("submit",event=>{event.preventDefault();sendMessage();});
 
 function setWorkspace(view){
   const showingRadar=view==="radar";
+  const showingBts=view==="bts";
+  const showingResearch=view==="research";
   radarView.hidden=!showingRadar;
-  chat.style.display=showingRadar?"none":"flex";
-  document.querySelector(".composer-wrap").style.display=showingRadar?"none":"block";
-  document.querySelector("#nav-chat").classList.toggle("active",!showingRadar);
+  btsRadarView.hidden=!showingBts;
+  document.querySelector("#research").hidden=!showingResearch;
+  chat.style.display=(showingRadar||showingBts||showingResearch)?"none":"flex";
+  document.querySelector(".composer-wrap").style.display=(showingRadar||showingBts||showingResearch)?"none":"block";
+  document.querySelector("#nav-chat").classList.toggle("active",!showingRadar&&!showingBts&&!showingResearch);
   document.querySelector("#nav-radar").classList.toggle("radar-active",showingRadar);
+  document.querySelector("#nav-bts").classList.toggle("radar-active",showingBts);
+  document.querySelector("#nav-research").classList.toggle("radar-active",showingResearch);
   if(showingRadar)loadRadar();
+  if(showingBts)loadBtsRadar();
+  if(showingResearch)loadResearch();
 }
+
+
+function formatBtsDate(value){
+  if(!value)return "发布时间未知";
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return "发布时间未知";
+  return date.toLocaleDateString("zh-CN",{year:"numeric",month:"2-digit",day:"2-digit"});
+}
+function radarItemId(item){return String(item.id||item.url||item.original_url||item.headline_zh||item.title||"unknown").slice(0,160)}
+function radarEvent(item,type,radarType){
+  if(!window.RADAR_2_ENABLED||!window.RADAR_2_EVENTS_ENABLED)return;
+  const key="aster-radar-view:"+radarType+":"+radarItemId(item);
+  if(type==="item_view"){try{if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,"1")}catch(e){}}
+  fetch("/api/radar/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({item_id:radarItemId(item),event_type:type,metadata:{radar:radarType,source:String(item.source_name||item.company||item.source||"").slice(0,80)}})}).catch(()=>{});
+}
+function radarAsk(item,radarType,action){
+  const context={title:item.title||item.headline_zh||"",title_zh:item.title_zh||item.headline_zh||"",summary:item.summary||item.summary_zh||"",source:item.source_name||item.company||(item.source_list||[]).join(", "),published_at:item.published_at||item.discovered_at||"",url:item.preferred_url||item.original_url||item.url||"",category:item.category||item.source_type||"",member:item.member||"",core_concepts:Array.isArray(item.core_concepts)?item.core_concepts:(Array.isArray(item.tags)?item.tags:[])};
+  const prompts={meaning:"请用简单的话解释这条内容是什么意思。",story:"请把这条内容讲成一段容易理解的背景故事。",why:"这条内容为什么重要？",relation:"它和之前的相关动态有什么联系？",summary:"请用三句话总结这条内容。"};
+  const question=prompts[action]||"请帮我理解这条内容。";radarEvent(item,"ask_aster",radarType);setWorkspace("chat");sendMessage(question,context);
+}
+async function showRadarStory(card,item){
+  let panel=card.querySelector(".radar-story");if(!panel){panel=document.createElement("section");panel.className="radar-story";card.appendChild(panel)}
+  panel.replaceChildren();const loading=document.createElement("p");loading.textContent="Aster 正在准备一个小故事…";panel.appendChild(loading);
+  try{
+    const response=await fetch("/api/ai-radar/story",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({item})});
+    const result=await response.json();if(!response.ok)throw new Error(result.detail||"故事暂不可用");panel.replaceChildren();
+    if(result.status!=="ready"){const note=document.createElement("p");note.textContent=result.message||"故事解释暂不可用；你仍可查看原文或询问 Aster。";panel.appendChild(note);return}
+    const badge=document.createElement("span");badge.className="radar-ai-badge";badge.textContent="AI 生成";panel.appendChild(badge);
+    if(result.related===false){const note=document.createElement("p");note.textContent="这些概念关联较弱，建议分别理解：";panel.appendChild(note);(result.separate_explanations||[]).forEach(name=>{const button=document.createElement("button");button.type="button";button.textContent="单独解释："+name;button.addEventListener("click",()=>radarAsk({...item,core_concepts:[name]},"ai","meaning"));panel.appendChild(button)});return}
+    [["📖 一个小故事",result.story],["🧠 正式解释",result.formal_explanation],["🧩 故事里的隐喻",(result.metaphor_map||[]).join("\n")],["📰 回到这条新闻",result.back_to_news]].forEach(([title,text])=>{if(!text)return;const section=document.createElement("div");const heading=document.createElement("strong");heading.textContent=title;const body=document.createElement("p");body.textContent=text;section.append(heading,body);panel.appendChild(section)});
+  }catch(error){panel.replaceChildren();const note=document.createElement("p");note.textContent="故事解释暂不可用；你仍可查看原文或询问 Aster。";panel.appendChild(note)}
+}
+function addRadarActions(card,item,radarType){
+  const actions=document.createElement("div");actions.className="radar-actions";
+  const ask=document.createElement("button");ask.type="button";ask.textContent="✨ 问问 Aster";ask.addEventListener("click",()=>radarAsk(item,radarType,"meaning"));actions.appendChild(ask);
+  [["☆ 收藏","item_favorite"],["不感兴趣","item_dislike"]].forEach(([label,type])=>{const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{radarEvent(item,type,radarType);button.classList.toggle("selected")});actions.appendChild(button)});
+  const details=document.createElement("details");details.className="radar-action-menu";const summary=document.createElement("summary");summary.textContent="⋯";details.appendChild(summary);
+  [["meaning","这是什么意思"],["summary","三句话总结"],["story","讲讲背景故事"],["why","为什么重要"],["relation","和之前有什么联系"]].forEach(([key,label])=>{const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{details.open=false;if((radarType==="ai"||radarType==="research")&&key==="story")showRadarStory(card,item);else radarAsk(item,radarType,key)});details.appendChild(button)});
+  const original=item.preferred_url||item.original_url||item.url;if(original){const link=document.createElement("a");link.href=original;link.target="_blank";link.rel="noopener noreferrer";link.textContent="打开原文 ↗";link.addEventListener("click",()=>radarEvent(item,"open_original",radarType));details.appendChild(link)}
+  actions.appendChild(details);card.appendChild(actions);
+  const toggle=document.createElement("button");toggle.type="button";toggle.className="radar-expand";toggle.textContent="展开";toggle.addEventListener("click",()=>{card.classList.toggle("expanded");toggle.textContent=card.classList.contains("expanded")?"收起":"展开"});card.appendChild(toggle);
+  card.addEventListener("contextmenu",event=>{event.preventDefault();details.open=!details.open});let pressTimer;card.addEventListener("touchstart",()=>{pressTimer=setTimeout(()=>{details.open=true},550)},{passive:true});["touchend","touchmove","touchcancel"].forEach(type=>card.addEventListener(type,()=>clearTimeout(pressTimer),{passive:true}));
+  card.addEventListener("click",event=>{if(!event.target.closest("a,button,summary"))radarEvent(item,"item_click",radarType)});
+}
+function renderBtsCard(item){
+  const tier=item.importance_level||"B";
+  const card=document.createElement("article");card.className="bts-card radar-interactive-card importance-"+tier.toLowerCase();
+  const top=document.createElement("div");top.className="bts-card-top";
+  const badges=document.createElement("div");badges.className="bts-badges";
+  const official=document.createElement("span");official.className="bts-badge official";official.textContent=item.verification_status==="reported_by_media"?"媒体报道":(item.verification_status==="verified_official"?"✓ 官方核验":"来源已标注");
+  const category=document.createElement("span");category.className="bts-badge";category.textContent=tier+" · "+(item.member&&item.member!=="BTS"?item.member:(item.category||"官宣"));
+  const source=document.createElement("span");source.className="bts-badge";source.textContent=item.source_name||"Weverse";
+  badges.append(official,category,source);
+  const time=document.createElement("span");time.className="bts-time";time.textContent=formatBtsDate(item.published_at||item.discovered_at);
+  top.append(badges,time);
+  const headline=document.createElement("div");headline.className="bts-headline";headline.textContent=item.title||"";
+  const summary=document.createElement("div");summary.className="bts-summary";summary.textContent=item.summary_zh||"来自成员本人或 BTS 官方渠道的动态，点击直达原帖。";
+  const links=document.createElement("div");links.className="bts-source-row";
+  const preferred=document.createElement("a");preferred.className="bts-source";preferred.textContent="直达原帖 ↗";preferred.href=item.preferred_url||item.original_url||"#";preferred.target="_blank";preferred.rel="noopener noreferrer";
+  links.appendChild(preferred);
+  if(item.original_url && item.original_url!==item.preferred_url){
+    const original=document.createElement("a");original.className="bts-original";original.textContent="原始页面";original.href=item.original_url;original.target="_blank";original.rel="noopener noreferrer";links.appendChild(original);
+  }
+  if(item.provenance_url){const proof=document.createElement("a");proof.className="bts-provenance";proof.textContent="账号核验来源";proof.href=item.provenance_url;proof.target="_blank";proof.rel="noopener noreferrer";links.appendChild(proof)}
+  card.append(top,headline);
+  if(tier==="C"){
+    const details=document.createElement("details");details.className="bts-product-details";
+    const toggle=document.createElement("summary");toggle.textContent="展开商品与销售信息";details.appendChild(toggle);
+    const product=document.createElement("div");product.textContent="商品："+(item.product||item.title||"原文未提供");details.appendChild(product);
+    const sale=document.createElement("div");sale.textContent="销售时间："+(item.sale_time||item.sales_time||"原文未提供");details.appendChild(sale);
+    const channel=document.createElement("div");channel.textContent="购买渠道："+(item.purchase_channel||item.source_name||"以原文为准");details.appendChild(channel);
+    if(item.preferred_url||item.original_url)details.appendChild(preferred);
+    card.append(details);
+  }else{
+    card.append(summary,links);
+    if(window.RADAR_2_ENABLED)addRadarActions(card,item,"bts");
+  }
+  btsList.appendChild(card);radarEvent(item,"item_view","bts");
+}
+function renderFilteredBts(){
+  btsSocialGrid.hidden=btsSection!=="social";
+  btsList.hidden=btsSection==="social";
+  btsHotLinks.hidden=btsSection!=="timeline";
+  btsWeverseLinks.hidden=btsSection!=="weverse";
+  if(btsSection==="social"){renderBtsSocial();return}
+  const sourceItems=btsSection==="archive"?btsArchiveItems:btsItems;
+  const visible=sourceItems.filter(item=>btsSection==="weverse"?String(item.source_type||"").startsWith("weverse"):true);
+  btsList.replaceChildren();
+  if(!visible.length){const empty=document.createElement("div");empty.className="bts-empty";empty.textContent=btsSection==="archive"?"暂无已存档的历史内容。":btsSection==="weverse"?"Weverse 暂无可读取的新动态；这里仍保留官方 Weverse 入口。":"今天暂无新的重要官方动态；下方保留媒体报道与站外搜索入口。";btsList.appendChild(empty);return}
+  visible.forEach(renderBtsCard);
+}
+function renderBtsSocial(){
+  btsSocialGrid.replaceChildren();
+  const members=["RM","Jin","SUGA","j-hope","Jimin","V","Jung Kook"];
+  for(const member of members){
+    const card=document.createElement("article");card.className="bts-social-card";
+    const name=document.createElement("div");name.className="bts-social-name";name.textContent=member;
+    const links=document.createElement("div");links.className="bts-social-links";
+    const accounts=btsSources.filter(source=>source.member===member&&["instagram","tiktok"].includes(source.source_type));
+    accounts.forEach(account=>{const link=document.createElement("a");link.className="bts-social-link";link.textContent=account.source_type==="instagram"?"Instagram ↗":"TikTok ↗";link.href=account.url;link.target="_blank";link.rel="noopener noreferrer";links.appendChild(link)});
+    const note=document.createElement("div");note.className="bts-social-note";note.textContent=accounts.length?"官方账号入口 · 页面不会声称已自动抓取平台内容":"暂未找到可独立核验的本人账号入口";
+    card.append(name,links,note);
+    const proofUrl=accounts.find(account=>account.provenance_url)?.provenance_url;
+    if(proofUrl){const proof=document.createElement("a");proof.className="bts-provenance";proof.textContent="查看账号核验依据 ↗";proof.href=proofUrl;proof.target="_blank";proof.rel="noopener noreferrer";card.appendChild(proof)}
+    btsSocialGrid.appendChild(card);
+  }
+}
+async function loadBtsRadar(){
+  btsList.innerHTML='<div class="bts-empty">正在读取 BTS 官方动态…</div>';
+  try{
+    const [response,sourcesResponse]=await Promise.all([fetch("/api/bts-radar/today",{cache:"no-store"}),fetch("/api/bts-radar/sources",{cache:"no-store"})]);
+    const data=await response.json();const sourceData=await sourcesResponse.json();
+    if(!response.ok||!sourcesResponse.ok)throw new Error(data.detail||sourceData.detail||"读取失败");
+    btsDate.textContent=data.generated_at?("更新于 "+new Date(data.generated_at).toLocaleString("zh-CN")):"尚未生成";
+    btsIntro.textContent="自动时间线收录官方与 Weverse 动态；媒体报道单独标注出处，Instagram / TikTok 提供本人账号入口。中国大陆访问情况因网络环境和平台政策而异。";
+    btsItems=Array.isArray(data.items)?data.items:[];btsSources=Array.isArray(sourceData.sources)?sourceData.sources:[];renderFilteredBts();
+  }catch(error){
+    btsList.innerHTML='<div class="bts-empty">BTS Radar 暂时无法读取，请点击刷新。</div>';
+    console.error(error);
+  }
+}
+
 async function loadRadar(){
   radarList.innerHTML='<div class="radar-empty">正在读取今日简报…</div>';
   try{
@@ -456,21 +651,69 @@ async function loadRadar(){
   }
 }
 function renderRadarCard(item){
-  const card=document.createElement("article");card.className="radar-card";
+  const card=document.createElement("article");card.className="radar-card radar-interactive-card"+(item.importance==="C"?" importance-c":"");
   const top=document.createElement("div");top.className="radar-top";
-  const company=document.createElement("span");company.className="radar-company";company.textContent=item.company||"AI";
-  const score=document.createElement("span");score.className="radar-score";score.textContent="Aster 热点 "+(item.hot_score??"-");
-  top.append(company,score);
-  const headline=document.createElement("div");headline.className="radar-headline";headline.textContent=item.headline_zh||"";
-  const summary=document.createElement("div");summary.className="radar-summary";summary.textContent=item.summary_zh||"";
+  const company=document.createElement("span");company.className="radar-company";company.textContent=(item.source_list||[]).join(" · ")||item.company||"AI 动态";
+  const importance=document.createElement("span");importance.className="radar-score";importance.textContent=item.importance==="A"?"重点动态":item.importance==="C"?"低优先级简讯":"近期动态";
+  top.append(company,importance);
+  const headline=document.createElement("div");headline.className="radar-headline";headline.textContent=item.title_zh||item.headline_zh||item.title_original||"";
+  const summary=document.createElement("div");summary.className="radar-summary";summary.textContent=item.ai_status==="failed"?"中文摘要暂不可用。\n"+(item.summary_zh||""):item.summary_zh||"";
+  const generated=document.createElement("span");generated.className="radar-ai-badge";generated.textContent=item.ai_status==="ready"?"AI 生成 · 已做基础事实校验":"原始来源";
+  const oneLiner=document.createElement("p");oneLiner.className="radar-one-liner";oneLiner.textContent=item.one_liner_zh||"";
   const why=document.createElement("div");why.className="radar-why";why.textContent=item.why_it_matters_zh?("为什么重要 · "+item.why_it_matters_zh):"";
   const tags=document.createElement("div");tags.className="radar-tags";
-  (item.tags||[]).forEach(tag=>{const span=document.createElement("span");span.className="radar-tag";span.textContent=tag;tags.appendChild(span);});
+  (item.core_concepts||[]).slice(0,3).forEach(tag=>{const span=document.createElement("span");span.className="radar-tag";span.textContent="🧠 "+tag;tags.appendChild(span);});
+  const related=(item.related_concepts||[]).slice(0,5);if(related.length){const details=document.createElement("details");const summaryToggle=document.createElement("summary");summaryToggle.textContent="相关概念（可选）";details.appendChild(summaryToggle);const list=document.createElement("div");list.textContent=related.join(" · ");details.appendChild(list);tags.appendChild(details)}
+  const originalTitle=document.createElement("details");const originalToggle=document.createElement("summary");originalToggle.textContent="原始英文标题";const original=document.createElement("p");original.textContent=item.title_original||item.title||"";originalTitle.append(originalToggle,original);
   const link=document.createElement("a");link.className="radar-source";link.textContent=(item.source_list||[]).join(" · ")+"  ↗";link.href=item.url||"#";link.target="_blank";link.rel="noopener noreferrer";
-  card.append(top,headline,summary,why,tags,link);radarList.appendChild(card);
+  const timestamp=document.createElement("time");timestamp.className="radar-time";timestamp.dateTime=item.published_at||"";timestamp.textContent=item.published_at?new Date(item.published_at).toLocaleString("zh-CN"):"时间未提供";
+  card.append(top,headline,generated,summary,oneLiner,why,tags,originalTitle,timestamp,link);if(window.RADAR_2_ENABLED)addRadarActions(card,item,"ai");radarList.appendChild(card);radarEvent(item,"item_view","ai");
+}
+let researchMinutes=20;
+async function loadResearch({query="",refresh=false}={}){
+  const list=document.querySelector("#research-list"),date=document.querySelector("#research-date"),intro=document.querySelector("#research-intro");
+  list.innerHTML='<div class="radar-empty">正在读取论文候选…</div>';
+  try{
+    const path=query?"/api/research/search?q="+encodeURIComponent(query)+"&limit=50":"/api/research/today?minutes="+researchMinutes+(refresh?"&refresh=true":"");
+    const response=await fetch(path,{cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.detail||"论文池读取失败");
+    const stamp=data.fetched_at?new Date(data.fetched_at*1000).toLocaleString("zh-CN"):"尚无缓存";
+    date.textContent=`候选池 ${data.pool_count||0} 篇 · ${query?`搜索「${query}」`:`约 ${researchMinutes} 分钟偏好`} · ${stamp} · 进程临时缓存`;
+    intro.textContent=data.source_errors&&Object.keys(data.source_errors).length?"论文源暂时不可用；如果已有候选缓存，仍可继续查看。":"候选来自 arXiv；排序不调用 LLM。社区趋势数据暂未接入，因此不会虚构热度。当前候选未推荐的内容保留在临时论文池中。";
+    list.replaceChildren();
+    if(!Array.isArray(data.items)||!data.items.length){list.innerHTML='<div class="radar-empty">当前候选池里没有匹配内容。可以换个关键词，或稍后刷新。</div>';return}
+    data.items.forEach(item=>{
+      const card=document.createElement("article");card.className="radar-card research-card radar-interactive-card";
+      const top=document.createElement("div");top.className="radar-top";const source=document.createElement("span");source.className="radar-company";source.textContent=(item.source_list||[item.source||"arXiv"]).join(" · ");const type=document.createElement("span");type.className="radar-score";type.textContent=item.content_type||"论文";top.append(source,type);
+      const title=document.createElement("div");title.className="radar-headline";title.textContent=item.title_zh||item.title_original||"未命名论文";
+      const badge=document.createElement("span");badge.className="radar-ai-badge";badge.textContent=item.ai_status==="ready"?"AI 生成 · 摘要":"论文原始来源";
+      if(item.exploration){const explore=document.createElement("span");explore.className="radar-ai-badge";explore.textContent="🌱 探索新主题";badge.append(" · ",explore)}
+      const desc=document.createElement("div");desc.className="radar-summary";desc.textContent=item.ai_status==="ready"?(item.summary_zh||""):(item.ai_status==="failed"?"中文摘要暂不可用；以下为论文原始摘要。\n":"")+(item.summary_original||"");
+      const originalTitle=document.createElement("div");originalTitle.className="research-original-title";if(item.title_zh&&item.title_zh!==item.title_original)originalTitle.textContent=item.title_original||"";
+      const meta=document.createElement("div");meta.className="research-paper-meta";meta.textContent=`${(item.authors||[]).slice(0,4).join(", ")}${(item.authors||[]).length>4?" 等":""} · ${item.published_at?new Date(item.published_at).toLocaleDateString("zh-CN"):"时间未提供"} · 速览约 ${item.est_read_min||"?"} 分钟`;
+      const tags=document.createElement("div");tags.className="radar-tags";[...(item.core_concepts||[]).slice(0,3),...(item.topics||[]).slice(0,3)].forEach(name=>{const tag=document.createElement("span");tag.className="radar-tag";tag.textContent=name;tags.appendChild(tag)});
+      (item.trusted_concept_links||[]).forEach(name=>{const tag=document.createElement("span");tag.className="radar-tag";tag.textContent="↔ 已学概念："+name;tags.appendChild(tag)});
+      const link=document.createElement("a");link.className="radar-source";link.href=item.url||"#";link.target="_blank";link.rel="noopener noreferrer";link.textContent="查看论文原文 ↗";link.addEventListener("click",()=>radarEvent(item,"open_original","research"));
+      const ask=document.createElement("button");ask.type="button";ask.className="research-ask";ask.textContent="✨ 询问 Aster";ask.addEventListener("click",()=>radarAsk({...item,title:item.title_original,summary:item.summary_original,source:"arXiv",category:"Research"},"research","meaning"));
+      card.append(top,title,badge,desc,originalTitle,meta,tags,link,ask);list.appendChild(card);radarEvent(item,"item_view","research");
+    });
+  }catch(error){list.innerHTML='<div class="radar-empty">Research 暂时无法读取，请稍后重试。单个论文源失败不会影响其他 Radar。</div>';console.error(error)}
+}
+document.querySelector("#research-refresh").addEventListener("click",()=>loadResearch({refresh:true}));
+document.querySelector("#research-search-form").addEventListener("submit",event=>{event.preventDefault();loadResearch({query:document.querySelector("#research-query").value.trim()})});
+document.querySelectorAll(".research-budget button").forEach(button=>button.addEventListener("click",()=>{researchMinutes=Number(button.dataset.minutes)||20;document.querySelectorAll(".research-budget button").forEach(item=>item.classList.toggle("selected",item===button));loadResearch()}));
+
+async function loadBtsArchive(){
+  btsList.replaceChildren();const empty=document.createElement("div");empty.className="bts-empty";empty.textContent="正在读取已存档内容…";btsList.appendChild(empty);
+  try{const response=await fetch("/api/bts-radar/archive?limit=50",{cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.detail||"读取归档失败");btsArchiveItems=Array.isArray(data.items)?data.items:[];renderFilteredBts()}
+  catch(error){btsArchiveItems=[];btsList.innerHTML='<div class="bts-empty">归档暂时无法读取；Timeline 和 Weverse 仍可使用。</div>';console.error(error)}
 }
 document.querySelector("#nav-radar").addEventListener("click",()=>{setWorkspace("radar");sidebar.classList.remove("open");});
+document.querySelector("#nav-bts").addEventListener("click",()=>{setWorkspace("bts");sidebar.classList.remove("open");});
+document.querySelector("#nav-research").hidden=!window.RADAR_2_ENABLED;
+document.querySelector("#nav-research").addEventListener("click",()=>{setWorkspace("research");sidebar.classList.remove("open");});
 document.querySelector("#nav-chat").addEventListener("click",()=>{setWorkspace("chat");sidebar.classList.remove("open");});
+document.querySelector("#bts-tabs").addEventListener("click",event=>{const button=event.target.closest("[data-section]");if(!button)return;btsSection=button.dataset.section;document.querySelectorAll(".bts-tab").forEach(item=>item.classList.toggle("active",item===button));if(btsSection==="archive")loadBtsArchive();else renderFilteredBts()});
+document.querySelector("#bts-refresh").addEventListener("click",async()=>{const button=document.querySelector("#bts-refresh");button.disabled=true;button.textContent="抓取中…";try{const response=await fetch("/api/bts-radar/refresh",{method:"POST"});const data=await response.json();if(!response.ok)throw new Error(data.detail||"抓取失败");btsItems=Array.isArray(data.items)?data.items:[];btsDate.textContent="更新于 "+new Date(data.generated_at||Date.now()).toLocaleString("zh-CN");renderFilteredBts()}catch(error){btsList.innerHTML='<div class="bts-empty">抓取暂不可用，请稍后重试。</div>';console.error(error)}finally{button.disabled=false;button.textContent="↻ 刷新"}});
 document.querySelector("#radar-refresh").addEventListener("click",async()=>{
   const btn=document.querySelector("#radar-refresh");btn.disabled=true;btn.textContent="整理中…";
   radarList.innerHTML='<div class="radar-empty">正在抓取并整理最新 AI 热点…</div>';
@@ -818,3 +1061,4 @@ loadRadar();
 </script>
 </body>
 </html>
+
