@@ -14,6 +14,7 @@ from memory.service import MemoryService
 from services.conversation_service import ConversationService
 from services.radar_service import RadarService
 from services.bts_radar_service import BTSRadarService
+from services.research_service import RESEARCH
 from pathlib import Path
 import hashlib
 import hmac
@@ -458,6 +459,32 @@ def ai_radar_story(body: RadarStoryIn):
 def ai_radar_history():
     return {"briefs": RADAR.history(limit=14), "server_time": int(time.time())}
 
+
+
+
+def _research_provider():
+    provider_config = CONFIG.active_provider
+    if not provider_config or not provider_config.is_configured:
+        return None
+    try:
+        candidate = create_provider(CONFIG.main_provider, CONFIG)
+        return candidate if candidate.is_available() else None
+    except Exception:
+        return None
+
+
+@app.get("/api/research/today")
+def research_today(minutes: int = 20, refresh: bool = False):
+    if not radar_2_enabled():
+        return {"status": "disabled", "items": [], "pool_count": 0}
+    return RESEARCH.recommended(minutes=max(1, min(minutes, 60)), force_refresh=refresh, provider=_research_provider())
+
+
+@app.get("/api/research/search")
+def research_search(q: str = "", limit: int = 50):
+    if not radar_2_enabled():
+        return {"status": "disabled", "items": [], "pool_count": 0, "result_count": 0}
+    return RESEARCH.search(q[:160], limit=max(1, min(limit, 100)))
 
 @app.get("/api/cron/ai-radar")
 def ai_radar_cron(request: Request):

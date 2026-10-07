@@ -101,6 +101,12 @@ body::after{
 .radar-source{display:block;margin-top:auto;padding-top:12px;font-size:10px;color:#687895;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none}
 .radar-source:hover{text-decoration:underline}
 .radar-empty{padding:32px 16px;text-align:center;border:1px dashed rgba(115,132,176,.22);border-radius:16px;color:#818da2;font-size:12px;grid-column:1/-1}
+.research-controls{margin:12px 0 18px;padding:14px 16px;border:1px solid rgba(255,255,255,.82);background:rgba(255,255,255,.48);border-radius:15px;color:#596780;font-size:12px}
+.research-ask{align-self:flex-start;margin-top:10px;padding:7px 10px;border:1px solid rgba(103,121,176,.2);border-radius:9px;background:rgba(255,255,255,.75);color:#596780;font-size:11px}
+#nav-research[hidden]{display:none!important}
+.research-controls form{display:flex;gap:8px;margin-top:8px}.research-controls input{flex:1;min-width:0;padding:10px 12px;border:1px solid rgba(103,121,176,.2);border-radius:10px;background:rgba(255,255,255,.8);color:#293650}.research-controls form button,.research-budget button{padding:8px 11px;border:1px solid rgba(103,121,176,.2);border-radius:9px;background:#fff;color:#44516a}.research-budget{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:11px;color:#7d879b}.research-budget button.selected{background:#e9edfb;border-color:#cbd5f2}.research-paper-meta{font-size:10px;color:#7f8ba0;margin-top:8px}.research-original-title{font-size:11px;color:#78849a;margin-top:5px;line-height:1.5}.research-card .radar-tags{margin-top:8px}
+.research-ask{align-self:flex-start;margin-top:10px;padding:7px 10px;border:1px solid rgba(103,121,176,.2);border-radius:9px;background:rgba(255,255,255,.75);color:#596780;font-size:11px}
+#nav-research[hidden]{display:none!important}
 .side-item.radar-active{background:rgba(255,255,255,.58);color:#2d3850}
 #radar[hidden]{display:none!important}
 @media(max-width:899px){.radar-view{padding:22px 14px 72px}.radar-head{align-items:flex-start}.radar-title{font-size:25px}.radar-list{grid-template-columns:1fr}.radar-refresh{padding:8px 10px}}
@@ -272,6 +278,7 @@ body::after{
       <button class="side-item active" id="nav-chat">⌂ <span>对话</span></button>
       <button class="side-item" id="nav-radar">✦ <span>AI Radar</span></button>
       <button class="side-item" id="nav-bts">🐨 <span>BTS 信息中心</span></button>
+      <button class="side-item" id="nav-research">📚 <span>Research</span></button>
     </nav>
     <div class="conversation-list" id="conversation-list">
       <div class="conversation-empty">还没有过去的对话</div>
@@ -304,6 +311,21 @@ body::after{
       </div>
       <div class="radar-intro" id="radar-intro">Aster 正在整理多源 AI 热点。</div>
       <div class="radar-list" id="radar-list"><div class="radar-empty">正在读取今日简报…</div></div>
+    </section>
+
+
+    <section id="research" class="radar-view" hidden>
+      <div class="radar-head">
+        <div><div class="radar-kicker">RESEARCH DISCOVERY</div><div class="radar-title">Research · 今日推荐</div><div class="radar-date" id="research-date">正在读取论文池…</div></div>
+        <button class="radar-refresh" id="research-refresh" type="button">↻ 更新候选</button>
+      </div>
+      <div class="radar-intro" id="research-intro">从 arXiv 论文候选中筛选近期值得了解的研究。这里没有未读任务、排行榜或连续阅读要求。</div>
+      <div class="research-controls">
+        <label for="research-query">在论文候选池中搜索</label>
+        <form id="research-search-form"><input id="research-query" type="search" placeholder="例如：Agent Memory、RAG" autocomplete="off"><button type="submit">搜索</button></form>
+        <div class="research-budget" aria-label="阅读时间偏好"><span>我现在有</span><button type="button" data-minutes="10">10 分钟</button><button type="button" class="selected" data-minutes="20">20 分钟</button><button type="button" data-minutes="30">30 分钟</button><span>· 软预算，可随时停止</span></div>
+      </div>
+      <div class="radar-list" id="research-list"><div class="radar-empty">正在读取 Research Pool…</div></div>
     </section>
 
 
@@ -466,15 +488,19 @@ form.addEventListener("submit",event=>{event.preventDefault();sendMessage();});
 function setWorkspace(view){
   const showingRadar=view==="radar";
   const showingBts=view==="bts";
+  const showingResearch=view==="research";
   radarView.hidden=!showingRadar;
   btsRadarView.hidden=!showingBts;
-  chat.style.display=(showingRadar||showingBts)?"none":"flex";
-  document.querySelector(".composer-wrap").style.display=(showingRadar||showingBts)?"none":"block";
-  document.querySelector("#nav-chat").classList.toggle("active",!showingRadar&&!showingBts);
+  document.querySelector("#research").hidden=!showingResearch;
+  chat.style.display=(showingRadar||showingBts||showingResearch)?"none":"flex";
+  document.querySelector(".composer-wrap").style.display=(showingRadar||showingBts||showingResearch)?"none":"block";
+  document.querySelector("#nav-chat").classList.toggle("active",!showingRadar&&!showingBts&&!showingResearch);
   document.querySelector("#nav-radar").classList.toggle("radar-active",showingRadar);
   document.querySelector("#nav-bts").classList.toggle("radar-active",showingBts);
+  document.querySelector("#nav-research").classList.toggle("radar-active",showingResearch);
   if(showingRadar)loadRadar();
   if(showingBts)loadBtsRadar();
+  if(showingResearch)loadResearch();
 }
 
 
@@ -513,7 +539,7 @@ function addRadarActions(card,item,radarType){
   const ask=document.createElement("button");ask.type="button";ask.textContent="✨ 问问 Aster";ask.addEventListener("click",()=>radarAsk(item,radarType,"meaning"));actions.appendChild(ask);
   [["☆ 收藏","item_favorite"],["不感兴趣","item_dislike"]].forEach(([label,type])=>{const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{radarEvent(item,type,radarType);button.classList.toggle("selected")});actions.appendChild(button)});
   const details=document.createElement("details");details.className="radar-action-menu";const summary=document.createElement("summary");summary.textContent="⋯";details.appendChild(summary);
-  [["meaning","这是什么意思"],["summary","三句话总结"],["story","讲讲背景故事"],["why","为什么重要"],["relation","和之前有什么联系"]].forEach(([key,label])=>{const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{details.open=false;if(radarType==="ai"&&key==="story")showRadarStory(card,item);else radarAsk(item,radarType,key)});details.appendChild(button)});
+  [["meaning","这是什么意思"],["summary","三句话总结"],["story","讲讲背景故事"],["why","为什么重要"],["relation","和之前有什么联系"]].forEach(([key,label])=>{const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{details.open=false;if((radarType==="ai"||radarType==="research")&&key==="story")showRadarStory(card,item);else radarAsk(item,radarType,key)});details.appendChild(button)});
   const original=item.preferred_url||item.original_url||item.url;if(original){const link=document.createElement("a");link.href=original;link.target="_blank";link.rel="noopener noreferrer";link.textContent="打开原文 ↗";link.addEventListener("click",()=>radarEvent(item,"open_original",radarType));details.appendChild(link)}
   actions.appendChild(details);card.appendChild(actions);
   const toggle=document.createElement("button");toggle.type="button";toggle.className="radar-expand";toggle.textContent="展开";toggle.addEventListener("click",()=>{card.classList.toggle("expanded");toggle.textContent=card.classList.contains("expanded")?"收起":"展开"});card.appendChild(toggle);
@@ -643,6 +669,37 @@ function renderRadarCard(item){
   const timestamp=document.createElement("time");timestamp.className="radar-time";timestamp.dateTime=item.published_at||"";timestamp.textContent=item.published_at?new Date(item.published_at).toLocaleString("zh-CN"):"时间未提供";
   card.append(top,headline,generated,summary,oneLiner,why,tags,originalTitle,timestamp,link);if(window.RADAR_2_ENABLED)addRadarActions(card,item,"ai");radarList.appendChild(card);radarEvent(item,"item_view","ai");
 }
+let researchMinutes=20;
+async function loadResearch({query="",refresh=false}={}){
+  const list=document.querySelector("#research-list"),date=document.querySelector("#research-date"),intro=document.querySelector("#research-intro");
+  list.innerHTML='<div class="radar-empty">正在读取论文候选…</div>';
+  try{
+    const path=query?"/api/research/search?q="+encodeURIComponent(query)+"&limit=50":"/api/research/today?minutes="+researchMinutes+(refresh?"&refresh=true":"");
+    const response=await fetch(path,{cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.detail||"论文池读取失败");
+    const stamp=data.fetched_at?new Date(data.fetched_at*1000).toLocaleString("zh-CN"):"尚无缓存";
+    date.textContent=`候选池 ${data.pool_count||0} 篇 · ${query?`搜索「${query}」`:`约 ${researchMinutes} 分钟偏好`} · ${stamp} · 进程临时缓存`;
+    intro.textContent=data.source_errors&&Object.keys(data.source_errors).length?"论文源暂时不可用；如果已有候选缓存，仍可继续查看。":"候选来自 arXiv；排序不调用 LLM。社区趋势数据暂未接入，因此不会虚构热度。当前候选未推荐的内容保留在临时论文池中。";
+    list.replaceChildren();
+    if(!Array.isArray(data.items)||!data.items.length){list.innerHTML='<div class="radar-empty">当前候选池里没有匹配内容。可以换个关键词，或稍后刷新。</div>';return}
+    data.items.forEach(item=>{
+      const card=document.createElement("article");card.className="radar-card research-card radar-interactive-card";
+      const top=document.createElement("div");top.className="radar-top";const source=document.createElement("span");source.className="radar-company";source.textContent=(item.source_list||[item.source||"arXiv"]).join(" · ");const type=document.createElement("span");type.className="radar-score";type.textContent=item.content_type||"论文";top.append(source,type);
+      const title=document.createElement("div");title.className="radar-headline";title.textContent=item.title_zh||item.title_original||"未命名论文";
+      const badge=document.createElement("span");badge.className="radar-ai-badge";badge.textContent=item.ai_status==="ready"?"AI 生成 · 摘要":"论文原始来源";
+      const desc=document.createElement("div");desc.className="radar-summary";desc.textContent=item.ai_status==="ready"?(item.summary_zh||""):(item.ai_status==="failed"?"中文摘要暂不可用；以下为论文原始摘要。\n":"")+(item.summary_original||"");
+      const originalTitle=document.createElement("div");originalTitle.className="research-original-title";if(item.title_zh&&item.title_zh!==item.title_original)originalTitle.textContent=item.title_original||"";
+      const meta=document.createElement("div");meta.className="research-paper-meta";meta.textContent=`${(item.authors||[]).slice(0,4).join(", ")}${(item.authors||[]).length>4?" 等":""} · ${item.published_at?new Date(item.published_at).toLocaleDateString("zh-CN"):"时间未提供"} · 速览约 ${item.est_read_min||"?"} 分钟`;
+      const tags=document.createElement("div");tags.className="radar-tags";[...(item.core_concepts||[]).slice(0,3),...(item.topics||[]).slice(0,3)].forEach(name=>{const tag=document.createElement("span");tag.className="radar-tag";tag.textContent=name;tags.appendChild(tag)});
+      const link=document.createElement("a");link.className="radar-source";link.href=item.url||"#";link.target="_blank";link.rel="noopener noreferrer";link.textContent="查看论文原文 ↗";link.addEventListener("click",()=>radarEvent(item,"open_original","research"));
+      const ask=document.createElement("button");ask.type="button";ask.className="research-ask";ask.textContent="✨ 询问 Aster";ask.addEventListener("click",()=>radarAsk({...item,title:item.title_original,summary:item.summary_original,source:"arXiv",category:"Research"},"research","meaning"));
+      card.append(top,title,badge,desc,originalTitle,meta,tags,link,ask);list.appendChild(card);radarEvent(item,"item_view","research");
+    });
+  }catch(error){list.innerHTML='<div class="radar-empty">Research 暂时无法读取，请稍后重试。单个论文源失败不会影响其他 Radar。</div>';console.error(error)}
+}
+document.querySelector("#research-refresh").addEventListener("click",()=>loadResearch({refresh:true}));
+document.querySelector("#research-search-form").addEventListener("submit",event=>{event.preventDefault();loadResearch({query:document.querySelector("#research-query").value.trim()})});
+document.querySelectorAll(".research-budget button").forEach(button=>button.addEventListener("click",()=>{researchMinutes=Number(button.dataset.minutes)||20;document.querySelectorAll(".research-budget button").forEach(item=>item.classList.toggle("selected",item===button));loadResearch()}));
+
 async function loadBtsArchive(){
   btsList.replaceChildren();const empty=document.createElement("div");empty.className="bts-empty";empty.textContent="正在读取已存档内容…";btsList.appendChild(empty);
   try{const response=await fetch("/api/bts-radar/archive?limit=50",{cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.detail||"读取归档失败");btsArchiveItems=Array.isArray(data.items)?data.items:[];renderFilteredBts()}
@@ -650,6 +707,8 @@ async function loadBtsArchive(){
 }
 document.querySelector("#nav-radar").addEventListener("click",()=>{setWorkspace("radar");sidebar.classList.remove("open");});
 document.querySelector("#nav-bts").addEventListener("click",()=>{setWorkspace("bts");sidebar.classList.remove("open");});
+document.querySelector("#nav-research").hidden=!window.RADAR_2_ENABLED;
+document.querySelector("#nav-research").addEventListener("click",()=>{setWorkspace("research");sidebar.classList.remove("open");});
 document.querySelector("#nav-chat").addEventListener("click",()=>{setWorkspace("chat");sidebar.classList.remove("open");});
 document.querySelector("#bts-tabs").addEventListener("click",event=>{const button=event.target.closest("[data-section]");if(!button)return;btsSection=button.dataset.section;document.querySelectorAll(".bts-tab").forEach(item=>item.classList.toggle("active",item===button));if(btsSection==="archive")loadBtsArchive();else renderFilteredBts()});
 document.querySelector("#bts-refresh").addEventListener("click",async()=>{const button=document.querySelector("#bts-refresh");button.disabled=true;button.textContent="抓取中…";try{const response=await fetch("/api/bts-radar/refresh",{method:"POST"});const data=await response.json();if(!response.ok)throw new Error(data.detail||"抓取失败");btsItems=Array.isArray(data.items)?data.items:[];btsDate.textContent="更新于 "+new Date(data.generated_at||Date.now()).toLocaleString("zh-CN");renderFilteredBts()}catch(error){btsList.innerHTML='<div class="bts-empty">抓取暂不可用，请稍后重试。</div>';console.error(error)}finally{button.disabled=false;button.textContent="↻ 刷新"}});

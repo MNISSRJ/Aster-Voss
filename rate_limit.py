@@ -160,6 +160,8 @@ def rate_limit_rule(method: str, path: str):
     exact = {
         ("POST", "/api/chat"): ("chat", 30, 60),
         ("POST", "/api/ai-radar/refresh"): ("radar_refresh", 6, 60),
+        ("GET", "/api/research/today"): ("research_refresh", 6, 60),
+        ("GET", "/api/research/search"): ("research_search", 30, 60),
         ("POST", "/api/ai-radar/story"): ("radar_story", 10, 60),
         ("POST", "/api/radar/events"): ("radar_events", 60, 60),
         ("POST", "/api/memory"): ("memory_write", 20, 60),
