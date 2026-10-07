@@ -17,5 +17,9 @@ class BTSRadarRepository:
     def today(self, user_id: str | None = None):
         return cloud.list_bts_radar_items(limit=30, user_id=user_id or self.default_user_id)
 
+    def history(self, user_id: str | None = None, limit: int = 50):
+        return cloud.list_bts_radar_items(limit=min(max(int(limit), 1), 50), user_id=user_id or self.default_user_id)
+
     def sources(self):
         return cloud.list_bts_radar_sources(limit=20) or SOURCES
+

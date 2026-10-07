@@ -5,7 +5,7 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 
-from bts_radar import SOURCES, collect_candidates, summarize
+from bts_radar import SOURCES, classify_importance, collect_candidates, summarize
 from memory import cloud
 
 
@@ -17,6 +17,8 @@ class BTSRadarService:
 
     def generate(self, provider=None):
         items = collect_candidates()
+        for item in items:
+            item["importance_level"] = classify_importance(item)
         items = summarize(provider, items)
         saved = bool(self.repository.save(items, self.user_id)) if cloud.enabled() else False
         return {
@@ -49,6 +51,8 @@ class BTSRadarService:
         fresh = summarize(None, collect_candidates())
         by_id.update({str(item.get("id")): item for item in fresh if item.get("id")})
         items = list(by_id.values())
+        for item in items:
+            item["importance_level"] = classify_importance(item)
         items.sort(
             key=lambda item: item.get("published_at") or item.get("discovered_at") or "",
             reverse=True,
@@ -63,3 +67,15 @@ class BTSRadarService:
                 "items": items,
             }
         return {"status": "empty", "generated_at": None, "source_count": len(SOURCES), "item_count": 0, "items": []}
+
+    def archive(self, limit: int = 50):
+        history = getattr(self.repository, "history", None)
+        if not callable(history):
+            return {"status": "empty", "item_count": 0, "items": []}
+        items = history(self.user_id, limit)
+        items = [item for item in items if item.get("source_type") not in {"instagram", "tiktok"}]
+        for item in items:
+            item["importance_level"] = classify_importance(item)
+        items.sort(key=lambda item: item.get("published_at") or item.get("discovered_at") or "", reverse=True)
+        return {"status": "ready" if items else "empty", "item_count": len(items), "items": items[:limit]}
+

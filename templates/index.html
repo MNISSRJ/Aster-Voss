@@ -254,6 +254,7 @@ body::after{
 .bts-head{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;margin-bottom:18px}.bts-kicker{font-size:10px;font-weight:800;letter-spacing:.16em;color:#8a78a6;text-transform:uppercase}.bts-title{font-size:31px;letter-spacing:-.8px;margin-top:5px;color:#293650}.bts-date{font-size:12px;color:#7b879d;margin-top:5px}.bts-refresh{border:1px solid rgba(125,103,176,.20);background:rgba(255,255,255,.60);color:#51466a;border-radius:12px;padding:9px 13px;font-size:12px;box-shadow:0 5px 18px rgba(88,103,157,.06)}.bts-refresh:hover{background:rgba(255,255,255,.80);transform:translateY(-1px)}
 .bts-intro{padding:13px 15px;border:1px solid rgba(255,255,255,.72);background:rgba(255,255,255,.38);border-radius:14px;color:#66728a;font-size:12px;line-height:1.65;margin-bottom:15px}.bts-list{display:flex;flex-direction:column;gap:11px}.bts-card{padding:16px 17px;border:1px solid rgba(255,255,255,.78);background:rgba(255,255,255,.48);border-radius:17px;box-shadow:0 8px 24px rgba(88,103,157,.05);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}.bts-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.bts-badges{display:flex;gap:6px;flex-wrap:wrap}.bts-badge{font-size:9px;border-radius:999px;padding:4px 7px;background:rgba(111,91,151,.10);color:#66537e}.bts-badge.official{background:rgba(89,139,111,.10);color:#4e775f}.bts-time{font-size:9px;color:#8b96aa;white-space:nowrap}.bts-headline{font-size:15px;font-weight:720;line-height:1.5;color:#34405a}.bts-summary{font-size:11.5px;line-height:1.65;color:#758198;margin-top:6px}.bts-source-row{display:flex;align-items:center;gap:10px;margin-top:11px}.bts-source{font-size:10px;color:#667aff;text-decoration:none}.bts-source:hover{text-decoration:underline}.bts-original{font-size:9px;color:#98a1b1}.bts-empty{padding:40px 12px;text-align:center;color:#96a0b1;font-size:11px}
 .bts-filters{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}.bts-filter{border:1px solid rgba(125,103,176,.18);background:rgba(255,255,255,.42);color:#66728a;border-radius:999px;padding:7px 11px;font-size:11px}.bts-filter.active{background:#66537e;color:#fff}.bts-provenance{font-size:9px;color:#8b96aa}
+.bts-card.importance-a{border-left:3px solid #6c5dd3}.bts-card.importance-b{padding:13px 15px}.bts-product-details{margin-top:8px;padding:9px 11px;border-radius:10px;background:rgba(111,91,151,.06);color:#758198;font-size:10px;line-height:1.8}.bts-product-details summary{cursor:pointer;color:#66537e;font-weight:650}.bts-product-details a{display:inline-block;margin-top:5px;color:#667aff;text-decoration:none}
 .bts-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 16px}.bts-tab{border:1px solid rgba(125,103,176,.18);background:rgba(255,255,255,.42);color:#66728a;border-radius:999px;padding:8px 13px;font-size:11px}.bts-tab.active{background:#66537e;color:#fff}.bts-social-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:11px}.bts-social-card{padding:16px;border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.48);border-radius:16px}.bts-social-name{font-weight:750;color:#34405a;margin-bottom:10px}.bts-social-links{display:flex;gap:8px;flex-wrap:wrap}.bts-social-link{font-size:11px;text-decoration:none;color:#66537e;padding:7px 9px;border-radius:9px;background:rgba(111,91,151,.09)}.bts-social-note{font-size:10px;color:#929caf;line-height:1.5;margin-top:9px}.bts-hot-links{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 14px}
 @media(max-width:899px){.bts-view{padding:22px 14px 86px}.bts-head{align-items:flex-start}.bts-title{font-size:26px}.bts-card{padding:14px}.bts-card-top{align-items:flex-start}.bts-time{white-space:normal;text-align:right}}
 .radar-card.importance-c:not(.expanded) .radar-summary,.radar-card.importance-c:not(.expanded) .radar-one-liner,.radar-card.importance-c:not(.expanded) .radar-tags{display:none}
@@ -317,7 +318,7 @@ body::after{
       </div>
       <div class="bts-intro" id="bts-intro">自动时间线只收录官方与 Weverse 来源；Instagram / TikTok 提供本人账号入口，热门报道会标明媒体出处。</div>
       <nav class="bts-tabs" id="bts-tabs" aria-label="信息中心分区">
-        <button class="bts-tab active" data-section="timeline">官方时间线</button><button class="bts-tab" data-section="weverse">Weverse</button><button class="bts-tab" data-section="social">Social</button><button class="bts-tab" data-section="popular">媒体与热搜</button>
+        <button class="bts-tab active" data-section="timeline">Timeline</button><button class="bts-tab" data-section="weverse">Weverse</button><button class="bts-tab" data-section="social">Social</button><button class="bts-tab" data-section="archive">Archive</button>
       </nav>
       <div class="bts-hot-links" id="bts-hot-links" hidden><span class="bts-social-note">自动收录近期媒体报道；微博和 X 提供站外搜索入口，不代表实时热度榜。</span><a class="bts-social-link" href="https://s.weibo.com/weibo?q=BTS" target="_blank" rel="noopener noreferrer">微博搜索 BTS ↗</a><a class="bts-social-link" href="https://x.com/search?q=BTS&src=typed_query" target="_blank" rel="noopener noreferrer">X 搜索 BTS ↗</a></div>
       <div class="bts-hot-links" id="bts-weverse-links" hidden><a class="bts-social-link" href="https://weverse.io/bts/notice?hl=zh-cn" target="_blank" rel="noopener noreferrer">官方公告 ↗</a><a class="bts-social-link" href="https://shop.weverse.io/zh-cn/shop/CNY/artists/2/notices" target="_blank" rel="noopener noreferrer">Weverse Shop ↗</a><a class="bts-social-link" href="https://weverse.io/bts/artist" target="_blank" rel="noopener noreferrer">成员帖子 ↗</a><a class="bts-social-link" href="https://weverse.io/bts/live" target="_blank" rel="noopener noreferrer">LIVE ↗</a></div>
@@ -387,7 +388,7 @@ const btsDate=document.querySelector("#bts-date");
 const btsSocialGrid=document.querySelector("#bts-social-grid");
 const btsHotLinks=document.querySelector("#bts-hot-links");
 const btsWeverseLinks=document.querySelector("#bts-weverse-links");
-let btsItems=[];let btsSources=[];let btsSection="timeline";
+let btsItems=[];let btsArchiveItems=[];let btsSources=[];let btsSection="timeline";
 
 function scrollChat(){
   requestAnimationFrame(()=>{chat.scrollTo({top:chat.scrollHeight,behavior:"smooth"});});
@@ -520,11 +521,12 @@ function addRadarActions(card,item,radarType){
   card.addEventListener("click",event=>{if(!event.target.closest("a,button,summary"))radarEvent(item,"item_click",radarType)});
 }
 function renderBtsCard(item){
-  const card=document.createElement("article");card.className="bts-card radar-interactive-card";
+  const tier=item.importance_level||"B";
+  const card=document.createElement("article");card.className="bts-card radar-interactive-card importance-"+tier.toLowerCase();
   const top=document.createElement("div");top.className="bts-card-top";
   const badges=document.createElement("div");badges.className="bts-badges";
   const official=document.createElement("span");official.className="bts-badge official";official.textContent=item.verification_status==="reported_by_media"?"媒体报道":(item.verification_status==="verified_official"?"✓ 官方核验":"来源已标注");
-  const category=document.createElement("span");category.className="bts-badge";category.textContent=item.member&&item.member!=="BTS"?item.member:(item.category||"官宣");
+  const category=document.createElement("span");category.className="bts-badge";category.textContent=tier+" · "+(item.member&&item.member!=="BTS"?item.member:(item.category||"官宣"));
   const source=document.createElement("span");source.className="bts-badge";source.textContent=item.source_name||"Weverse";
   badges.append(official,category,source);
   const time=document.createElement("span");time.className="bts-time";time.textContent=formatBtsDate(item.published_at||item.discovered_at);
@@ -538,17 +540,31 @@ function renderBtsCard(item){
     const original=document.createElement("a");original.className="bts-original";original.textContent="原始页面";original.href=item.original_url;original.target="_blank";original.rel="noopener noreferrer";links.appendChild(original);
   }
   if(item.provenance_url){const proof=document.createElement("a");proof.className="bts-provenance";proof.textContent="账号核验来源";proof.href=item.provenance_url;proof.target="_blank";proof.rel="noopener noreferrer";links.appendChild(proof)}
-  card.append(top,headline,summary,links);if(window.RADAR_2_ENABLED)addRadarActions(card,item,"bts");btsList.appendChild(card);radarEvent(item,"item_view","bts");
+  card.append(top,headline);
+  if(tier==="C"){
+    const details=document.createElement("details");details.className="bts-product-details";
+    const toggle=document.createElement("summary");toggle.textContent="展开商品与销售信息";details.appendChild(toggle);
+    const product=document.createElement("div");product.textContent="商品："+(item.product||item.title||"原文未提供");details.appendChild(product);
+    const sale=document.createElement("div");sale.textContent="销售时间："+(item.sale_time||item.sales_time||"原文未提供");details.appendChild(sale);
+    const channel=document.createElement("div");channel.textContent="购买渠道："+(item.purchase_channel||item.source_name||"以原文为准");details.appendChild(channel);
+    if(item.preferred_url||item.original_url)details.appendChild(preferred);
+    card.append(details);
+  }else{
+    card.append(summary,links);
+    if(window.RADAR_2_ENABLED)addRadarActions(card,item,"bts");
+  }
+  btsList.appendChild(card);radarEvent(item,"item_view","bts");
 }
 function renderFilteredBts(){
   btsSocialGrid.hidden=btsSection!=="social";
   btsList.hidden=btsSection==="social";
-  btsHotLinks.hidden=btsSection!=="popular";
+  btsHotLinks.hidden=btsSection!=="timeline";
   btsWeverseLinks.hidden=btsSection!=="weverse";
   if(btsSection==="social"){renderBtsSocial();return}
-  const visible=btsItems.filter(item=>btsSection==="popular"?item.source_type==="media":btsSection==="weverse"?String(item.source_type||"").startsWith("weverse"):item.source_type!=="media");
+  const sourceItems=btsSection==="archive"?btsArchiveItems:btsItems;
+  const visible=sourceItems.filter(item=>btsSection==="weverse"?String(item.source_type||"").startsWith("weverse"):true);
   btsList.replaceChildren();
-  if(!visible.length){const empty=document.createElement("div");empty.className="bts-empty";empty.textContent=btsSection==="popular"?"暂时没有找到符合收录条件的近期媒体报道。":btsSection==="weverse"?"Weverse 暂无可读取的新动态；这里仍保留官方 Weverse 入口。":"暂时没有新的官方动态；可查看 Weverse 或热门报道分区。";btsList.appendChild(empty);return}
+  if(!visible.length){const empty=document.createElement("div");empty.className="bts-empty";empty.textContent=btsSection==="archive"?"暂无已存档的历史内容。":btsSection==="weverse"?"Weverse 暂无可读取的新动态；这里仍保留官方 Weverse 入口。":"今天暂无新的重要官方动态；下方保留媒体报道与站外搜索入口。";btsList.appendChild(empty);return}
   visible.forEach(renderBtsCard);
 }
 function renderBtsSocial(){
@@ -627,10 +643,15 @@ function renderRadarCard(item){
   const timestamp=document.createElement("time");timestamp.className="radar-time";timestamp.dateTime=item.published_at||"";timestamp.textContent=item.published_at?new Date(item.published_at).toLocaleString("zh-CN"):"时间未提供";
   card.append(top,headline,generated,summary,oneLiner,why,tags,originalTitle,timestamp,link);if(window.RADAR_2_ENABLED)addRadarActions(card,item,"ai");radarList.appendChild(card);radarEvent(item,"item_view","ai");
 }
+async function loadBtsArchive(){
+  btsList.replaceChildren();const empty=document.createElement("div");empty.className="bts-empty";empty.textContent="正在读取已存档内容…";btsList.appendChild(empty);
+  try{const response=await fetch("/api/bts-radar/archive?limit=50",{cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.detail||"读取归档失败");btsArchiveItems=Array.isArray(data.items)?data.items:[];renderFilteredBts()}
+  catch(error){btsArchiveItems=[];btsList.innerHTML='<div class="bts-empty">归档暂时无法读取；Timeline 和 Weverse 仍可使用。</div>';console.error(error)}
+}
 document.querySelector("#nav-radar").addEventListener("click",()=>{setWorkspace("radar");sidebar.classList.remove("open");});
 document.querySelector("#nav-bts").addEventListener("click",()=>{setWorkspace("bts");sidebar.classList.remove("open");});
 document.querySelector("#nav-chat").addEventListener("click",()=>{setWorkspace("chat");sidebar.classList.remove("open");});
-document.querySelector("#bts-tabs").addEventListener("click",event=>{const button=event.target.closest("[data-section]");if(!button)return;btsSection=button.dataset.section;document.querySelectorAll(".bts-tab").forEach(item=>item.classList.toggle("active",item===button));renderFilteredBts()});
+document.querySelector("#bts-tabs").addEventListener("click",event=>{const button=event.target.closest("[data-section]");if(!button)return;btsSection=button.dataset.section;document.querySelectorAll(".bts-tab").forEach(item=>item.classList.toggle("active",item===button));if(btsSection==="archive")loadBtsArchive();else renderFilteredBts()});
 document.querySelector("#bts-refresh").addEventListener("click",async()=>{const button=document.querySelector("#bts-refresh");button.disabled=true;button.textContent="抓取中…";try{const response=await fetch("/api/bts-radar/refresh",{method:"POST"});const data=await response.json();if(!response.ok)throw new Error(data.detail||"抓取失败");btsItems=Array.isArray(data.items)?data.items:[];btsDate.textContent="更新于 "+new Date(data.generated_at||Date.now()).toLocaleString("zh-CN");renderFilteredBts()}catch(error){btsList.innerHTML='<div class="bts-empty">抓取暂不可用，请稍后重试。</div>';console.error(error)}finally{button.disabled=false;button.textContent="↻ 刷新"}});
 document.querySelector("#radar-refresh").addEventListener("click",async()=>{
   const btn=document.querySelector("#radar-refresh");btn.disabled=true;btn.textContent="整理中…";
@@ -979,3 +1000,4 @@ loadRadar();
 </script>
 </body>
 </html>
+

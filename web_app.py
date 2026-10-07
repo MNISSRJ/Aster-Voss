@@ -386,6 +386,11 @@ def bts_radar_sources():
     return {"sources": BTS_RADAR.repository.sources(), "server_time": int(time.time())}
 
 
+@app.get("/api/bts-radar/archive")
+def bts_radar_archive(limit: int = 50):
+    return BTS_RADAR.archive(limit=max(1, min(limit, 50)))
+
+
 @app.post("/api/radar/events")
 def radar_event(body: RadarEventIn):
     allowed = {"item_view", "item_click", "item_favorite", "item_dislike", "ask_aster", "open_original"}
@@ -628,3 +633,4 @@ def capabilities():
         "automations": list_automations(),
         "server_time": int(time.time()),
     }
+

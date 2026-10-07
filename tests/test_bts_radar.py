@@ -1,4 +1,4 @@
-from bts_radar import SOURCES, _extract, _extract_media, _extract_social_posts, collect_candidates
+from bts_radar import SOURCES, _extract, _extract_media, _extract_social_posts, classify_importance, collect_candidates, summarize
 from services.bts_radar_service import BTSRadarService
 
 
@@ -138,3 +138,71 @@ def test_today_refreshes_feed_and_filters_legacy_social_posts(monkeypatch):
     result = service.today()
     assert result["item_count"] == 2
     assert [item["id"] for item in result["items"]] == ["member-1", "notice-1"]
+
+
+def test_bts_importance_rules_put_major_events_a_products_c_and_unknown_b():
+    assert classify_importance({"source_type": "weverse", "official": True, "title": "BTS WORLD TOUR announcement"}) == "A"
+    assert classify_importance({"source_type": "weverse_live", "official": True, "title": "Good night LIVE"}) == "B"
+    assert classify_importance({"source_type": "weverse_shop", "official": True, "title": "BTS merch"}) == "C"
+    assert classify_importance({"source_type": "unknown", "official": True, "title": "Mystery update"}) == "B"
+
+
+def test_bts_summarization_only_calls_llm_for_a_tier_and_fences_source_text():
+    import json
+    from types import SimpleNamespace
+
+    class Provider:
+        def __init__(self):
+            self.messages = None
+        def is_available(self):
+            return True
+        def complete(self, messages, **kwargs):
+            self.messages = messages
+            return SimpleNamespace(text=json.dumps({"items": [{"candidate": 1, "summary_zh": "官方宣布巡演。"}]}))
+
+    provider = Provider()
+    items = [
+        {"title": "BTS WORLD TOUR announcement", "category": "演出", "source_type": "weverse", "official": True,
+         "importance_level": "A", "preferred_url": "https://weverse.io/bts/notice/1"},
+        {"title": "BTS merch", "category": "周边", "source_type": "weverse_shop", "official": True,
+         "importance_level": "C", "preferred_url": "https://shop.weverse.io/notice/2", "summary_zh": "原文摘要"},
+    ]
+    result = summarize(provider, items)
+    assert result[0]["summary_zh"] == "官方宣布巡演。"
+    assert result[1]["summary_zh"] == "原文摘要"
+    prompt = provider.messages[1].content
+    assert "UNTRUSTED SOURCE CONTENT" in prompt
+    assert "BTS merch" not in prompt
+
+
+def test_social_sources_are_built_only_from_the_official_account_whitelist():
+    import json
+    from pathlib import Path
+
+    config = json.loads((Path(__file__).parents[1] / "config" / "official_accounts.json").read_text(encoding="utf-8"))
+    approved = {(row["name"], platform, account["handle"])
+                for row in config["members"]
+                for platform, account in row.get("accounts", {}).items()
+                if account.get("verified") is True}
+    actual = {(source["member"], source["source_type"], source["url"].rstrip("/").split("/")[-1].lstrip("@"))
+              for source in SOURCES if source["source_type"] in {"instagram", "tiktok"}}
+    assert actual == approved
+
+
+def test_archive_uses_read_only_repository_history_and_excludes_social_items():
+    class Repo:
+        def history(self, user_id, limit):
+            assert user_id == "test"
+            assert limit == 20
+            return [
+                {"id": "archive-notice", "source_type": "weverse", "official": True,
+                 "title": "BTS WORLD TOUR announcement", "published_at": "2026-10-01T00:00:00Z"},
+                {"id": "legacy-social", "source_type": "instagram", "official": True,
+                 "title": "A social post"},
+            ]
+
+    result = BTSRadarService(repository=Repo(), user_id="test").archive(20)
+    assert result["status"] == "ready"
+    assert [item["id"] for item in result["items"]] == ["archive-notice"]
+    assert result["items"][0]["importance_level"] == "A"
+

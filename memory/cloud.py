@@ -396,6 +396,9 @@ def save_bts_radar_items(items: list[dict], user_id: str = DEFAULT_USER_ID) -> b
             row = dict(item)
             row.pop("source_url", None)
             row.pop("language", None)
+            # Presentation-only fields are computed at read time and are not
+            # assumed to exist in older Preview or Production schemas.
+            row.pop("importance_level", None)
             row["user_id"] = user_id
             row["updated_at"] = now
             rows.append(row)
@@ -417,6 +420,7 @@ def list_bts_radar_items(limit: int = 30, user_id: str = DEFAULT_USER_ID) -> lis
         return rows if isinstance(rows, list) else []
     except Exception:
         return []
+
 
 
 def list_bts_radar_sources(limit: int = 20) -> list[dict]:
