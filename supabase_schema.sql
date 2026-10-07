@@ -232,4 +232,7 @@ create table if not exists public.bts_radar_items (
 create index if not exists bts_radar_items_user_discovered_idx
   on public.bts_radar_items (user_id, discovered_at desc);
 
-create 
+create index if not exists bts_radar_items_dedupe_idx
+  on public.bts_radar_items (dedupe_hash);
+
+alter table public.bts_radar_items enable row level security;

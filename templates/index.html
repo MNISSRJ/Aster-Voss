@@ -112,4 +112,848 @@ body::after{
 
 .main{flex:1;min-width:0;position:relative}
 .topbar{
-  height:64px;display:flex;align-items:center;justify-content:space-
+  height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;
+  border-bottom:1px solid rgba(128,142,184,.14);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)
+}
+.brand{display:flex;align-items:center;gap:10px}.brand-name{font-size:16px;font-weight:700}.brand-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.top-actions{display:flex;align-items:center;gap:7px}.new{
+  border:1px solid rgba(103,121,176,.18);background:rgba(255,255,255,.48);color:#34405a;
+  border-radius:11px;padding:9px 12px;font-size:13px;font-weight:650
+}
+.new:hover{background:rgba(255,255,255,.68)}.mobile-menu{display:none;border:0;background:transparent;color:#56657f;font-size:22px}
+
+.chat{
+  height:calc(100vh - 64px);overflow-y:auto;scrollbar-width:none;
+  padding:28px min(7vw,90px) 142px;display:flex;flex-direction:column;gap:14px
+}
+.chat::-webkit-scrollbar{display:none}
+.msg{max-width:78%;font-size:15.5px;line-height:1.7;word-break:break-word;white-space:pre-wrap;animation:msgIn .18s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.u{
+  align-self:flex-end;color:white;padding:10px 14px;border-radius:19px 19px 6px 19px;
+  background:linear-gradient(135deg,#667aff,#8b6cff 58%,#54c6ff);box-shadow:0 8px 25px rgba(100,119,255,.18)
+}
+.a{
+  align-self:flex-start;padding:12px 15px;border-radius:18px;color:#2f3b54;
+  background:rgba(255,255,255,.48);border:1px solid rgba(255,255,255,.78);
+  box-shadow:0 9px 28px rgba(88,103,157,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)
+}
+.welcome{
+  max-width:min(650px,90%);color:#60708b;background:rgba(255,255,255,.52)
+}
+.thinking{
+  display:flex!important;align-items:center;gap:12px;width:max-content;max-width:none;
+  position:relative;overflow:hidden
+}
+.thinking::after{
+  content:"";position:absolute;inset:-70% -30%;
+  background:linear-gradient(110deg,transparent 38%,rgba(255,255,255,.72) 50%,transparent 62%);
+  transform:translateX(-80%);animation:sweep 2.2s ease-in-out infinite
+}
+@keyframes sweep{0%,25%{transform:translateX(-80%)}75%,100%{transform:translateX(80%)}}
+.thinking-name{font-size:13px;font-weight:700;color:#56637c;position:relative;z-index:1}
+.liquid{display:flex;gap:4px;align-items:flex-end;height:22px;position:relative;z-index:1}
+.drop{
+  width:8px;height:11px;border-radius:65% 65% 48% 48%;
+  background:linear-gradient(145deg,#63d9ff,#7880ff 54%,#b06cff);
+  box-shadow:0 0 14px rgba(108,131,255,.32);
+  animation:dropWave 1.12s ease-in-out infinite
+}
+.drop:nth-child(2){animation-delay:.12s}.drop:nth-child(3){animation-delay:.24s}.drop:nth-child(4){animation-delay:.36s}.drop:nth-child(5){animation-delay:.48s}
+@keyframes dropWave{
+  0%,100%{transform:translateY(1px) scale(.92,.92);opacity:.68}
+  34%{transform:translateY(-8px) scale(1.02,1.18);opacity:1}
+  64%{transform:translateY(-2px) scale(.96,.98);opacity:.86}
+}
+
+.composer-wrap{
+  position:fixed;left:248px;right:0;bottom:0;z-index:8;padding:10px 20px 18px;
+  background:linear-gradient(transparent,rgba(238,243,255,.70) 32%,rgba(238,243,255,.94))
+}
+.composer{
+  width:min(860px,92%);margin:auto;display:flex;align-items:flex-end;gap:8px;
+  padding:8px;border-radius:19px;background:rgba(255,255,255,.58);
+  border:1px solid rgba(255,255,255,.84);box-shadow:0 14px 45px rgba(87,104,163,.14);
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)
+}
+.composer textarea{
+  flex:1;min-height:44px;max-height:140px;resize:none;overflow-y:auto;scrollbar-width:none;
+  border:0;outline:0;background:transparent;color:#263149;padding:10px 10px;line-height:1.5
+}
+.composer textarea::-webkit-scrollbar{display:none}.composer textarea::placeholder{color:#8b96a9}
+.send{
+  flex:0 0 44px;width:44px;height:44px;border:0;border-radius:14px;
+  background:linear-gradient(135deg,#667aff,#8d69ff 56%,#50c6ff);color:white;font-size:22px;font-weight:600;
+  box-shadow:0 8px 20px rgba(100,116,255,.20);transition:.15s ease
+}
+.send:hover{transform:translateY(-1px)}.send:disabled{opacity:.45;transform:none}
+
+.overlay{position:fixed;inset:0;background:rgba(83,98,145,.18);opacity:0;pointer-events:none;transition:.2s ease;z-index:20}
+.overlay.open{opacity:1;pointer-events:auto}
+.settings{
+  position:fixed;top:0;right:0;width:min(440px,94vw);height:100vh;z-index:21;
+  background:rgba(250,252,255,.80);border-left:1px solid rgba(255,255,255,.80);
+  box-shadow:-18px 0 70px rgba(70,86,140,.18);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);
+  transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column
+}
+.settings.open{transform:translateX(0)}
+.settings-head{display:flex;align-items:center;justify-content:space-between;padding:18px;border-bottom:1px solid var(--line)}
+.settings-title{font-size:18px;font-weight:750}.close{border:0;background:transparent;color:#7c889d;font-size:25px}
+.settings-body{padding:20px;overflow-y:auto;scrollbar-width:none}.settings-body::-webkit-scrollbar{display:none}
+.section{margin-bottom:28px}.section-title{font-size:13px;font-weight:750;margin-bottom:6px}.section-copy{font-size:12px;line-height:1.65;color:#748199;margin-bottom:12px}
+.theme-row{display:flex;gap:4px;background:rgba(224,230,248,.60);border-radius:11px;padding:3px}
+.theme-btn{flex:1;border:0;background:transparent;color:#7a879c;border-radius:9px;padding:8px;font-size:12px}.theme-btn.active{background:rgba(255,255,255,.78);color:#34405a;box-shadow:0 1px 5px rgba(70,83,130,.08)}
+.memory-compose{display:flex;gap:7px}.memory-compose input{
+  flex:1;min-width:0;border:1px solid rgba(115,132,176,.23);background:rgba(255,255,255,.52);color:#2b3851;
+  border-radius:11px;padding:10px 11px;outline:0
+}
+.memory-compose input:focus{border-color:rgba(99,118,205,.48);box-shadow:0 0 0 4px rgba(107,126,230,.10)}
+.memory-add{border:0;border-radius:11px;padding:10px 12px;background:linear-gradient(135deg,#667aff,#8c69ff);color:#fff;font-weight:700}
+.memory-import{width:100%;margin-top:8px;border:1px solid rgba(115,132,176,.20);border-radius:11px;background:rgba(255,255,255,.34);color:#4a5770;padding:10px 12px;text-align:left;font-size:12px}
+.memory-list{display:flex;flex-direction:column;gap:8px;margin-top:13px}
+.memory-card{
+  border:1px solid rgba(115,132,176,.18);border-radius:13px;background:rgba(255,255,255,.44);padding:11px;
+  box-shadow:0 5px 18px rgba(84,102,157,.05)
+}
+.memory-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.memory-source{font-size:10px;color:#8a95a8;text-transform:uppercase;letter-spacing:.06em}
+.memory-actions{display:flex;gap:3px}.memory-action{border:0;background:transparent;color:#79869b;border-radius:7px;padding:4px 5px;font-size:11px}.memory-action:hover{background:rgba(224,230,245,.72);color:#39455e}
+.memory-text{margin-top:7px;font-size:12.5px;line-height:1.58;white-space:pre-wrap;word-break:break-word}
+.memory-edit{width:100%;min-height:82px;margin-top:7px;resize:vertical;border:1px solid rgba(115,132,176,.22);border-radius:9px;background:rgba(255,255,255,.60);color:#2b3851;padding:9px;outline:0;line-height:1.5}
+.memory-save{border:0;background:#283349;color:white;border-radius:8px;padding:7px 10px;font-size:11px;margin-top:7px}.memory-cancel{border:1px solid rgba(115,132,176,.22);background:transparent;color:#657189;border-radius:8px;padding:6px 10px;font-size:11px;margin:7px 0 0 5px}
+.memory-empty{border:1px dashed rgba(115,132,176,.22);border-radius:12px;padding:22px 12px;text-align:center;color:#8290a5;font-size:12px;line-height:1.65}
+
+.clean-mode::before,.clean-mode::after{display:none}
+.clean-mode{background:#f5f6f8}
+.clean-mode .sidebar{background:rgba(255,255,255,.92);border-right-color:#e5e7eb}
+.clean-mode .topbar{background:rgba(255,255,255,.72);border-bottom-color:#e6e8ed}
+.clean-mode .a,.clean-mode .welcome{background:rgba(255,255,255,.94);border-color:#e6e8ed;box-shadow:0 4px 18px rgba(40,47,61,.05)}
+.clean-mode .composer-wrap{background:linear-gradient(transparent,rgba(245,246,248,.72) 32%,rgba(245,246,248,.96))}
+.clean-mode .composer{background:#fff;border-color:#e1e4ea;box-shadow:0 8px 28px rgba(40,47,61,.08)}
+.clean-mode .send{background:#1f2937;box-shadow:none}
+.clean-mode .settings{background:rgba(255,255,255,.97)}
+.clean-mode .memory-card{background:#fff;border-color:#e3e6eb}
+
+.toast{position:fixed;left:50%;bottom:88px;transform:translate(-50%,10px);padding:9px 13px;border-radius:11px;background:rgba(38,50,76,.84);color:white;border:1px solid rgba(255,255,255,.26);box-shadow:0 10px 30px rgba(48,62,104,.20);opacity:0;pointer-events:none;transition:.18s ease;z-index:40;font-size:12px}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:899px){
+  body{overflow:auto}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .2s ease;z-index:25;width:276px}
+  .sidebar.open{transform:translateX(0)}
+  .topbar{padding:0 14px}.mobile-menu{display:block}.brand{display:none}
+  .main{width:100%}.chat{padding:22px 14px 136px}.msg{max-width:89%}
+  .composer-wrap{left:0;right:0;padding:9px 10px calc(10px + env(safe-area-inset-bottom))}
+  .composer{width:100%}.settings{width:94vw}
+}
+
+.bts-view{height:calc(100vh - 64px);overflow-y:auto;padding:34px min(7vw,92px) 86px;scrollbar-width:none}.bts-view::-webkit-scrollbar{display:none}
+.bts-head{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;margin-bottom:18px}.bts-kicker{font-size:10px;font-weight:800;letter-spacing:.16em;color:#8a78a6;text-transform:uppercase}.bts-title{font-size:31px;letter-spacing:-.8px;margin-top:5px;color:#293650}.bts-date{font-size:12px;color:#7b879d;margin-top:5px}.bts-refresh{border:1px solid rgba(125,103,176,.20);background:rgba(255,255,255,.60);color:#51466a;border-radius:12px;padding:9px 13px;font-size:12px;box-shadow:0 5px 18px rgba(88,103,157,.06)}.bts-refresh:hover{background:rgba(255,255,255,.80);transform:translateY(-1px)}
+.bts-intro{padding:13px 15px;border:1px solid rgba(255,255,255,.72);background:rgba(255,255,255,.38);border-radius:14px;color:#66728a;font-size:12px;line-height:1.65;margin-bottom:15px}.bts-list{display:flex;flex-direction:column;gap:11px}.bts-card{padding:16px 17px;border:1px solid rgba(255,255,255,.78);background:rgba(255,255,255,.48);border-radius:17px;box-shadow:0 8px 24px rgba(88,103,157,.05);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}.bts-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.bts-badges{display:flex;gap:6px;flex-wrap:wrap}.bts-badge{font-size:9px;border-radius:999px;padding:4px 7px;background:rgba(111,91,151,.10);color:#66537e}.bts-badge.official{background:rgba(89,139,111,.10);color:#4e775f}.bts-time{font-size:9px;color:#8b96aa;white-space:nowrap}.bts-headline{font-size:15px;font-weight:720;line-height:1.5;color:#34405a}.bts-summary{font-size:11.5px;line-height:1.65;color:#758198;margin-top:6px}.bts-source-row{display:flex;align-items:center;gap:10px;margin-top:11px}.bts-source{font-size:10px;color:#667aff;text-decoration:none}.bts-source:hover{text-decoration:underline}.bts-original{font-size:9px;color:#98a1b1}.bts-empty{padding:40px 12px;text-align:center;color:#96a0b1;font-size:11px}
+.bts-filters{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}.bts-filter{border:1px solid rgba(125,103,176,.18);background:rgba(255,255,255,.42);color:#66728a;border-radius:999px;padding:7px 11px;font-size:11px}.bts-filter.active{background:#66537e;color:#fff}.bts-provenance{font-size:9px;color:#8b96aa}
+.bts-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 16px}.bts-tab{border:1px solid rgba(125,103,176,.18);background:rgba(255,255,255,.42);color:#66728a;border-radius:999px;padding:8px 13px;font-size:11px}.bts-tab.active{background:#66537e;color:#fff}.bts-social-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:11px}.bts-social-card{padding:16px;border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.48);border-radius:16px}.bts-social-name{font-weight:750;color:#34405a;margin-bottom:10px}.bts-social-links{display:flex;gap:8px;flex-wrap:wrap}.bts-social-link{font-size:11px;text-decoration:none;color:#66537e;padding:7px 9px;border-radius:9px;background:rgba(111,91,151,.09)}.bts-social-note{font-size:10px;color:#929caf;line-height:1.5;margin-top:9px}.bts-hot-links{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 14px}
+@media(max-width:899px){.bts-view{padding:22px 14px 86px}.bts-head{align-items:flex-start}.bts-title{font-size:26px}.bts-card{padding:14px}.bts-card-top{align-items:flex-start}.bts-time{white-space:normal;text-align:right}}
+.radar-actions{display:flex;align-items:center;gap:8px;margin-top:12px}.radar-actions button,.radar-expand{border:1px solid rgba(109,119,167,.2);background:rgba(255,255,255,.65);border-radius:9px;padding:7px 10px;color:#59658a;font:inherit;font-size:11px;cursor:pointer}.radar-actions>button:first-child{background:#f0efff;color:#6258aa}.radar-action-menu{position:relative}.radar-action-menu summary{list-style:none;cursor:pointer;border:1px solid rgba(109,119,167,.2);border-radius:9px;padding:5px 10px;color:#59658a}.radar-action-menu summary::-webkit-details-marker{display:none}.radar-action-menu[open]{z-index:3}.radar-action-menu button,.radar-action-menu a{display:block;width:170px;text-align:left;padding:8px 10px;border:0;border-bottom:1px solid #ececf3;background:#fff;color:#59658a;text-decoration:none;font-size:11px}.radar-action-menu button:hover,.radar-action-menu a:hover{background:#f6f5ff}.radar-expand{margin-top:9px;padding:4px 8px}.radar-interactive-card:not(.expanded) .radar-summary,.radar-interactive-card:not(.expanded) .bts-summary{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.radar-interactive-card:not(.expanded) .radar-why{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-brand">
+      <div class="side-logo">✦</div>
+      <div><div class="side-name">Aster Voss</div><div class="side-sub">Personal AI Agent</div></div>
+    </div>
+    <button class="side-new" id="new-chat-side">＋ 新对话</button>
+    <nav class="side-nav">
+      <button class="side-item active" id="nav-chat">⌂ <span>对话</span></button>
+      <button class="side-item" id="nav-radar">✦ <span>AI Radar</span></button>
+      <button class="side-item" id="nav-bts">🐨 <span>BTS 信息中心</span></button>
+    </nav>
+    <div class="conversation-list" id="conversation-list">
+      <div class="conversation-empty">还没有过去的对话</div>
+    </div>
+    <div class="side-spacer"></div>
+    <div class="side-foot"><button id="settings-side">⚙ 设置</button></div>
+  </aside>
+
+  <section class="main">
+    <header class="topbar">
+      <div class="top-actions">
+        <button class="mobile-menu" id="mobile-menu" aria-label="打开菜单">☰</button>
+        <div class="brand"><div class="top-logo">✦</div><div><div class="brand-name">Aster Voss</div><div class="brand-sub">Personal AI Agent · cloud memory</div></div></div>
+      </div>
+      <button class="new" id="new-chat-top">＋ 新对话</button>
+    </header>
+
+    <div id="chat" class="chat">
+      <div class="msg a welcome">你好，我是 Aster Voss。<br>现在我有了云端长期记忆。你可以直接和我聊天，也可以说“记住：……”让我记住一件事。</div>
+    </div>
+
+    <section id="radar" class="radar-view" hidden>
+      <div class="radar-head">
+        <div>
+          <div class="radar-kicker">ASTER INTELLIGENCE</div>
+          <div class="radar-title">今日 AI 简报</div>
+          <div class="radar-date" id="radar-date">正在加载…</div>
+        </div>
+        <button class="radar-refresh" id="radar-refresh" type="button">↻ 刷新</button>
+      </div>
+      <div class="radar-intro" id="radar-intro">Aster 正在整理多源 AI 热点。</div>
+      <div class="radar-list" id="radar-list"><div class="radar-empty">正在读取今日简报…</div></div>
+    </section>
+
+
+    <section id="bts-radar" class="bts-view" hidden>
+      <div class="bts-head">
+        <div>
+          <div class="bts-kicker">BTS INFORMATION CENTER</div>
+          <div class="bts-title">BTS 信息中心</div>
+          <div class="bts-date" id="bts-date">正在加载…</div>
+        </div>
+        <button class="bts-refresh" id="bts-refresh" type="button">↻ 刷新</button>
+      </div>
+      <div class="bts-intro" id="bts-intro">自动时间线只收录官方与 Weverse 来源；Instagram / TikTok 提供本人账号入口，热门报道会标明媒体出处。</div>
+      <nav class="bts-tabs" id="bts-tabs" aria-label="信息中心分区">
+        <button class="bts-tab active" data-section="timeline">官方时间线</button><button class="bts-tab" data-section="weverse">Weverse</button><button class="bts-tab" data-section="social">Social</button><button class="bts-tab" data-section="popular">媒体与热搜</button>
+      </nav>
+      <div class="bts-hot-links" id="bts-hot-links" hidden><span class="bts-social-note">自动收录近期媒体报道；微博和 X 提供站外搜索入口，不代表实时热度榜。</span><a class="bts-social-link" href="https://s.weibo.com/weibo?q=BTS" target="_blank" rel="noopener noreferrer">微博搜索 BTS ↗</a><a class="bts-social-link" href="https://x.com/search?q=BTS&src=typed_query" target="_blank" rel="noopener noreferrer">X 搜索 BTS ↗</a></div>
+      <div class="bts-hot-links" id="bts-weverse-links" hidden><a class="bts-social-link" href="https://weverse.io/bts/notice?hl=zh-cn" target="_blank" rel="noopener noreferrer">官方公告 ↗</a><a class="bts-social-link" href="https://shop.weverse.io/zh-cn/shop/CNY/artists/2/notices" target="_blank" rel="noopener noreferrer">Weverse Shop ↗</a><a class="bts-social-link" href="https://weverse.io/bts/artist" target="_blank" rel="noopener noreferrer">成员帖子 ↗</a><a class="bts-social-link" href="https://weverse.io/bts/live" target="_blank" rel="noopener noreferrer">LIVE ↗</a></div>
+      <div class="bts-social-grid" id="bts-social-grid" hidden></div>
+      <div class="bts-list" id="bts-list"><div class="bts-empty">正在读取 BTS 官方动态…</div></div>
+    </section>
+
+    <div class="composer-wrap">
+      <form class="composer" id="chat-form">
+        <textarea id="input" rows="1" placeholder="和 Aster 说点什么…"></textarea>
+        <button class="send" id="send" type="submit" aria-label="发送">↑</button>
+      </form>
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<aside class="settings" id="settings" aria-label="设置">
+  <div class="settings-head"><div class="settings-title">设置</div><button class="close" id="settings-close" type="button" aria-label="关闭">×</button></div>
+  <div class="settings-body">
+    <section class="section">
+      <div class="section-title">外观</div>
+      <div class="section-copy">Aster 默认使用彩色玻璃空间，也可以切换到更纯净的浅色界面。</div>
+      <div class="theme-row">
+        <button class="theme-btn active" data-theme-choice="glass" type="button">彩色玻璃</button>
+        <button class="theme-btn" data-theme-choice="clean" type="button">纯净浅色</button>
+      </div>
+    </section>
+    <section class="section">
+      <div class="section-title">🧠 长期记忆</div>
+      <div class="section-copy">这里的内容会被 Aster 在后续对话中使用。你可以直接管理，也可以从最近对话里整理。</div>
+      <div class="memory-compose">
+        <input id="memory-input" placeholder="添加一条长期记忆…" autocomplete="off">
+        <button class="memory-add" id="memory-add" type="button">添加</button>
+      </div>
+      <button class="memory-import" id="memory-summary" type="button">✨ 从最近对话整理</button>
+      <button class="memory-import" id="memory-suggest" type="button">🪄 提取记忆建议（先审核）</button>
+      <div class="memory-list" id="memory-suggestions" hidden></div>
+      <div class="memory-list" id="memory-list"><div class="memory-empty">正在读取…</div></div>
+    </section>
+  </div>
+</aside>
+<div class="toast" id="toast"></div>
+
+<script>
+const chat=document.querySelector("#chat");
+const input=document.querySelector("#input");
+const form=document.querySelector("#chat-form");
+const sendButton=document.querySelector("#send");
+const sidebar=document.querySelector("#sidebar");
+const overlay=document.querySelector("#overlay");
+const settings=document.querySelector("#settings");
+const toast=document.querySelector("#toast");
+const memoryList=document.querySelector("#memory-list");
+const conversationList=document.querySelector("#conversation-list");
+let currentConversationId=localStorage.getItem("aster-current-conversation")||null;
+const memoryInput=document.querySelector("#memory-input");
+const memorySuggestions=document.querySelector("#memory-suggestions");
+const radarView=document.querySelector("#radar");
+const radarList=document.querySelector("#radar-list");
+const radarIntro=document.querySelector("#radar-intro");
+const radarDate=document.querySelector("#radar-date");
+const btsRadarView=document.querySelector("#bts-radar");
+const btsList=document.querySelector("#bts-list");
+const btsIntro=document.querySelector("#bts-intro");
+const btsDate=document.querySelector("#bts-date");
+const btsSocialGrid=document.querySelector("#bts-social-grid");
+const btsHotLinks=document.querySelector("#bts-hot-links");
+const btsWeverseLinks=document.querySelector("#bts-weverse-links");
+let btsItems=[];let btsSources=[];let btsSection="timeline";
+
+function scrollChat(){
+  requestAnimationFrame(()=>{chat.scrollTo({top:chat.scrollHeight,behavior:"smooth"});});
+}
+function addMessage(text,kind){
+  const el=document.createElement("div");
+  el.className="msg "+kind;
+  el.textContent=text;
+  chat.appendChild(el);
+  scrollChat();
+  return el;
+}
+function addThinking(){
+  const el=document.createElement("div");
+  el.className="msg a thinking";
+  el.innerHTML='<span class="thinking-name">Aster</span><span class="liquid"><i class="drop"></i><i class="drop"></i><i class="drop"></i><i class="drop"></i><i class="drop"></i></span>';
+  chat.appendChild(el);
+  scrollChat();
+  return el;
+}
+function showToast(message){
+  toast.textContent=message;
+  toast.classList.add("show");
+  clearTimeout(window._asterToast);
+  window._asterToast=setTimeout(()=>toast.classList.remove("show"),1800);
+}
+async function sendMessage(overrideValue=null,radarContext=null){
+  const value=(overrideValue??input.value).trim();
+  if(!value || sendButton.disabled)return;
+  addMessage(radarContext?"正在询问："+(radarContext.title_zh||radarContext.title||"Radar 条目")+"\n"+value:value,"u");
+  input.value="";
+  input.style.height="44px";
+  sendButton.disabled=true;
+  const thinking=addThinking();
+  try{
+    const response=await fetch("/api/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message:value,conversation_id:currentConversationId,...(radarContext?{radar_context:radarContext}:{})})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok){
+      if(data.text){
+        thinking.remove();
+        addMessage(data.text||"……","a");
+        if(data.conversation_id){
+          currentConversationId=data.conversation_id;
+          localStorage.setItem("aster-current-conversation",currentConversationId);
+        }
+        showToast(data.error||"回复成功，但历史记录暂时未保存");
+        await loadConversations(false);
+        return;
+      }
+      throw new Error(data.detail||data.error||"请求失败");
+    }
+    thinking.remove();
+    addMessage(data.text||"……","a");
+    if(data.conversation_id){
+      currentConversationId=data.conversation_id;
+      localStorage.setItem("aster-current-conversation",currentConversationId);
+    }
+    if(data.conversation_persisted===false)showToast("回复成功，但历史记录暂时未保存");
+    await loadConversations(false);
+  }catch(error){
+    thinking.remove();
+    addMessage("刚才没有成功收到回复，请再试一次。","a");
+    console.error(error);
+  }finally{
+    sendButton.disabled=false;
+    input.focus();
+  }
+}
+form.addEventListener("submit",event=>{event.preventDefault();sendMessage();});
+
+function setWorkspace(view){
+  const showingRadar=view==="radar";
+  const showingBts=view==="bts";
+  radarView.hidden=!showingRadar;
+  btsRadarView.hidden=!showingBts;
+  chat.style.display=(showingRadar||showingBts)?"none":"flex";
+  document.querySelector(".composer-wrap").style.display=(showingRadar||showingBts)?"none":"block";
+  document.querySelector("#nav-chat").classList.toggle("active",!showingRadar&&!showingBts);
+  document.querySelector("#nav-radar").classList.toggle("radar-active",showingRadar);
+  document.querySelector("#nav-bts").classList.toggle("radar-active",showingBts);
+  if(showingRadar)loadRadar();
+  if(showingBts)loadBtsRadar();
+}
+
+
+function formatBtsDate(value){
+  if(!value)return "发布时间未知";
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return "发布时间未知";
+  return date.toLocaleDateString("zh-CN",{year:"numeric",month:"2-digit",day:"2-digit"});
+}
+function radarItemId(item){return String(item.id||item.url||item.original_url||item.headline_zh||item.title||"unknown").slice(0,160)}
+function radarEvent(item,type,radarType){
+  if(!window.RADAR_2_ENABLED)return;
+  const key="aster-radar-view:"+radarType+":"+radarItemId(item);
+  if(type==="item_view"){try{if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,"1")}catch(e){}}
+  fetch("/api/radar/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({item_id:radarItemId(item),event_type:type,metadata:{radar:radarType,source:String(item.source_name||item.company||item.source||"").slice(0,80)}})}).catch(()=>{});
+}
+function radarAsk(item,radarType,action){
+  const context={title:item.title||item.headline_zh||"",title_zh:item.title_zh||item.headline_zh||"",summary:item.summary||item.summary_zh||"",source:item.source_name||item.company||(item.source_list||[]).join(", "),published_at:item.published_at||item.discovered_at||"",url:item.preferred_url||item.original_url||item.url||"",category:item.category||item.source_type||"",member:item.member||"",core_concepts:Array.isArray(item.core_concepts)?item.core_concepts:(Array.isArray(item.tags)?item.tags:[])};
+  const prompts={meaning:"请用简单的话解释这条内容是什么意思。",story:"请把这条内容讲成一段容易理解的背景故事。",why:"这条内容为什么重要？",relation:"它和之前的相关动态有什么联系？",summary:"请用三句话总结这条内容。"};
+  const question=prompts[action]||"请帮我理解这条内容。";radarEvent(item,"ask_aster",radarType);setWorkspace("chat");sendMessage(question,context);
+}
+function addRadarActions(card,item,radarType){
+  const actions=document.createElement("div");actions.className="radar-actions";
+  const ask=document.createElement("button");ask.type="button";ask.textContent="✨ 问问 Aster";ask.addEventListener("click",()=>radarAsk(item,radarType,"meaning"));actions.appendChild(ask);
+  [["☆ 收藏","item_favorite"],["不感兴趣","item_dislike"]].forEach(([label,type])=>{const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{radarEvent(item,type,radarType);button.classList.toggle("selected")});actions.appendChild(button)});
+  const details=document.createElement("details");details.className="radar-action-menu";const summary=document.createElement("summary");summary.textContent="⋯";details.appendChild(summary);
+  [["meaning","这是什么意思"],["summary","三句话总结"],["story","讲讲背景故事"],["why","为什么重要"],["relation","和之前有什么联系"]].forEach(([key,label])=>{const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{details.open=false;radarAsk(item,radarType,key)});details.appendChild(button)});
+  const original=item.preferred_url||item.original_url||item.url;if(original){const link=document.createElement("a");link.href=original;link.target="_blank";link.rel="noopener noreferrer";link.textContent="打开原文 ↗";link.addEventListener("click",()=>radarEvent(item,"open_original",radarType));details.appendChild(link)}
+  actions.appendChild(details);card.appendChild(actions);
+  const toggle=document.createElement("button");toggle.type="button";toggle.className="radar-expand";toggle.textContent="展开";toggle.addEventListener("click",()=>{card.classList.toggle("expanded");toggle.textContent=card.classList.contains("expanded")?"收起":"展开"});card.appendChild(toggle);
+  card.addEventListener("contextmenu",event=>{event.preventDefault();details.open=!details.open});let pressTimer;card.addEventListener("touchstart",()=>{pressTimer=setTimeout(()=>{details.open=true},550)},{passive:true});["touchend","touchmove","touchcancel"].forEach(type=>card.addEventListener(type,()=>clearTimeout(pressTimer),{passive:true}));
+  card.addEventListener("click",event=>{if(!event.target.closest("a,button,summary"))radarEvent(item,"item_click",radarType)});
+}
+function renderBtsCard(item){
+  const card=document.createElement("article");card.className="bts-card radar-interactive-card";
+  const top=document.createElement("div");top.className="bts-card-top";
+  const badges=document.createElement("div");badges.className="bts-badges";
+  const official=document.createElement("span");official.className="bts-badge official";official.textContent=item.verification_status==="reported_by_media"?"媒体报道":(item.verification_status==="verified_official"?"✓ 官方核验":"来源已标注");
+  const category=document.createElement("span");category.className="bts-badge";category.textContent=item.member&&item.member!=="BTS"?item.member:(item.category||"官宣");
+  const source=document.createElement("span");source.className="bts-badge";source.textContent=item.source_name||"Weverse";
+  badges.append(official,category,source);
+  const time=document.createElement("span");time.className="bts-time";time.textContent=formatBtsDate(item.published_at||item.discovered_at);
+  top.append(badges,time);
+  const headline=document.createElement("div");headline.className="bts-headline";headline.textContent=item.title||"";
+  const summary=document.createElement("div");summary.className="bts-summary";summary.textContent=item.summary_zh||"来自成员本人或 BTS 官方渠道的动态，点击直达原帖。";
+  const links=document.createElement("div");links.className="bts-source-row";
+  const preferred=document.createElement("a");preferred.className="bts-source";preferred.textContent="直达原帖 ↗";preferred.href=item.preferred_url||item.original_url||"#";preferred.target="_blank";preferred.rel="noopener noreferrer";
+  links.appendChild(preferred);
+  if(item.original_url && item.original_url!==item.preferred_url){
+    const original=document.createElement("a");original.className="bts-original";original.textContent="原始页面";original.href=item.original_url;original.target="_blank";original.rel="noopener noreferrer";links.appendChild(original);
+  }
+  if(item.provenance_url){const proof=document.createElement("a");proof.className="bts-provenance";proof.textContent="账号核验来源";proof.href=item.provenance_url;proof.target="_blank";proof.rel="noopener noreferrer";links.appendChild(proof)}
+  card.append(top,headline,summary,links);if(window.RADAR_2_ENABLED)addRadarActions(card,item,"bts");btsList.appendChild(card);radarEvent(item,"item_view","bts");
+}
+function renderFilteredBts(){
+  btsSocialGrid.hidden=btsSection!=="social";
+  btsList.hidden=btsSection==="social";
+  btsHotLinks.hidden=btsSection!=="popular";
+  btsWeverseLinks.hidden=btsSection!=="weverse";
+  if(btsSection==="social"){renderBtsSocial();return}
+  const visible=btsItems.filter(item=>btsSection==="popular"?item.source_type==="media":btsSection==="weverse"?String(item.source_type||"").startsWith("weverse"):item.source_type!=="media");
+  btsList.replaceChildren();
+  if(!visible.length){const empty=document.createElement("div");empty.className="bts-empty";empty.textContent=btsSection==="popular"?"暂时没有找到符合收录条件的近期媒体报道。":btsSection==="weverse"?"Weverse 暂无可读取的新动态；这里仍保留官方 Weverse 入口。":"暂时没有新的官方动态；可查看 Weverse 或热门报道分区。";btsList.appendChild(empty);return}
+  visible.forEach(renderBtsCard);
+}
+function renderBtsSocial(){
+  btsSocialGrid.replaceChildren();
+  const members=["RM","Jin","SUGA","j-hope","Jimin","V","Jung Kook"];
+  for(const member of members){
+    const card=document.createElement("article");card.className="bts-social-card";
+    const name=document.createElement("div");name.className="bts-social-name";name.textContent=member;
+    const links=document.createElement("div");links.className="bts-social-links";
+    const accounts=btsSources.filter(source=>source.member===member&&["instagram","tiktok"].includes(source.source_type));
+    accounts.forEach(account=>{const link=document.createElement("a");link.className="bts-social-link";link.textContent=account.source_type==="instagram"?"Instagram ↗":"TikTok ↗";link.href=account.url;link.target="_blank";link.rel="noopener noreferrer";links.appendChild(link)});
+    const note=document.createElement("div");note.className="bts-social-note";note.textContent=accounts.length?"官方账号入口 · 页面不会声称已自动抓取平台内容":"暂未找到可独立核验的本人账号入口";
+    card.append(name,links,note);
+    const proofUrl=accounts.find(account=>account.provenance_url)?.provenance_url;
+    if(proofUrl){const proof=document.createElement("a");proof.className="bts-provenance";proof.textContent="查看账号核验依据 ↗";proof.href=proofUrl;proof.target="_blank";proof.rel="noopener noreferrer";card.appendChild(proof)}
+    btsSocialGrid.appendChild(card);
+  }
+}
+async function loadBtsRadar(){
+  btsList.innerHTML='<div class="bts-empty">正在读取 BTS 官方动态…</div>';
+  try{
+    const [response,sourcesResponse]=await Promise.all([fetch("/api/bts-radar/today",{cache:"no-store"}),fetch("/api/bts-radar/sources",{cache:"no-store"})]);
+    const data=await response.json();const sourceData=await sourcesResponse.json();
+    if(!response.ok||!sourcesResponse.ok)throw new Error(data.detail||sourceData.detail||"读取失败");
+    btsDate.textContent=data.generated_at?("更新于 "+new Date(data.generated_at).toLocaleString("zh-CN")):"尚未生成";
+    btsIntro.textContent="自动时间线收录官方与 Weverse 动态；媒体报道单独标注出处，Instagram / TikTok 提供本人账号入口。中国大陆访问情况因网络环境和平台政策而异。";
+    btsItems=Array.isArray(data.items)?data.items:[];btsSources=Array.isArray(sourceData.sources)?sourceData.sources:[];renderFilteredBts();
+  }catch(error){
+    btsList.innerHTML='<div class="bts-empty">BTS Radar 暂时无法读取，请点击刷新。</div>';
+    console.error(error);
+  }
+}
+
+async function loadRadar(){
+  radarList.innerHTML='<div class="radar-empty">正在读取今日简报…</div>';
+  try{
+    const response=await fetch("/api/ai-radar/today",{cache:"no-store"});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.detail||"读取失败");
+    const statusLabel=data.status==="ready"?"已生成":data.status==="fallback"?"降级展示":data.status==="failed"?"生成失败":"未生成";
+    radarDate.textContent=(data.brief_date||"").replace(/-/g,".")+" · "+statusLabel;
+    if(data.generated_at){
+      radarDate.textContent += " · "+new Date(data.generated_at).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});
+    }
+    if(!data.items||!data.items.length){
+      radarIntro.textContent=data.status==="empty"
+        ?"Aster 还没有拿到今天的热点。点击“刷新”立即生成一份。"
+        :"当前没有可展示的简报内容。点击“刷新”重试。";
+      radarList.innerHTML='<div class="radar-empty">暂无内容</div>';
+      return;
+    }
+    radarIntro.textContent=data.intro_zh||"Aster 已为你整理今天的 AI 热点。";
+    radarList.innerHTML="";
+    data.items.forEach(renderRadarCard);
+  }catch(error){
+    radarList.innerHTML='<div class="radar-empty">简报暂时无法读取，请点击刷新。</div>';
+    console.error(error);
+  }
+}
+function renderRadarCard(item){
+  const card=document.createElement("article");card.className="radar-card radar-interactive-card";
+  const top=document.createElement("div");top.className="radar-top";
+  const company=document.createElement("span");company.className="radar-company";company.textContent=item.company||"AI";
+  const score=document.createElement("span");score.className="radar-score";score.textContent="Aster 热点 "+(item.hot_score??"-");
+  top.append(company,score);
+  const headline=document.createElement("div");headline.className="radar-headline";headline.textContent=item.headline_zh||"";
+  const summary=document.createElement("div");summary.className="radar-summary";summary.textContent=item.summary_zh||"";
+  const why=document.createElement("div");why.className="radar-why";why.textContent=item.why_it_matters_zh?("为什么重要 · "+item.why_it_matters_zh):"";
+  const tags=document.createElement("div");tags.className="radar-tags";
+  (item.tags||[]).forEach(tag=>{const span=document.createElement("span");span.className="radar-tag";span.textContent=tag;tags.appendChild(span);});
+  const link=document.createElement("a");link.className="radar-source";link.textContent=(item.source_list||[]).join(" · ")+"  ↗";link.href=item.url||"#";link.target="_blank";link.rel="noopener noreferrer";
+  card.append(top,headline,summary,why,tags,link);if(window.RADAR_2_ENABLED)addRadarActions(card,item,"ai");radarList.appendChild(card);radarEvent(item,"item_view","ai");
+}
+document.querySelector("#nav-radar").addEventListener("click",()=>{setWorkspace("radar");sidebar.classList.remove("open");});
+document.querySelector("#nav-bts").addEventListener("click",()=>{setWorkspace("bts");sidebar.classList.remove("open");});
+document.querySelector("#nav-chat").addEventListener("click",()=>{setWorkspace("chat");sidebar.classList.remove("open");});
+document.querySelector("#bts-tabs").addEventListener("click",event=>{const button=event.target.closest("[data-section]");if(!button)return;btsSection=button.dataset.section;document.querySelectorAll(".bts-tab").forEach(item=>item.classList.toggle("active",item===button));renderFilteredBts()});
+document.querySelector("#bts-refresh").addEventListener("click",async()=>{const button=document.querySelector("#bts-refresh");button.disabled=true;button.textContent="抓取中…";try{const response=await fetch("/api/bts-radar/refresh",{method:"POST"});const data=await response.json();if(!response.ok)throw new Error(data.detail||"抓取失败");btsItems=Array.isArray(data.items)?data.items:[];btsDate.textContent="更新于 "+new Date(data.generated_at||Date.now()).toLocaleString("zh-CN");renderFilteredBts()}catch(error){btsList.innerHTML='<div class="bts-empty">抓取暂不可用，请稍后重试。</div>';console.error(error)}finally{button.disabled=false;button.textContent="↻ 刷新"}});
+document.querySelector("#radar-refresh").addEventListener("click",async()=>{
+  const btn=document.querySelector("#radar-refresh");btn.disabled=true;btn.textContent="整理中…";
+  radarList.innerHTML='<div class="radar-empty">正在抓取并整理最新 AI 热点…</div>';
+  try{
+    const response=await fetch("/api/ai-radar/refresh",{method:"POST"});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.detail||data.error||"刷新失败");
+    radarDate.textContent=(data.brief_date||"").replace(/-/g,".")+" · "+(data.status==="ready"?"刚刚更新":"已完成");
+    if(data.generated_at)radarDate.textContent+=" · "+new Date(data.generated_at).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});
+    radarIntro.textContent=data.intro_zh||"";
+    radarList.innerHTML="";
+    (data.items||[]).forEach(renderRadarCard);
+    if(data.items&&data.items.length)showToast("AI 简报已更新，"+data.items.length+" 条");
+    else showToast("简报生成完成，但暂无可展示内容");
+  }catch(error){
+    radarList.innerHTML='<div class="radar-empty">简报生成失败。'+(error.message?("<br>"+error.message):"")+'</div>';
+    showToast("简报更新失败");
+    console.error(error);
+  }finally{btn.disabled=false;btn.textContent="↻ 刷新";}
+});
+function toggleSidebar(){sidebar.classList.toggle("open")}
+document.querySelector("#mobile-menu").addEventListener("click",toggleSidebar);
+
+async function resetChat(){
+  currentConversationId=null;
+  localStorage.removeItem("aster-current-conversation");
+  try{await fetch("/api/reset",{method:"POST"});}catch(error){console.error(error)}
+  chat.innerHTML='<div class="msg a welcome">新对话开始。<br>你好，我还是 Aster Voss。长期记忆不会因为新对话而消失。</div>';
+  setWorkspace("chat");
+  await loadConversations(false);
+  input.focus();
+  showToast("已开启新对话");
+  sidebar.classList.remove("open");
+}
+document.querySelector("#new-chat-side").addEventListener("click",resetChat);
+document.querySelector("#new-chat-top").addEventListener("click",resetChat);
+document.querySelector("#nav-chat").addEventListener("click",()=>{setWorkspace("chat");sidebar.classList.remove("open");});
+document.querySelector("#settings-side").addEventListener("click",event=>{
+  event.preventDefault();
+  event.stopPropagation();
+  openSettings();
+});
+
+function openSettings(){
+  settings.classList.add("open");
+  overlay.classList.add("open");
+  settings.setAttribute("aria-hidden","false");
+  loadMemories();
+  sidebar.classList.remove("open");
+}
+function closeSettings(){settings.classList.remove("open");overlay.classList.remove("open");settings.setAttribute("aria-hidden","true")}
+document.querySelector("#settings-close").addEventListener("click",closeSettings);
+overlay.addEventListener("click",closeSettings);
+window.addEventListener("keydown",event=>{if(event.key==="Escape")closeSettings();});
+
+function applyTheme(theme){
+  document.body.classList.toggle("clean-mode",theme==="clean");
+  document.querySelectorAll(".theme-btn").forEach(btn=>btn.classList.toggle("active",btn.dataset.themeChoice===theme));
+  localStorage.setItem("aster-ui-theme",theme);
+}
+document.querySelectorAll(".theme-btn").forEach(btn=>btn.addEventListener("click",()=>applyTheme(btn.dataset.themeChoice)));
+applyTheme(localStorage.getItem("aster-ui-theme")||"glass");
+
+
+function formatConversationDate(value){
+  if(!value)return "";
+  try{
+    const date=new Date(value);
+    return date.toLocaleDateString("zh-CN",{month:"2-digit",day:"2-digit"});
+  }catch(error){return ""}
+}
+function formatConversationTime(value){
+  if(!value)return "";
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return "";
+  const now=new Date();
+  const sameDay=d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
+  if(sameDay)return d.toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});
+  const yesterday=new Date(now);yesterday.setDate(now.getDate()-1);
+  const isYesterday=d.getFullYear()===yesterday.getFullYear()&&d.getMonth()===yesterday.getMonth()&&d.getDate()===yesterday.getDate();
+  if(isYesterday)return "昨天 "+d.toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});
+  return d.toLocaleDateString("zh-CN",{month:"2-digit",day:"2-digit"});
+}
+function conversationGroup(item){
+  if(!item.created_at)return "其他";
+  const d=new Date(item.created_at), now=new Date();
+  const startToday=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const yesterday=new Date(startToday);yesterday.setDate(yesterday.getDate()-1);
+  if(d>=startToday)return "今天";
+  if(d>=yesterday)return "昨天";
+  return d.toLocaleDateString("zh-CN",{month:"long",day:"numeric"});
+}
+function renderConversations(items){
+  conversationList.innerHTML="";
+  if(!items.length){
+    conversationList.innerHTML='<div class="conversation-empty">还没有过去的对话</div>';
+    return;
+  }
+  let group="";
+  items.forEach(item=>{
+    const nextGroup=conversationGroup(item);
+    if(nextGroup!==group){
+      const heading=document.createElement("div");heading.className="conversation-group";heading.textContent=nextGroup;
+      conversationList.appendChild(heading);group=nextGroup;
+    }
+    const row=document.createElement("div");
+    row.className="conversation-item"+(item.id===currentConversationId?" active":"");
+    const meta=document.createElement("div");meta.className="conversation-meta";
+    const title=document.createElement("span");title.className="conversation-title";
+    title.title=item.title||"新对话";title.textContent=item.title||"新对话";
+    const time=document.createElement("time");time.className="conversation-time";
+    const startTime=item.created_at?formatConversationTime(item.created_at):"";
+    const updated=item.updated_at?formatConversationTime(item.updated_at):"";
+    time.title=item.created_at?new Date(item.created_at).toLocaleString("zh-CN"):"";
+    time.textContent=startTime?("开始 "+startTime+(updated&&updated!==startTime?(" · "+updated):"")):"";
+    meta.append(title,time);
+    const del=document.createElement("button");del.type="button";del.className="conversation-delete";
+    del.setAttribute("aria-label","删除对话");del.textContent="×";
+    row.append(meta,del);
+    row.addEventListener("click",event=>{if(event.target!==del)openConversation(item.id);});
+    del.addEventListener("click",async event=>{event.stopPropagation();await deleteConversation(item.id);});
+    conversationList.appendChild(row);
+  });
+}
+async function loadConversations(autoOpen=true){
+  try{
+    const response=await fetch("/api/conversations",{cache:"no-store"});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.detail||"读取对话失败");
+    const items=Array.isArray(data.conversations)?data.conversations:[];
+    renderConversations(items);
+    if(!autoOpen)return;
+    if(currentConversationId && items.some(item=>item.id===currentConversationId)){
+      await openConversation(currentConversationId,false);
+    }else if(items.length){
+      await openConversation(items[0].id,false);
+    }else{
+      currentConversationId=null;
+      localStorage.removeItem("aster-current-conversation");
+    }
+  }catch(error){
+    conversationList.innerHTML='<div class="conversation-empty">历史对话暂时无法读取</div>';
+    console.error(error);
+  }
+}
+async function openConversation(id,closeSidebar=true){
+  try{
+    const response=await fetch("/api/conversations/"+encodeURIComponent(id),{cache:"no-store"});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.detail||"读取对话失败");
+    currentConversationId=data.id;
+    localStorage.setItem("aster-current-conversation",currentConversationId);
+    chat.innerHTML="";
+    const messages=Array.isArray(data.messages)?data.messages:[];
+    if(!messages.length){
+      chat.innerHTML='<div class="msg a welcome">这个对话还没有消息。</div>';
+    }else{
+      messages.forEach(message=>{
+        if(message.role==="user"||message.role==="assistant"){
+          addMessage(message.content||"",message.role==="user"?"u":"a");
+        }
+      });
+    }
+    await loadConversations(false);
+    if(closeSidebar)sidebar.classList.remove("open");
+    input.focus();
+    scrollChat();
+  }catch(error){
+    showToast("打开对话失败");
+    console.error(error);
+  }
+}
+async function deleteConversation(id){
+  if(!window.confirm("删除这段对话？删除后无法恢复。"))return;
+  try{
+    const response=await fetch("/api/conversations/"+encodeURIComponent(id),{method:"DELETE"});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.detail||"删除失败");
+    if(currentConversationId===id){
+      currentConversationId=null;
+      localStorage.removeItem("aster-current-conversation");
+      chat.innerHTML='<div class="msg a welcome">新对话开始。<br>你可以继续和 Aster 聊天。</div>';
+    }
+    await loadConversations(false);
+    showToast("对话已删除");
+  }catch(error){
+    showToast("删除对话失败");
+    console.error(error);
+  }
+}
+
+async function suggestMemories(){
+  if(!currentConversationId){showToast("先打开一段对话");return;}
+  const button=document.querySelector("#memory-suggest");
+  button.disabled=true;button.textContent="正在提取…";
+  memorySuggestions.hidden=false;
+  memorySuggestions.innerHTML='<div class="memory-empty">正在寻找值得长期记住的信息…</div>';
+  try{
+    const response=await fetch("/api/memory/suggestions",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({conversation_id:currentConversationId})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.detail||"提取失败");
+    if(!data.suggestions||!data.suggestions.length){
+      memorySuggestions.innerHTML='<div class="memory-empty">没有发现适合长期保存的内容。</div>';
+      return;
+    }
+    memorySuggestions.innerHTML="";
+    data.suggestions.forEach(value=>{
+      const card=document.createElement("div");card.className="memory-card";
+      const text=document.createElement("div");text.className="memory-text";text.textContent=value;
+      const actions=document.createElement("div");actions.className="memory-actions";actions.style.marginTop="9px";
+      const keep=document.createElement("button");keep.className="memory-action";keep.textContent="保存";
+      const skip=document.createElement("button");skip.className="memory-action";skip.textContent="忽略";
+      keep.onclick=async()=>{
+        const response=await fetch("/api/memory",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({text:value})
+        });
+        if(response.ok){card.remove();showToast("已保存");loadMemories();}
+      };
+      skip.onclick=()=>card.remove();
+      actions.append(keep,skip);
+      card.append(text,actions);
+      memorySuggestions.appendChild(card);
+    });
+  }catch(error){
+    memorySuggestions.innerHTML='<div class="memory-empty">记忆提取失败，请稍后再试。</div>';
+    console.error(error);
+  }finally{
+    button.disabled=false;
+    button.textContent="🪄 提取记忆建议（先审核）";
+  }
+}
+
+async function loadMemories(){
+  memoryList.innerHTML='<div class="memory-empty">正在读取…</div>';
+  try{
+    const response=await fetch("/api/memory",{cache:"no-store"});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.detail||"读取失败");
+    if(!Array.isArray(data.memories)||!data.memories.length){
+      memoryList.innerHTML='<div class="memory-empty">还没有长期记忆。<br>可以手动添加，或者从最近对话整理。</div>';
+      return;
+    }
+    memoryList.innerHTML="";
+    data.memories.forEach(renderMemory);
+  }catch(error){
+    memoryList.innerHTML='<div class="memory-empty">长期记忆暂时无法读取，请稍后再试。</div>';
+    console.error(error);
+  }
+}
+function renderMemory(item){
+  const card=document.createElement("div");
+  card.className="memory-card";
+  const top=document.createElement("div");top.className="memory-top";
+  const source=document.createElement("span");source.className="memory-source";source.textContent=item.source||"manual";
+  const actions=document.createElement("div");actions.className="memory-actions";
+  const edit=document.createElement("button");edit.type="button";edit.className="memory-action";edit.textContent="编辑";
+  const remove=document.createElement("button");remove.type="button";remove.className="memory-action";remove.textContent="删除";
+  actions.append(edit,remove);top.append(source,actions);
+  const text=document.createElement("div");text.className="memory-text";text.textContent=item.text||"";
+  card.append(top,text);memoryList.appendChild(card);
+  edit.addEventListener("click",()=>editMemory(item,card));
+  remove.addEventListener("click",()=>deleteMemory(item.id));
+}
+async function addMemory(){
+  const text=memoryInput.value.trim();
+  if(!text)return;
+  const button=document.querySelector("#memory-add");button.disabled=true;
+  try{
+    const response=await fetch("/api/memory",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.detail||"添加失败");
+    memoryInput.value="";
+    showToast("已加入长期记忆");
+    await loadMemories();
+  }catch(error){showToast("添加失败");console.error(error)}
+  finally{button.disabled=false;memoryInput.focus();}
+}
+document.querySelector("#memory-add").addEventListener("click",addMemory);
+memoryInput.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();addMemory();}});
+
+function editMemory(item,card){
+  const current=card.querySelector(".memory-text");
+  card.innerHTML="";
+  const area=document.createElement("textarea");area.className="memory-edit";area.value=item.text||"";
+  const save=document.createElement("button");save.type="button";save.className="memory-save";save.textContent="保存";
+  const cancel=document.createElement("button");cancel.type="button";cancel.className="memory-cancel";cancel.textContent="取消";
+  card.append(area,save,cancel);area.focus();
+  save.addEventListener("click",async()=>{
+    const text=area.value.trim();if(!text)return;
+    save.disabled=true;
+    try{
+      const response=await fetch("/api/memory/"+encodeURIComponent(item.id),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.detail||"保存失败");
+      showToast("已更新");await loadMemories();
+    }catch(error){showToast("更新失败");console.error(error)}
+    finally{save.disabled=false;}
+  });
+  cancel.addEventListener("click",loadMemories);
+}
+async function deleteMemory(id){
+  if(!window.confirm("删除这条长期记忆？"))return;
+  try{
+    const response=await fetch("/api/memory/"+encodeURIComponent(id),{method:"DELETE"});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.detail||"删除失败");
+    showToast("已删除");await loadMemories();
+  }catch(error){showToast("删除失败");console.error(error)}
+}
+
+async function summarizeMemories(){
+  const button=document.querySelector("#memory-summary");button.disabled=true;button.textContent="正在整理…";
+  try{
+    if(!currentConversationId){showToast("先聊几句，再整理这段对话");button.disabled=false;button.textContent="✨ 从最近对话整理";return;}
+    const response=await fetch("/api/memory/summarize",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conversation_id:currentConversationId})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.detail||data.error||"整理失败");
+    showToast(data.added?("已整理 "+data.added+" 条记忆"):"没有发现新的长期记忆");
+    await loadMemories();
+  }catch(error){showToast("整理失败");console.error(error)}
+  finally{button.disabled=false;button.textContent="✨ 从最近对话整理";}
+}
+document.querySelector("#memory-summary").addEventListener("click",summarizeMemories);
+document.querySelector("#memory-suggest").addEventListener("click",suggestMemories);
+
+input.addEventListener("input",()=>{
+  input.style.height="auto";
+  input.style.height=Math.min(input.scrollHeight,140)+"px";
+});
+input.addEventListener("keydown",event=>{
+  if(event.key==="Enter" && !event.shiftKey){
+    event.preventDefault();
+    sendMessage();
+  }
+});
+loadConversations(true);
+loadRadar();
+
+</script>
+</body>
+</html>
