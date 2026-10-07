@@ -90,6 +90,11 @@ body::after{
 .radar-score{font-size:10px;color:#637190;background:rgba(225,231,249,.68);padding:4px 7px;border-radius:999px}
 .radar-headline{font-size:16px;line-height:1.45;font-weight:720;color:#293650;margin-top:8px}
 .radar-summary{font-size:12.5px;line-height:1.65;color:#5f6d85;margin-top:7px}
+.radar-ai-badge{display:inline-flex;align-self:flex-start;margin-top:6px;padding:3px 7px;border-radius:999px;background:rgba(222,239,233,.65);color:#4c7865;font-size:10px}
+.radar-one-liner{font-size:12px;line-height:1.55;color:#514b7f;font-weight:600;margin:8px 0 0}
+.radar-time{font-size:10px;color:#8791a4;margin-top:8px}
+.radar-story{margin-top:12px;padding:12px;border:1px solid rgba(109,119,167,.18);border-radius:12px;background:rgba(255,255,255,.65);font-size:12px;line-height:1.7;color:#59658a;white-space:normal}
+.radar-story p{white-space:pre-wrap}.radar-story strong{color:#4c5272}.radar-story button{margin:5px;padding:6px 9px;border:1px solid rgba(109,119,167,.2);border-radius:8px;background:#fff;color:#59658a}
 .radar-why{font-size:11.5px;line-height:1.55;color:#7b879c;margin-top:9px;padding-top:9px;border-top:1px solid rgba(128,142,184,.14)}
 .radar-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
 .radar-tag{font-size:10px;color:#657390;background:rgba(238,242,252,.72);padding:4px 7px;border-radius:7px}
@@ -251,7 +256,7 @@ body::after{
 .bts-filters{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}.bts-filter{border:1px solid rgba(125,103,176,.18);background:rgba(255,255,255,.42);color:#66728a;border-radius:999px;padding:7px 11px;font-size:11px}.bts-filter.active{background:#66537e;color:#fff}.bts-provenance{font-size:9px;color:#8b96aa}
 .bts-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 16px}.bts-tab{border:1px solid rgba(125,103,176,.18);background:rgba(255,255,255,.42);color:#66728a;border-radius:999px;padding:8px 13px;font-size:11px}.bts-tab.active{background:#66537e;color:#fff}.bts-social-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:11px}.bts-social-card{padding:16px;border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.48);border-radius:16px}.bts-social-name{font-weight:750;color:#34405a;margin-bottom:10px}.bts-social-links{display:flex;gap:8px;flex-wrap:wrap}.bts-social-link{font-size:11px;text-decoration:none;color:#66537e;padding:7px 9px;border-radius:9px;background:rgba(111,91,151,.09)}.bts-social-note{font-size:10px;color:#929caf;line-height:1.5;margin-top:9px}.bts-hot-links{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 14px}
 @media(max-width:899px){.bts-view{padding:22px 14px 86px}.bts-head{align-items:flex-start}.bts-title{font-size:26px}.bts-card{padding:14px}.bts-card-top{align-items:flex-start}.bts-time{white-space:normal;text-align:right}}
-.radar-actions{display:flex;align-items:center;gap:8px;margin-top:12px}.radar-actions button,.radar-expand{border:1px solid rgba(109,119,167,.2);background:rgba(255,255,255,.65);border-radius:9px;padding:7px 10px;color:#59658a;font:inherit;font-size:11px;cursor:pointer}.radar-actions>button:first-child{background:#f0efff;color:#6258aa}.radar-action-menu{position:relative}.radar-action-menu summary{list-style:none;cursor:pointer;border:1px solid rgba(109,119,167,.2);border-radius:9px;padding:5px 10px;color:#59658a}.radar-action-menu summary::-webkit-details-marker{display:none}.radar-action-menu[open]{z-index:3}.radar-action-menu button,.radar-action-menu a{display:block;width:170px;text-align:left;padding:8px 10px;border:0;border-bottom:1px solid #ececf3;background:#fff;color:#59658a;text-decoration:none;font-size:11px}.radar-action-menu button:hover,.radar-action-menu a:hover{background:#f6f5ff}.radar-expand{margin-top:9px;padding:4px 8px}.radar-interactive-card:not(.expanded) .radar-summary,.radar-interactive-card:not(.expanded) .bts-summary{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.radar-interactive-card:not(.expanded) .radar-why{display:none}
+.radar-card.importance-c:not(.expanded) .radar-summary,.radar-card.importance-c:not(.expanded) .radar-one-liner,.radar-card.importance-c:not(.expanded) .radar-tags{display:none}
 </style>
 </head>
 <body>
@@ -490,12 +495,24 @@ function radarAsk(item,radarType,action){
   const prompts={meaning:"请用简单的话解释这条内容是什么意思。",story:"请把这条内容讲成一段容易理解的背景故事。",why:"这条内容为什么重要？",relation:"它和之前的相关动态有什么联系？",summary:"请用三句话总结这条内容。"};
   const question=prompts[action]||"请帮我理解这条内容。";radarEvent(item,"ask_aster",radarType);setWorkspace("chat");sendMessage(question,context);
 }
+async function showRadarStory(card,item){
+  let panel=card.querySelector(".radar-story");if(!panel){panel=document.createElement("section");panel.className="radar-story";card.appendChild(panel)}
+  panel.replaceChildren();const loading=document.createElement("p");loading.textContent="Aster 正在准备一个小故事…";panel.appendChild(loading);
+  try{
+    const response=await fetch("/api/ai-radar/story",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({item})});
+    const result=await response.json();if(!response.ok)throw new Error(result.detail||"故事暂不可用");panel.replaceChildren();
+    if(result.status!=="ready"){const note=document.createElement("p");note.textContent=result.message||"故事解释暂不可用；你仍可查看原文或询问 Aster。";panel.appendChild(note);return}
+    const badge=document.createElement("span");badge.className="radar-ai-badge";badge.textContent="AI 生成";panel.appendChild(badge);
+    if(result.related===false){const note=document.createElement("p");note.textContent="这些概念关联较弱，建议分别理解：";panel.appendChild(note);(result.separate_explanations||[]).forEach(name=>{const button=document.createElement("button");button.type="button";button.textContent="单独解释："+name;button.addEventListener("click",()=>radarAsk({...item,core_concepts:[name]},"ai","meaning"));panel.appendChild(button)});return}
+    [["📖 一个小故事",result.story],["🧠 正式解释",result.formal_explanation],["🧩 故事里的隐喻",(result.metaphor_map||[]).join("\n")],["📰 回到这条新闻",result.back_to_news]].forEach(([title,text])=>{if(!text)return;const section=document.createElement("div");const heading=document.createElement("strong");heading.textContent=title;const body=document.createElement("p");body.textContent=text;section.append(heading,body);panel.appendChild(section)});
+  }catch(error){panel.replaceChildren();const note=document.createElement("p");note.textContent="故事解释暂不可用；你仍可查看原文或询问 Aster。";panel.appendChild(note)}
+}
 function addRadarActions(card,item,radarType){
   const actions=document.createElement("div");actions.className="radar-actions";
   const ask=document.createElement("button");ask.type="button";ask.textContent="✨ 问问 Aster";ask.addEventListener("click",()=>radarAsk(item,radarType,"meaning"));actions.appendChild(ask);
   [["☆ 收藏","item_favorite"],["不感兴趣","item_dislike"]].forEach(([label,type])=>{const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{radarEvent(item,type,radarType);button.classList.toggle("selected")});actions.appendChild(button)});
   const details=document.createElement("details");details.className="radar-action-menu";const summary=document.createElement("summary");summary.textContent="⋯";details.appendChild(summary);
-  [["meaning","这是什么意思"],["summary","三句话总结"],["story","讲讲背景故事"],["why","为什么重要"],["relation","和之前有什么联系"]].forEach(([key,label])=>{const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{details.open=false;radarAsk(item,radarType,key)});details.appendChild(button)});
+  [["meaning","这是什么意思"],["summary","三句话总结"],["story","讲讲背景故事"],["why","为什么重要"],["relation","和之前有什么联系"]].forEach(([key,label])=>{const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{details.open=false;if(radarType==="ai"&&key==="story")showRadarStory(card,item);else radarAsk(item,radarType,key)});details.appendChild(button)});
   const original=item.preferred_url||item.original_url||item.url;if(original){const link=document.createElement("a");link.href=original;link.target="_blank";link.rel="noopener noreferrer";link.textContent="打开原文 ↗";link.addEventListener("click",()=>radarEvent(item,"open_original",radarType));details.appendChild(link)}
   actions.appendChild(details);card.appendChild(actions);
   const toggle=document.createElement("button");toggle.type="button";toggle.className="radar-expand";toggle.textContent="展开";toggle.addEventListener("click",()=>{card.classList.toggle("expanded");toggle.textContent=card.classList.contains("expanded")?"收起":"展开"});card.appendChild(toggle);
@@ -592,18 +609,23 @@ async function loadRadar(){
   }
 }
 function renderRadarCard(item){
-  const card=document.createElement("article");card.className="radar-card radar-interactive-card";
+  const card=document.createElement("article");card.className="radar-card radar-interactive-card"+(item.importance==="C"?" importance-c":"");
   const top=document.createElement("div");top.className="radar-top";
-  const company=document.createElement("span");company.className="radar-company";company.textContent=item.company||"AI";
-  const score=document.createElement("span");score.className="radar-score";score.textContent="Aster 热点 "+(item.hot_score??"-");
-  top.append(company,score);
-  const headline=document.createElement("div");headline.className="radar-headline";headline.textContent=item.headline_zh||"";
-  const summary=document.createElement("div");summary.className="radar-summary";summary.textContent=item.summary_zh||"";
+  const company=document.createElement("span");company.className="radar-company";company.textContent=(item.source_list||[]).join(" · ")||item.company||"AI 动态";
+  const importance=document.createElement("span");importance.className="radar-score";importance.textContent=item.importance==="A"?"重点动态":item.importance==="C"?"低优先级简讯":"近期动态";
+  top.append(company,importance);
+  const headline=document.createElement("div");headline.className="radar-headline";headline.textContent=item.title_zh||item.headline_zh||item.title_original||"";
+  const summary=document.createElement("div");summary.className="radar-summary";summary.textContent=item.ai_status==="failed"?"中文摘要暂不可用。\n"+(item.summary_zh||""):item.summary_zh||"";
+  const generated=document.createElement("span");generated.className="radar-ai-badge";generated.textContent=item.ai_status==="ready"?"AI 生成 · 已做基础事实校验":"原始来源";
+  const oneLiner=document.createElement("p");oneLiner.className="radar-one-liner";oneLiner.textContent=item.one_liner_zh||"";
   const why=document.createElement("div");why.className="radar-why";why.textContent=item.why_it_matters_zh?("为什么重要 · "+item.why_it_matters_zh):"";
   const tags=document.createElement("div");tags.className="radar-tags";
-  (item.tags||[]).forEach(tag=>{const span=document.createElement("span");span.className="radar-tag";span.textContent=tag;tags.appendChild(span);});
+  (item.core_concepts||[]).slice(0,3).forEach(tag=>{const span=document.createElement("span");span.className="radar-tag";span.textContent="🧠 "+tag;tags.appendChild(span);});
+  const related=(item.related_concepts||[]).slice(0,5);if(related.length){const details=document.createElement("details");const summaryToggle=document.createElement("summary");summaryToggle.textContent="相关概念（可选）";details.appendChild(summaryToggle);const list=document.createElement("div");list.textContent=related.join(" · ");details.appendChild(list);tags.appendChild(details)}
+  const originalTitle=document.createElement("details");const originalToggle=document.createElement("summary");originalToggle.textContent="原始英文标题";const original=document.createElement("p");original.textContent=item.title_original||item.title||"";originalTitle.append(originalToggle,original);
   const link=document.createElement("a");link.className="radar-source";link.textContent=(item.source_list||[]).join(" · ")+"  ↗";link.href=item.url||"#";link.target="_blank";link.rel="noopener noreferrer";
-  card.append(top,headline,summary,why,tags,link);if(window.RADAR_2_ENABLED)addRadarActions(card,item,"ai");radarList.appendChild(card);radarEvent(item,"item_view","ai");
+  const timestamp=document.createElement("time");timestamp.className="radar-time";timestamp.dateTime=item.published_at||"";timestamp.textContent=item.published_at?new Date(item.published_at).toLocaleString("zh-CN"):"时间未提供";
+  card.append(top,headline,generated,summary,oneLiner,why,tags,originalTitle,timestamp,link);if(window.RADAR_2_ENABLED)addRadarActions(card,item,"ai");radarList.appendChild(card);radarEvent(item,"item_view","ai");
 }
 document.querySelector("#nav-radar").addEventListener("click",()=>{setWorkspace("radar");sidebar.classList.remove("open");});
 document.querySelector("#nav-bts").addEventListener("click",()=>{setWorkspace("bts");sidebar.classList.remove("open");});

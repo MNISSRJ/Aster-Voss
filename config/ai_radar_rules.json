@@ -1,0 +1,43 @@
+{
+  "official_sources": [
+    "OpenAI",
+    "Anthropic",
+    "Google DeepMind",
+    "Meta AI",
+    "Microsoft Research",
+    "NVIDIA"
+  ],
+  "a_keywords": [
+    "launches",
+    "launched",
+    "introduces",
+    "introduced",
+    "unveils",
+    "unveiled",
+    "releases",
+    "released",
+    "发布",
+    "推出",
+    "开源",
+    "重大更新",
+    "new model",
+    "reasoning model",
+    "frontier model",
+    "benchmark"
+  ],
+  "c_keywords": [
+    "opinion",
+    "podcast",
+    "roundup",
+    "weekly recap",
+    "interview",
+    "funding round",
+    "raises $",
+    "融资",
+    "专访",
+    "播客",
+    "盘点",
+    "周报"
+  ]
+}
+

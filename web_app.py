@@ -197,6 +197,10 @@ class RadarEventIn(BaseModel):
     metadata: dict = {}
 
 
+class RadarStoryIn(BaseModel):
+    item: dict
+
+
 class ConversationRefIn(BaseModel):
     conversation_id: str | None = None
 
@@ -428,6 +432,19 @@ def ai_radar_refresh():
     payload = _generate_ai_brief()
     payload["server_time"] = int(time.time())
     return payload
+
+
+@app.post("/api/ai-radar/story")
+def ai_radar_story(body: RadarStoryIn):
+    if not radar_2_enabled():
+        return {"status": "disabled", "ai_generated": False}
+    provider = None
+    provider_config = CONFIG.active_provider
+    if provider_config and provider_config.is_configured:
+        candidate = create_provider(CONFIG.main_provider, CONFIG)
+        if candidate.is_available():
+            provider = candidate
+    return RADAR.story(body.item, provider)
 
 
 @app.get("/api/ai-radar/history")
