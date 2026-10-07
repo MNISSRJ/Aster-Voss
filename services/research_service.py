@@ -11,11 +11,15 @@ from typing import Callable
 
 from research_pool import deduplicate_papers, fetch_arxiv, fetch_semantic_scholar, knowledge_budget_items, rank_papers, search_pool
 from ai_radar_enrichment import LANGUAGE, PROMPT_VERSION, cache_key
+from research_personalization import personalize_ranked
 
 
 class ResearchService:
-    def __init__(self, fetcher: Callable | None = None, ttl_seconds: int = 3600):
+    def __init__(self, fetcher: Callable | None = None, ttl_seconds: int = 3600, *, event_provider: Callable | None = None, trusted_concepts: Callable | None = None):
         self.fetcher = fetcher
+        # Cloud behavior data stays opt-in until Preview/Production isolation is confirmed.
+        self.event_provider = event_provider or (lambda: ())
+        self.trusted_concepts = trusted_concepts or (lambda: ())
         self.ttl_seconds = max(60, int(ttl_seconds))
         self._lock = threading.Lock()
         self._pool: list[dict] = []
@@ -80,7 +84,7 @@ class ResearchService:
 
     def recommended(self, minutes: int = 20, force_refresh: bool = False, provider=None) -> dict:
         pool = self.refresh(force=force_refresh)
-        ranked = rank_papers(pool["items"])
+        ranked = personalize_ranked(rank_papers(pool["items"]), self.event_provider(), trusted_concepts=self.trusted_concepts())
         selected = knowledge_budget_items(ranked, minutes)
         enriched = {}
         for paper in selected:
@@ -136,12 +140,14 @@ class ResearchService:
         pool = self.refresh()
         matches = search_pool(pool["items"], query, limit)
         # Search results are sorted using the same deterministic non-LLM policy.
-        ranked = rank_papers(matches)
+        ranked = personalize_ranked(rank_papers(matches), self.event_provider(), trusted_concepts=self.trusted_concepts())
         return {**pool, "query": query[:160], "items": [self._public_item(item) for item in ranked], "result_count": len(ranked)}
 
     @staticmethod
     def _public_item(item: dict) -> dict:
-        return {key: value for key, value in item.items() if not key.startswith("_")}
+        public = {key: value for key, value in item.items() if not key.startswith("_")}
+        public["exploration"] = bool(item.get("_exploration"))
+        return public
 
 
 RESEARCH = ResearchService()
