@@ -76,13 +76,11 @@ h1{font-size:clamp(31px,4vw,47px);letter-spacing:-1.7px;line-height:1.12;margin:
 <div class="shell">
 <aside class="sidebar">
   <div class="brand"><div class="brand-icon">✦</div><div><div class="brand-name">Aster Voss</div><div class="brand-caption">个人 AI 助手</div></div></div>
-  <div class="nav-label">工作空间</div>
-  <nav class="nav" aria-label="主导航">
-    <button class="active" data-nav="全部卡片"><span class="nav-icon">⌂</span> 概览</button>
-    <button data-nav="对话"><span class="nav-icon">◌</span> 对话</button>
-    <button data-nav="BTS 信息中心"><span class="nav-icon">◇</span> BTS 信息中心</button>
-    <button data-nav="AI Radar"><span class="nav-icon">✧</span> AI Radar</button>
-    <button data-nav="Research"><span class="nav-icon">⌕</span> Research</button>
+  <div class="nav-label">个人空间</div>
+  <nav class="nav" aria-label="侧边栏">
+    <button class="active" data-nav="对话"><span class="nav-icon">◌</span> 对话</button>
+    <button data-nav="新增对话"><span class="nav-icon">＋</span> 新增对话</button>
+    <button data-nav="设置"><span class="nav-icon">⚙</span> 设置</button>
   </nav>
   <div class="side-bottom">卡片布局草图<br>此页面用于体验交互与层级</div>
 </aside>
@@ -135,7 +133,7 @@ document.querySelectorAll('[data-open]').forEach(button=>button.addEventListener
 document.querySelectorAll('.tabs button').forEach(tab=>tab.addEventListener('click',()=>{const group=tab.closest('.tabs');group.querySelectorAll('button').forEach(item=>{const active=item===tab;item.classList.toggle('active',active);item.setAttribute('aria-selected',String(active))});tab.closest('.card').querySelector('.tab-note').textContent='已选择 '+tab.textContent+' 来源 · 原型预览'}));
 document.querySelectorAll('.mini-compose').forEach(form=>form.addEventListener('submit',event=>{event.preventDefault();notify('这是布局预览，尚未发送消息。')}));
 document.getElementById('search').addEventListener('input',event=>{const query=event.target.value.trim().toLocaleLowerCase();let visible=0;cards.forEach(card=>{const show=card.dataset.card.toLocaleLowerCase().includes(query);card.hidden=!show;if(show)visible++});document.getElementById('empty').style.display=visible?'none':'block'});
-document.querySelectorAll('.nav button').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.nav button').forEach(item=>item.classList.toggle('active',item===button));const label=button.dataset.nav;if(label==='全部卡片'){cards.forEach(card=>card.hidden=false);document.getElementById('search').value='';document.getElementById('empty').style.display='none'}else{document.getElementById('search').value=label;document.getElementById('search').dispatchEvent(new Event('input'))}}));
+document.querySelectorAll('.nav button').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.nav button').forEach(item=>item.classList.toggle('active',item===button));const label=button.dataset.nav;if(label==='对话'){cards.forEach(card=>card.hidden=false);document.getElementById('search').value='';document.getElementById('empty').style.display='none';document.querySelector('.card[data-card^="对话"]').scrollIntoView({behavior:'smooth',block:'center'})}else if(label==='新增对话'){const form=document.querySelector('.mini-compose');form.reset();const card=form.closest('.card');card.hidden=false;card.classList.add('open');document.getElementById('search').value='';document.querySelectorAll('.card').forEach(item=>{if(item!==card)item.hidden=false});document.getElementById('empty').style.display='none';form.querySelector('input').focus();notify('新对话草图已准备好。')}else{notify('设置入口已保留；设置面板可在下一步接入。')}}));
 </script>
 </body>
 </html>
