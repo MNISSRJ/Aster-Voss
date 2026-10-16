@@ -341,6 +341,24 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 
+/* Card-based home dashboard */
+.home-view[hidden]{display:none!important}.home-view{height:calc(100vh - 64px);overflow-y:auto;scrollbar-width:none;padding:clamp(28px,5vw,64px) clamp(20px,5.2vw,78px) 54px}.home-view::-webkit-scrollbar{display:none}
+.home-intro{max-width:690px;margin:0 auto 34px}.home-kicker{font-size:10px;font-weight:750;letter-spacing:.16em;color:#8794ad;text-transform:uppercase}
+.home-title{font-size:clamp(30px,4vw,44px);line-height:1.14;letter-spacing:-1.4px;color:#293650;margin:12px 0 11px;font-weight:690}.home-title span{display:block;font-size:14px;letter-spacing:0;font-weight:500;color:#6f7d94;margin-top:10px}
+.home-copy{max-width:520px;font-size:12px;line-height:1.75;color:#7b879d;margin:0}.home-section-head{max-width:920px;margin:0 auto 12px;display:flex;align-items:center;justify-content:space-between;color:#56637b;font-size:11px;font-weight:700}.home-section-head span+span{font-size:9px;color:#98a3b6;font-weight:500}
+.home-grid{max-width:920px;margin:0 auto;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.home-card{position:relative;min-height:205px;grid-column:span 6;padding:19px;border:1px solid rgba(255,255,255,.88);border-radius:20px;background:rgba(255,255,255,.52);box-shadow:0 10px 30px rgba(81,100,157,.075);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.home-card:hover{transform:translateY(-3px);border-color:#fff;box-shadow:0 16px 38px rgba(81,100,157,.12)}.home-card-chat{grid-column:span 7}.home-card-bts{grid-column:span 5}.home-card-radar{grid-column:span 5}.home-card-research{grid-column:span 7}
+.home-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.home-symbol{width:34px;height:34px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.9);border-radius:12px;background:rgba(255,255,255,.66);color:#6e80d6;font-size:15px}.home-tag{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:#909bb0}
+.home-card h2{margin:15px 0 6px;color:#303c55;font-size:17px;letter-spacing:-.3px;font-weight:680}.home-card p{margin:0;max-width:410px;color:#7b879d;font-size:11px;line-height:1.65}
+.home-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:18px;padding-top:11px;border-top:1px solid rgba(117,135,177,.13)}.home-open{border:0;background:transparent;color:#6174d8;padding:5px 0;font-size:11px;font-weight:650}.home-open:hover{color:#475cc8}.home-arrow{display:inline-block;margin-left:5px;transition:transform .16s}.home-open:hover .home-arrow{transform:translateX(3px)}.home-hint{font-size:9px;color:#98a3b5}
+.home-chat-form{display:flex;align-items:center;gap:8px;margin-top:16px;padding:7px;border:1px solid rgba(255,255,255,.9);border-radius:13px;background:rgba(255,255,255,.58)}.home-chat-form input{flex:1;min-width:0;border:0;outline:0;background:transparent;padding:7px 8px;color:#293650;font-size:11px}.home-chat-form input::placeholder{color:#9aa5b7}.home-chat-form button{width:31px;height:31px;border:0;border-radius:10px;background:linear-gradient(135deg,#667aff,#8c69ff 56%,#50c6ff);color:white;font-size:17px}
+.home-tabs{display:flex;gap:4px;width:max-content;margin-top:14px;padding:4px;border-radius:10px;background:rgba(230,236,250,.62)}.home-tabs button{border:0;border-radius:7px;background:transparent;color:#8793a9;padding:6px 8px;font-size:9px}.home-tabs button:hover,.home-tabs button.active{background:rgba(255,255,255,.88);color:#4e5d7a;box-shadow:0 2px 8px rgba(65,82,140,.08)}
+.home-card-lines{display:grid;gap:8px;margin-top:14px}.home-card-line{display:flex;align-items:center;gap:8px;color:#8490a5;font-size:10px}.home-card-line i{width:6px;height:6px;border-radius:50%;background:#9eabe0;flex:none}
+.home-brand{border:0;background:transparent;color:inherit;padding:0;text-align:left;cursor:pointer}.home-brand:focus-visible,.home-open:focus-visible,.home-tabs button:focus-visible{outline:2px solid rgba(99,119,225,.6);outline-offset:3px}.app.home-active .composer-wrap{display:none!important}
+@media(max-width:1100px){.home-view{padding-left:clamp(18px,3vw,34px);padding-right:clamp(18px,3vw,34px)}}
+@media(max-width:899px){.home-view{height:calc(100dvh - 60px);padding:25px 16px 40px}.home-grid{gap:11px}.home-card,.home-card-chat,.home-card-bts,.home-card-radar,.home-card-research{grid-column:span 6}.brand.home-brand{display:flex}.home-brand .brand-sub{display:none}}
+@media(max-width:620px){.home-intro{margin-bottom:26px}.home-title{font-size:33px}.home-card,.home-card-chat,.home-card-bts,.home-card-radar,.home-card-research{grid-column:span 12;min-height:190px}.home-grid{gap:10px}.home-card-chat{min-height:214px}.home-section-head{margin-bottom:10px}}
+
 </style>
 </head>
 <body>
@@ -368,10 +386,18 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
     <header class="topbar">
       <div class="top-actions">
         <button class="mobile-menu" id="mobile-menu" aria-label="打开菜单">☰</button>
-        <div class="brand"><div class="top-logo">✦</div><div><div class="brand-name">Aster Voss</div><div class="brand-sub">Personal AI Agent · cloud memory</div></div></div>
+        <button class="brand home-brand" id="home-brand" type="button" aria-label="返回主页概览"><div class="top-logo">✦</div><div><div class="brand-name">Aster Voss</div><div class="brand-sub">Personal AI Agent · cloud memory</div></div></button>
       </div>
-      <button class="new" id="new-chat-top">＋ 新对话</button>
     </header>
+
+    <section id="home" class="home-view" hidden>
+      <div class="home-intro"><div class="home-kicker">ASTER VOSS · YOUR PERSONAL AGENT</div><h1 class="home-title">你好，我是 Aster Voss。<span>今天想从哪里开始？</span></h1><p class="home-copy">把常用功能放在一处，点开卡片即可继续使用原有模块。对话、BTS Radar、AI Radar 与 Research 的数据和交互保持不变。</p></div>
+      <div class="home-section-head"><span>快速入口</span><span>选择一张卡片继续</span></div><div class="home-grid">
+        <article class="home-card home-card-chat"><div class="home-card-top"><div class="home-symbol">◌</div><span class="home-tag">Your space</span></div><h2>继续对话</h2><p>向 Aster 提问，或从最近的对话继续。</p><form class="home-chat-form" id="home-chat-form"><input id="home-input" type="text" placeholder="写下你想聊的内容…" autocomplete="off" aria-label="输入消息"><button type="submit" aria-label="发送消息">↑</button></form><div class="home-card-bottom"><button class="home-open" type="button" data-home-view="chat">打开对话<span class="home-arrow">→</span></button><span class="home-hint">对话与历史记录</span></div></article>
+        <article class="home-card home-card-bts"><div class="home-card-top"><div class="home-symbol">◇</div><span class="home-tag">BTS Radar</span></div><h2>BTS 信息中心</h2><p>官方动态、Weverse 与社交入口集中浏览。</p><div class="home-tabs" aria-label="BTS 信息分区"><button class="active" type="button" data-home-bts-section="timeline">Timeline</button><button type="button" data-home-bts-section="weverse">Weverse</button><button type="button" data-home-bts-section="social">Social</button></div><div class="home-card-bottom"><button class="home-open" type="button" data-home-view="bts">打开信息中心<span class="home-arrow">→</span></button><span class="home-hint">查看当前信息流</span></div></article>
+        <article class="home-card home-card-radar"><div class="home-card-top"><div class="home-symbol">✧</div><span class="home-tag">Discover</span></div><h2>AI Radar</h2><p>查看已接入的 AI 热点简报、来源与动态详情。</p><div class="home-card-lines"><div class="home-card-line"><i></i><span>今日简报与主题脉络</span></div><div class="home-card-line"><i></i><span>来源、摘要与原文入口</span></div></div><div class="home-card-bottom"><button class="home-open" type="button" data-home-view="radar">打开 AI Radar<span class="home-arrow">→</span></button><span class="home-hint">简报与动态</span></div></article>
+        <article class="home-card home-card-research" id="home-card-research"><div class="home-card-top"><div class="home-symbol">⌕</div><span class="home-tag">Explore</span></div><h2>Research</h2><p>搜索论文候选，按你的阅读时间偏好浏览研究结果。</p><div class="home-card-lines"><div class="home-card-line"><i></i><span>论文检索与阅读时长筛选</span></div><div class="home-card-line"><i></i><span>研究摘要与来源信息</span></div></div><div class="home-card-bottom"><button class="home-open" type="button" data-home-view="research">打开 Research<span class="home-arrow">→</span></button><span class="home-hint">论文候选与发现</span></div></article>
+      </div></section>
 
     <div id="chat" class="chat">
       <div class="msg a welcome">你好，我是 Aster Voss。<br>现在我有了云端长期记忆。你可以直接和我聊天，也可以说“记住：……”让我记住一件事。</div>
@@ -563,21 +589,15 @@ async function sendMessage(overrideValue=null,radarContext=null){
 form.addEventListener("submit",event=>{event.preventDefault();sendMessage();});
 
 function setWorkspace(view){
-  const showingRadar=view==="radar";
-  const showingBts=view==="bts";
-  const showingResearch=view==="research";
-  radarView.hidden=!showingRadar;
-  btsRadarView.hidden=!showingBts;
-  document.querySelector("#research").hidden=!showingResearch;
-  chat.style.display=(showingRadar||showingBts||showingResearch)?"none":"flex";
-  document.querySelector(".composer-wrap").style.display=(showingRadar||showingBts||showingResearch)?"none":"block";
-  document.querySelector("#nav-chat").classList.toggle("active",!showingRadar&&!showingBts&&!showingResearch);
-  document.querySelector("#nav-radar").classList.toggle("radar-active",showingRadar);
-  document.querySelector("#nav-bts").classList.toggle("radar-active",showingBts);
-  document.querySelector("#nav-research").classList.toggle("radar-active",showingResearch);
-  if(showingRadar)loadRadar();
-  if(showingBts)loadBtsRadar();
-  if(showingResearch)loadResearch();
+  const showingHome=view==="home",showingRadar=view==="radar",showingBts=view==="bts",showingResearch=view==="research";
+  const showingModule=showingRadar||showingBts||showingResearch;
+  document.querySelector("#home").hidden=!showingHome;
+  radarView.hidden=!showingRadar;btsRadarView.hidden=!showingBts;document.querySelector("#research").hidden=!showingResearch;
+  chat.style.display=(showingHome||showingModule)?"none":"flex";
+  document.querySelector(".composer-wrap").style.display=(showingHome||showingModule)?"none":"block";
+  document.querySelector("#nav-chat").classList.toggle("active",view==="chat");
+  document.querySelector(".app").classList.toggle("home-active",showingHome);
+  if(showingRadar)loadRadar();if(showingBts)loadBtsRadar();if(showingResearch)loadResearch();
 }
 
 
@@ -784,11 +804,19 @@ async function loadBtsArchive(){
   try{const response=await fetch("/api/bts-radar/archive?limit=50",{cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.detail||"读取归档失败");btsArchiveItems=Array.isArray(data.items)?data.items:[];renderFilteredBts()}
   catch(error){btsArchiveItems=[];btsList.innerHTML='<div class="bts-empty">归档暂时无法读取；Timeline 和 Weverse 仍可使用。</div>';console.error(error)}
 }
-document.querySelector("#nav-radar").addEventListener("click",()=>{setWorkspace("radar");sidebar.classList.remove("open");});
-document.querySelector("#nav-bts").addEventListener("click",()=>{setWorkspace("bts");sidebar.classList.remove("open");});
-document.querySelector("#nav-research").hidden=!window.RADAR_2_ENABLED;
-document.querySelector("#nav-research").addEventListener("click",()=>{setWorkspace("research");sidebar.classList.remove("open");});
 document.querySelector("#nav-chat").addEventListener("click",()=>{setWorkspace("chat");sidebar.classList.remove("open");});
+document.querySelector("#home-brand").addEventListener("click",()=>setWorkspace("home"));
+document.querySelectorAll("[data-home-view]").forEach(button=>button.addEventListener("click",()=>setWorkspace(button.dataset.homeView)));
+document.querySelectorAll("[data-home-bts-section]").forEach(button=>button.addEventListener("click",()=>{
+  document.querySelectorAll("[data-home-bts-section]").forEach(item=>item.classList.toggle("active",item===button));
+  setWorkspace("bts");
+  const target=document.querySelector('#bts-tabs [data-section="'+button.dataset.homeBtsSection+'"]');
+  if(target)target.click();
+}));
+document.querySelector("#home-chat-form").addEventListener("submit",event=>{
+  event.preventDefault();const message=document.querySelector("#home-input").value.trim();if(!message)return;
+  setWorkspace("chat");input.value=message;sendMessage();
+});
 document.querySelector("#bts-tabs").addEventListener("click",event=>{const button=event.target.closest("[data-section]");if(!button)return;btsSection=button.dataset.section;document.querySelectorAll(".bts-tab").forEach(item=>item.classList.toggle("active",item===button));if(btsSection==="archive")loadBtsArchive();else renderFilteredBts()});
 document.querySelector("#bts-refresh").addEventListener("click",async()=>{const button=document.querySelector("#bts-refresh");button.disabled=true;button.textContent="抓取中…";try{const response=await fetch("/api/bts-radar/refresh",{method:"POST"});const data=await response.json();if(!response.ok)throw new Error(data.detail||"抓取失败");btsItems=Array.isArray(data.items)?data.items:[];btsDate.textContent="更新于 "+new Date(data.generated_at||Date.now()).toLocaleString("zh-CN");renderFilteredBts()}catch(error){btsList.innerHTML='<div class="bts-empty">抓取暂不可用，请稍后重试。</div>';console.error(error)}finally{button.disabled=false;button.textContent="↻ 刷新"}});
 document.querySelector("#radar-refresh").addEventListener("click",async()=>{
@@ -826,7 +854,6 @@ async function resetChat(){
   sidebar.classList.remove("open");
 }
 document.querySelector("#new-chat-side").addEventListener("click",resetChat);
-document.querySelector("#new-chat-top").addEventListener("click",resetChat);
 document.querySelector("#nav-chat").addEventListener("click",()=>{setWorkspace("chat");sidebar.classList.remove("open");});
 document.querySelector("#settings-side").addEventListener("click",event=>{
   event.preventDefault();
@@ -1133,7 +1160,7 @@ input.addEventListener("keydown",event=>{
   }
 });
 loadConversations(true);
-loadRadar();
+setWorkspace("home");
 
 </script>
 </body>
