@@ -118,8 +118,8 @@ class RadarService:
             importance = candidate["importance"]
             key = cache_key(candidate)
             item = cached.get(key) or generated_by_key.get(key) or _raw_item(candidate, importance)
-                # Refresh transient feed metadata while reusing only cached AI fields.
-                item = {**item, "source_list": candidate.get("source_list", []), "hot_score": candidate.get("hot_score", 0), "region": candidate.get("region", "international")}
+            # Refresh transient feed metadata while reusing only cached AI fields.
+            item = {**item, "source_list": candidate.get("source_list", []), "hot_score": candidate.get("hot_score", 0), "region": candidate.get("region", "international")}
             results.append(item)
 
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
