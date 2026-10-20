@@ -103,7 +103,7 @@ class RadarService:
         selected = candidates[:6]
         historical = self.repository.list(limit=14, user_id=self.user_id) if cloud.enabled() else []
         cached = self._cached_enrichments(historical)
-        ai_candidates = [item for item in selected if item["importance"] in {"A", "B"}]
+        ai_candidates = selected
         generated_by_key = {}
         uncached = [item for item in ai_candidates if cache_key(item) not in cached]
         if uncached and provider and provider.is_available():
@@ -116,13 +116,8 @@ class RadarService:
         results = []
         for candidate in selected:
             importance = candidate["importance"]
-            if importance == "C":
-                # C items are rendered from source text and never sent to an LLM.
-                item = _raw_item(candidate, importance, "source_only")
-                item["source_type"] = "official" if item["source_type"] == "official" else "ai_summary"
-            else:
-                key = cache_key(candidate)
-                item = cached.get(key) or generated_by_key.get(key) or _raw_item(candidate, importance)
+            key = cache_key(candidate)
+            item = cached.get(key) or generated_by_key.get(key) or _raw_item(candidate, importance)
                 # Refresh transient feed metadata while reusing only cached AI fields.
                 item = {**item, "source_list": candidate.get("source_list", []), "hot_score": candidate.get("hot_score", 0), "region": candidate.get("region", "international")}
             results.append(item)
@@ -132,7 +127,7 @@ class RadarService:
             "status": "ready" if results else "empty",
             "brief_date": time.strftime("%Y-%m-%d", time.gmtime()),
             "generated_at": now,
-            "intro_zh": "今天的 AI 动态已按重要性整理；低重要性条目使用原始摘要。" if results else "今天暂时没有抓到可用的 AI 热点。",
+            "intro_zh": "今天的 AI 动态已按重要性整理；入选动态均提供中文概要。" if results else "今天暂时没有抓到可用的 AI 热点。",
             "items": results,
             "source_count": len({source for item in candidates for source in item.get("source_list", [])}),
             "candidate_count": len(candidates),
