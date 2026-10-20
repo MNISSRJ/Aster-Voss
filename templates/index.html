@@ -533,7 +533,7 @@ const radarView=document.querySelector("#radar");
 const radarList=document.querySelector("#radar-list");
 const radarIntro=document.querySelector("#radar-intro");
 const radarDate=document.querySelector("#radar-date");
-let radarItems=[];let radarRegionFilter="all";
+let radarItems=[];let radarRegionalItems=[];let radarRegionFilter="all";
 const btsRadarView=document.querySelector("#bts-radar");
 const btsList=document.querySelector("#bts-list");
 const btsIntro=document.querySelector("#bts-intro");
@@ -769,6 +769,7 @@ async function loadRadar(){
     }
     radarIntro.textContent=data.intro_zh||"Aster 已为你整理今天的 AI 热点。";
     radarItems=Array.isArray(data.items)?data.items:[];
+    radarRegionalItems=Array.isArray(data.regional_items)?data.regional_items:[];
     renderRadarItems();
   }catch(error){
     radarList.innerHTML='<div class="radar-empty">简报暂时无法读取，请点击刷新。</div>';
@@ -784,14 +785,15 @@ function getRadarRegion(item){
   return "unknown";
 }
 function renderRadarItems(){
-  const matches=radarItems.filter(item=>{
+  const sourceItems=radarRegionFilter==="all"||!radarRegionalItems.length?radarItems:radarRegionalItems;
+  const matches=sourceItems.filter(item=>{
     const region=getRadarRegion(item);
     if(radarRegionFilter==="all")return true;
     if(radarRegionFilter==="domestic")return region==="domestic"||region==="mixed";
     return region==="international"||region==="mixed";
   });
   radarList.replaceChildren();
-  if(!matches.length){const empty=document.createElement("div");empty.className="radar-empty";empty.textContent=radarRegionFilter==="domestic"?"当前全球前 10 条中没有国内 AI 动态。":"暂时没有抓取到国外 AI 动态；可点右上角刷新重试。";radarList.appendChild(empty);return;}
+  if(!matches.length){const empty=document.createElement("div");empty.className="radar-empty";empty.textContent=radarRegionFilter==="domestic"?"今天暂时没有国内 AI 动态。":"今天暂时没有国外 AI 动态；可点右上角刷新重试。";radarList.appendChild(empty);return;}
   matches.forEach(renderRadarCard);
 }
 document.querySelector("#radar-categories").addEventListener("click",event=>{
@@ -896,6 +898,7 @@ document.querySelector("#radar-refresh").addEventListener("click",async()=>{
     if(data.generated_at)radarDate.textContent+=" · "+new Date(data.generated_at).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});
     radarIntro.textContent=data.intro_zh||"";
     radarItems=Array.isArray(data.items)?data.items:[];
+    radarRegionalItems=Array.isArray(data.regional_items)?data.regional_items:[];
     renderRadarItems();
     if(data.items&&data.items.length)showToast("AI 简报已更新，"+data.items.length+" 条");
     else showToast("简报生成完成，但暂无可展示内容");
