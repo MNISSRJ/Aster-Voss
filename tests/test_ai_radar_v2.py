@@ -45,20 +45,22 @@ def test_collect_candidates_marks_domestic_international_and_mixed_regions(monke
     rows = {
         "TechCrunch AI": [
             {"id":"one","title":"Shared AI update","url":"https://example.test/1","description":"International item","published_at":now,"feed":"TechCrunch AI","source":"TechCrunch AI"},
-            {"id":"two","title":"Global model update","url":"https://example.test/2","description":"Global item","published_at":now,"feed":"TechCrunch AI","source":"TechCrunch AI"},
+            {"id":"two","title":"Global AI model update","url":"https://example.test/2","description":"Global item","published_at":now,"feed":"TechCrunch AI","source":"TechCrunch AI"},
         ],
         "Google News 国内 AI": [
             {"id":"one","title":"Shared AI update","url":"https://example.test/1","description":"Domestic item","published_at":now,"feed":"Google News 国内 AI","source":"Google News 国内 AI"},
             {"id":"three","title":"China AI update","url":"https://example.test/3","description":"Domestic item","published_at":now,"feed":"Google News 国内 AI","source":"Google News 国内 AI"},
+            {"id":"four","title":"中国人保董事长谈保险业风险保障新格局","url":"https://example.test/4","description":"保险行业报道","published_at":now,"feed":"Google News 国内 AI","source":"Google News 国内 AI"},
         ],
     }
     monkeypatch.setattr(ai_radar, "FEEDS", [("TechCrunch AI", "https://foreign.test/feed")])
     monkeypatch.setattr(ai_radar, "DOMESTIC_FEEDS", [("Google News 国内 AI", "https://domestic.test/feed")])
     monkeypatch.setattr(ai_radar, "_read_feed", lambda name, url: rows[name])
     result = {item["title"]: item for item in ai_radar.collect_candidates()}
-    assert result["Global model update"]["region"] == "international"
+    assert result["Global AI model update"]["region"] == "international"
     assert result["China AI update"]["region"] == "domestic"
     assert result["Shared AI update"]["region"] == "mixed"
+    assert "中国人保董事长谈保险业风险保障新格局" not in result
 
 
 def test_importance_rules_are_configurable_and_uncertain_defaults_to_b(monkeypatch):
