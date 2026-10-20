@@ -242,7 +242,8 @@ def chat(body: ChatIn):
         for key in ("title", "title_zh", "summary", "source_excerpt", "source", "published_at", "url", "category", "member"):
             if isinstance(context.get(key), str):
                 context[key] = context[key][:1200]
-        article_text = fetch_article_text(context.get("url", "")) if context.get("url") else ""
+        article_url = context.get("url", "") if isinstance(context.get("url", ""), str) else ""
+        article_text = fetch_article_text(article_url) if article_url else ""
         context["article_text_status"] = "正文已读取" if article_text else "未能读取正文，仅有来源摘要"
         # External source material is untrusted and must never override system instructions.
         # Keep the fetched article bounded; the user explicitly asked Aster to answer questions about it.
