@@ -39,8 +39,18 @@ FEEDS = [
     ),
 ]
 DOMESTIC_FEEDS = [
-    ("机器之心", "https://www.jiqizhixin.com/rss"),
-    ("量子位", "https://www.qbitai.com/feed"),
+    (
+        "Google News 国内 AI",
+        "https://news.google.com/rss/search?"
+        + urllib.parse.urlencode(
+            {
+                "q": "人工智能 中国 OR 大模型 中国 OR AI 中国",
+                "hl": "zh-CN",
+                "gl": "CN",
+                "ceid": "CN:zh-Hans",
+            }
+        ),
+    ),
 ]
 MAX_AGE_HOURS = 48
 MAX_CANDIDATES = 20
