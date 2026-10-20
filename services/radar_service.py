@@ -52,7 +52,7 @@ class RadarService:
     def generate(self, provider=None):
         if radar_2_enabled():
             return self._generate_v2(provider)
-        candidates = collect_candidates()
+        candidates = collect_candidates()[:20]
         if not candidates:
             payload = self._fallback_payload([])
         elif provider and provider.is_available():
@@ -101,13 +101,19 @@ class RadarService:
         candidates = collect_candidates()
         for candidate in candidates:
             candidate["importance"] = classify_importance(candidate)
-        # Keep selection bounded and predictable; the score remains internal.
-        selected = candidates[:MAX_ITEMS]
+
+        global_selected = candidates[:MAX_ITEMS]
+        domestic_selected = [item for item in candidates if item.get("region") in {"domestic", "mixed"}][:MAX_ITEMS]
+        international_selected = [item for item in candidates if item.get("region") in {"international", "mixed"}][:MAX_ITEMS]
+        regional_by_id = {item["id"]: item for item in (*domestic_selected, *international_selected)}
+        enrichment_by_id = {item["id"]: item for item in global_selected}
+        enrichment_by_id.update(regional_by_id)
+        selected = sorted(enrichment_by_id.values(), key=lambda item: item.get("hot_rank", 10_000))
+
         historical = self.repository.list(limit=14, user_id=self.user_id) if cloud.enabled() else []
         cached = self._cached_enrichments(historical)
-        ai_candidates = selected
         generated_by_key = {}
-        uncached = [item for item in ai_candidates if cache_key(item) not in cached]
+        uncached = [item for item in selected if cache_key(item) not in cached]
         if uncached and provider and provider.is_available():
             try:
                 generated = curate_v2(provider, uncached)
@@ -115,23 +121,30 @@ class RadarService:
             except Exception as exc:
                 log.info("radar v2 enrichment failed error=%s", type(exc).__name__)
 
-        results = []
+        results_by_id = {}
         for candidate in selected:
             importance = candidate["importance"]
             key = cache_key(candidate)
             item = cached.get(key) or generated_by_key.get(key) or _raw_item(candidate, importance)
-            # Refresh transient feed metadata while reusing only cached AI fields.
-            item = {**item, "source_list": candidate.get("source_list", []), "hot_score": candidate.get("hot_score", 0), "hot_rank": candidate.get("hot_rank", 0), "region": candidate.get("region", "international")}
-            results.append(item)
+            item = {
+                **item,
+                "source_list": candidate.get("source_list", []),
+                "hot_score": candidate.get("hot_score", 0),
+                "hot_rank": candidate.get("hot_rank", 0),
+                "region": candidate.get("region", "international"),
+            }
+            results_by_id[candidate["id"]] = item
 
-        results.sort(key=lambda item: item.get("hot_rank", 10_000))
+        results = [results_by_id[item["id"]] for item in global_selected if item["id"] in results_by_id]
+        regional_results = [results_by_id[item["id"]] for item in selected if item["id"] in regional_by_id]
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         payload = {
             "status": "ready" if results else "empty",
             "brief_date": time.strftime("%Y-%m-%d", time.gmtime()),
             "generated_at": now,
-            "intro_zh": "按全球 AI 行业候选的来源覆盖与新鲜度排序，展示前 10 条；热度是相对排名，不是浏览量。" if results else "今天暂时没有抓到可用的 AI 热点。",
+            "intro_zh": "全部动态为全球热度候选前 10；国内与国外分类分别展示各自地区前 10。热度按来源覆盖与新鲜度估算，不是浏览量。" if results else "今天暂时没有抓到可用的 AI 热点。",
             "items": results,
+            "regional_items": regional_results,
             "source_count": len({source for item in candidates for source in item.get("source_list", [])}),
             "candidate_count": len(candidates),
             "saved": False,
