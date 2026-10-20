@@ -161,8 +161,6 @@ def _story_region(row: dict[str, Any], feed_region: str) -> str:
 
 
 def collect_candidates() -> list[dict[str, Any]]:
-
-def collect_candidates() -> list[dict[str, Any]]:
     now = datetime.now(timezone.utc)
     cutoff = now - timedelta(hours=MAX_AGE_HOURS)
     groups: dict[str, dict[str, Any]] = {}
