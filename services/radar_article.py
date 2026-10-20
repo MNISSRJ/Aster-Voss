@@ -78,7 +78,7 @@ def extract_article_text(markup: str) -> str:
         pass
     choices = (parser.article, parser.main, parser.body)
     text = next((" ".join(parts) for parts in choices if len(" ".join(parts)) >= 300), "")
-    text = html.unescape(re.sub(r"\\s+", " ", text)).strip()
+    text = html.unescape(re.sub(r"\s+", " ", text)).strip()
     return text[:MAX_ARTICLE_CHARS]
 
 
