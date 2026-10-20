@@ -102,6 +102,20 @@ create index if not exists aster_usage_events_user_date_idx
 
 alter table public.aster_usage_events enable row level security;
 
+-- Radar 2 interaction events are separate from model usage analytics.
+create table if not exists public.radar_events (
+  id bigint generated always as identity primary key,
+  user_id text not null,
+  item_id text not null,
+  event_type text not null check (event_type in ('item_view','item_click','item_favorite','item_dislike','ask_aster','open_original')),
+  created_at timestamptz not null default now(),
+  metadata jsonb not null default '{}'::jsonb,
+  retention_days integer not null default 90 check (retention_days between 1 and 3650)
+);
+create index if not exists radar_events_user_created_idx on public.radar_events (user_id, created_at desc);
+create index if not exists radar_events_item_created_idx on public.radar_events (item_id, created_at desc);
+alter table public.radar_events enable row level security;
+
 
 -- Aster Voss request rate limiting.
 -- This is required for durable rate limits in serverless/Vercel.
@@ -167,3 +181,58 @@ $$;
 
 revoke all on function public.consume_aster_rate_limit(text, integer, integer) from public, anon, authenticated;
 grant execute on function public.consume_aster_rate_limit(text, integer, integer) to service_role;
+
+
+-- Aster Voss BTS Radar
+create table if not exists public.bts_radar_sources (
+  id text primary key,
+  name text not null,
+  url text not null,
+  source_type text not null,
+  language text not null default 'zh-CN',
+  official boolean not null default true,
+  official_account text not null default '',
+  provenance_url text not null default '',
+  preferred_region text not null default 'CN',
+  accessibility_score numeric not null default 0,
+  accessibility_confidence numeric not null default 0,
+  enabled boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.bts_radar_sources enable row level security;
+
+create table if not exists public.bts_radar_items (
+  id text primary key,
+  user_id text not null default 'mint',
+  title text not null,
+  summary_zh text not null default '',
+  category text not null default '官宣',
+  source_id text not null references public.bts_radar_sources(id),
+  source_name text not null,
+  source_type text not null,
+  member text not null default '',
+  original_url text not null,
+  preferred_url text not null,
+  preferred_url_region text not null default 'CN',
+  published_at timestamptz,
+  discovered_at timestamptz not null default now(),
+  official boolean not null default true,
+  official_account text not null default '',
+  provenance_url text not null default '',
+  verification_status text not null default 'verified_official',
+  accessibility_score numeric not null default 0,
+  accessibility_confidence numeric not null default 0,
+  importance numeric not null default 1,
+  status text not null default 'official',
+  dedupe_hash text not null,
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists bts_radar_items_user_discovered_idx
+  on public.bts_radar_items (user_id, discovered_at desc);
+
+create index if not exists bts_radar_items_dedupe_idx
+  on public.bts_radar_items (dedupe_hash);
+
+alter table public.bts_radar_items enable row level security;

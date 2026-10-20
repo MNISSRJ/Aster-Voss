@@ -6,8 +6,10 @@ import time
 
 import log
 
-from ai_radar import collect_candidates, curate
+from ai_radar import MAX_ITEMS, collect_candidates, curate, curate_v2, generate_story, _raw_item
 from memory import cloud
+from ai_radar_enrichment import LANGUAGE, STORY_PROMPT_VERSION, cache_key, classify_importance, content_hash
+from feature_flags import radar_2_enabled
 
 
 class RadarService:
@@ -15,6 +17,7 @@ class RadarService:
         from .radar_repository import RadarRepository
         self.repository = repository or RadarRepository()
         self.user_id = user_id or (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "mint"
+        self._story_cache = {}
 
     def _fallback_payload(self, candidates):
         return {
@@ -37,15 +40,19 @@ class RadarService:
                     "source_list": item.get("source_list", []),
                     "published_at": item["published_at"],
                     "hot_score": item["hot_score"],
+                    "hot_rank": item.get("hot_rank", 0),
+                    "region": item.get("region", "international"),
                 }
-                for item in candidates[:6]
+                for item in candidates[:MAX_ITEMS]
             ],
             "source_count": len({s for item in candidates for s in item.get("source_list", [])}),
             "candidate_count": len(candidates),
         }
 
     def generate(self, provider=None):
-        candidates = collect_candidates()
+        if radar_2_enabled():
+            return self._generate_v2(provider)
+        candidates = collect_candidates()[:20]
         if not candidates:
             payload = self._fallback_payload([])
         elif provider and provider.is_available():
@@ -72,12 +79,112 @@ class RadarService:
             payload = self._fallback_payload(candidates)
 
         payload.setdefault("status", "ready" if payload.get("items") else "empty")
+        payload["items"].sort(key=lambda item: item.get("hot_rank", 10_000))
         payload["saved"] = (
             bool(self.repository.save(payload["brief_date"], payload, self.user_id))
             if cloud.enabled()
             else False
         )
         return payload
+
+    @staticmethod
+    def _cached_enrichments(briefs):
+        cached = {}
+        for brief in briefs or []:
+            payload = brief.get("payload") if isinstance(brief, dict) else None
+            for item in payload.get("items", []) if isinstance(payload, dict) else []:
+                if isinstance(item, dict) and item.get("ai_status") == "ready" and item.get("ai_cache_key"):
+                    cached[item["ai_cache_key"]] = item
+        return cached
+
+    def _generate_v2(self, provider=None):
+        candidates = collect_candidates()
+        for candidate in candidates:
+            candidate["importance"] = classify_importance(candidate)
+
+        global_selected = candidates[:MAX_ITEMS]
+        domestic_selected = [item for item in candidates if item.get("region") in {"domestic", "mixed"}][:MAX_ITEMS]
+        international_selected = [item for item in candidates if item.get("region") in {"international", "mixed"}][:MAX_ITEMS]
+        regional_by_id = {item["id"]: item for item in (*domestic_selected, *international_selected)}
+        enrichment_by_id = {item["id"]: item for item in global_selected}
+        enrichment_by_id.update(regional_by_id)
+        selected = sorted(enrichment_by_id.values(), key=lambda item: item.get("hot_rank", 10_000))
+
+        historical = self.repository.list(limit=14, user_id=self.user_id) if cloud.enabled() else []
+        cached = self._cached_enrichments(historical)
+        generated_by_key = {}
+        uncached = [item for item in selected if cache_key(item) not in cached]
+        if uncached and provider and provider.is_available():
+            try:
+                generated = curate_v2(provider, uncached)
+                generated_by_key = {item["ai_cache_key"]: item for item in generated}
+            except Exception as exc:
+                log.info("radar v2 enrichment failed error=%s", type(exc).__name__)
+
+        results_by_id = {}
+        for candidate in selected:
+            importance = candidate["importance"]
+            key = cache_key(candidate)
+            item = cached.get(key) or generated_by_key.get(key) or _raw_item(candidate, importance)
+            item = {
+                **item,
+                "source_list": candidate.get("source_list", []),
+                "hot_score": candidate.get("hot_score", 0),
+                "hot_rank": candidate.get("hot_rank", 0),
+                "region": candidate.get("region", "international"),
+            }
+            results_by_id[candidate["id"]] = item
+
+        results = [results_by_id[item["id"]] for item in global_selected if item["id"] in results_by_id]
+        regional_results = [results_by_id[item["id"]] for item in selected if item["id"] in regional_by_id]
+        now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        payload = {
+            "status": "ready" if results else "empty",
+            "brief_date": time.strftime("%Y-%m-%d", time.gmtime()),
+            "generated_at": now,
+            "intro_zh": "全部动态为全球热度候选前 10；国内与国外分类分别展示各自地区前 10。热度按来源覆盖与新鲜度估算，不是浏览量。" if results else "今天暂时没有抓到可用的 AI 热点。",
+            "items": results,
+            "regional_items": regional_results,
+            "source_count": len({source for item in candidates for source in item.get("source_list", [])}),
+            "candidate_count": len(candidates),
+            "saved": False,
+            "radar_version": 2,
+        }
+        if cloud.enabled():
+            payload["saved"] = bool(self.repository.save(payload["brief_date"], payload, self.user_id))
+        return payload
+
+    def story(self, item: dict, provider=None):
+        if not radar_2_enabled():
+            return {"status": "disabled", "ai_generated": False}
+        if not isinstance(item, dict):
+            return {"status": "unavailable", "message": "找不到这条 Radar 内容。"}
+        item_hash = str(item.get("content_hash") or content_hash(item))
+        key = ":".join((item_hash, STORY_PROMPT_VERSION, LANGUAGE))
+        cache = item.get("story_cache") if isinstance(item.get("story_cache"), dict) else {}
+        if key in cache:
+            return cache[key]
+        if key in self._story_cache:
+            return self._story_cache[key]
+        if not provider or not provider.is_available():
+            return {"status": "unavailable", "message": "故事解释暂不可用；你仍可查看原文或询问 Aster。"}
+        try:
+            result = generate_story(provider, item)
+        except Exception as exc:
+            log.info("radar story failed error=%s", type(exc).__name__)
+            return {"status": "unavailable", "message": "故事解释暂不可用；你仍可查看原文或询问 Aster。"}
+        self._story_cache[key] = result
+        while len(self._story_cache) > 64:
+            self._story_cache.pop(next(iter(self._story_cache)))
+        # Persist inside the existing daily brief JSON payload; no schema change.
+        today = self.today()
+        if today:
+            for saved_item in today.get("items", []):
+                if saved_item.get("id") == item.get("id") and saved_item.get("content_hash") == item_hash:
+                    saved_item.setdefault("story_cache", {})[key] = result
+                    self.repository.save(today.get("brief_date", ""), today, self.user_id)
+                    break
+        return result
     def today(self):
         date_str = time.strftime("%Y-%m-%d", time.gmtime())
         stored = self.repository.get(date_str, self.user_id)
@@ -89,3 +196,4 @@ class RadarService:
 
     def history(self, limit=14):
         return self.repository.list(limit=limit, user_id=self.user_id)
+

@@ -1,0 +1,12 @@
+{
+  "members": [
+    {"id": "rm", "name": "RM", "accounts": {"instagram": {"handle": "rkive", "verified": true, "provenance_url": "https://www.instagram.com/rkive/"}}},
+    {"id": "jin", "name": "Jin", "accounts": {"instagram": {"handle": "jin", "verified": true, "provenance_url": "https://www.instagram.com/jin/"}}},
+    {"id": "suga", "name": "SUGA", "accounts": {"instagram": {"handle": "agustd", "verified": true, "provenance_url": "https://www.instagram.com/agustd/"}}},
+    {"id": "jhope", "name": "j-hope", "accounts": {"instagram": {"handle": "uarmyhope", "verified": true, "provenance_url": "https://www.instagram.com/uarmyhope/"}, "tiktok": {"handle": "iamurhope", "verified": true, "provenance_url": "https://newsroom.tiktok.com/vi-VN/j-hope-sweet-dream"}}},
+    {"id": "jimin", "name": "Jimin", "accounts": {"instagram": {"handle": "j.m", "verified": true, "provenance_url": "https://www.instagram.com/j.m/"}}},
+    {"id": "v", "name": "V", "accounts": {"instagram": {"handle": "thv", "verified": true, "provenance_url": "https://www.instagram.com/thv/"}}},
+    {"id": "jungkook", "name": "Jung Kook", "accounts": {"instagram": {"handle": "mnijungkook", "verified": true, "provenance_url": "https://www.instagram.com/mnijungkook/"}}}
+  ]
+}
+

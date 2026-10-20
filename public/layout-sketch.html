@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#eff4ff">
+<title>Aster Voss · 卡片布局草图</title>
+<style>
+:root{color-scheme:light;--ink:#27334c;--muted:#7d8aa2;--line:rgba(113,132,181,.16);--blue:#637bfa;--violet:#9272f5;--glass:rgba(255,255,255,.57)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+body{min-height:100vh;background:linear-gradient(135deg,#eef4ff 0%,#f6f5ff 54%,#f2f6ff 100%);overflow-x:hidden}
+body:before,body:after{content:"";position:fixed;width:54vw;height:54vw;min-width:360px;min-height:360px;border-radius:50%;filter:blur(12px);opacity:.52;pointer-events:none;z-index:-1}
+body:before{left:-21vw;top:-27vh;background:radial-gradient(circle,rgba(95,196,255,.58),rgba(126,133,255,.24) 48%,transparent 72%)}
+body:after{right:-23vw;bottom:-30vh;background:radial-gradient(circle,rgba(208,157,255,.43),rgba(255,183,218,.23) 49%,transparent 72%)}
+button,input{font:inherit}button{cursor:pointer}
+.shell{min-height:100vh;display:grid;grid-template-columns:224px minmax(0,1fr)}
+.sidebar{position:sticky;top:0;height:100vh;padding:24px 16px 18px;background:rgba(248,250,255,.57);border-right:1px solid rgba(255,255,255,.8);backdrop-filter:blur(26px);display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:11px;padding:2px 8px 30px}.brand-icon{width:38px;height:38px;display:grid;place-items:center;border:1px solid #fff;border-radius:14px;background:linear-gradient(145deg,#fff,rgba(221,231,255,.76));box-shadow:0 7px 22px rgba(95,116,190,.13);font-size:19px;color:#6677e9}
+.brand-name{font-size:14px;font-weight:720;letter-spacing:-.2px}.brand-caption{font-size:10px;color:var(--muted);margin-top:3px}
+.nav-label{font-size:10px;font-weight:700;letter-spacing:.13em;color:#a0aabe;padding:0 11px 9px;text-transform:uppercase}
+.nav{display:grid;gap:5px}.nav button{border:0;background:transparent;color:#707e96;border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:11px;text-align:left;font-size:12px;transition:.18s}
+.nav button:hover,.nav button.active{background:rgba(255,255,255,.72);color:#303d58;box-shadow:0 5px 16px rgba(83,102,162,.06)}
+.nav-icon{width:18px;text-align:center;font-size:15px;color:#8997b2}
+.side-bottom{margin-top:auto;border-top:1px solid var(--line);padding:14px 8px 0;color:#8995aa;font-size:10px;line-height:1.6}
+.workspace{width:min(1160px,100%);margin:0 auto;padding:32px clamp(22px,5vw,72px) 56px}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:54px}
+.crumb{font-size:11px;color:#8794aa}.crumb span{color:#b0b9c8;margin:0 8px}
+.top-actions{display:flex;align-items:center;gap:9px}
+.preview-pill{border:1px solid rgba(255,255,255,.9);border-radius:999px;background:rgba(255,255,255,.45);padding:7px 11px;color:#7e8ba2;font-size:10px}
+.back-link{color:#687795;text-decoration:none;font-size:11px;padding:8px 11px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.47)}
+.back-link:hover{background:rgba(255,255,255,.8)}
+.intro{max-width:690px;margin:0 0 34px}
+.eyebrow{color:#8794ad;font-size:10px;font-weight:750;letter-spacing:.17em;text-transform:uppercase}
+h1{font-size:clamp(31px,4vw,47px);letter-spacing:-1.7px;line-height:1.12;margin:12px 0 12px;font-weight:690;color:#293650}
+.intro p{font-size:13px;line-height:1.75;color:#7b879d;margin:0;max-width:530px}
+.tools{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.section-title{font-size:12px;font-weight:680;color:#46536c}
+.search{width:min(260px,52vw);border:1px solid rgba(255,255,255,.9);outline:0;background:rgba(255,255,255,.52);border-radius:11px;padding:9px 12px;color:var(--ink);font-size:11px;box-shadow:0 5px 18px rgba(90,108,165,.04)}
+.search:focus{border-color:rgba(105,126,224,.45);box-shadow:0 0 0 3px rgba(105,126,224,.1)}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+.card{position:relative;isolation:isolate;overflow:hidden;min-height:222px;grid-column:span 6;border:1px solid rgba(255,255,255,.88);border-radius:22px;background:var(--glass);box-shadow:0 12px 34px rgba(81,100,157,.075);backdrop-filter:blur(20px);padding:20px;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+.card:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(135deg,rgba(255,255,255,.54),transparent 58%);opacity:.74}
+.card:hover{transform:translateY(-3px);box-shadow:0 18px 42px rgba(81,100,157,.13);border-color:#fff}
+.card.wide{grid-column:span 7}.card.compact{grid-column:span 5}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.card-symbol{width:35px;height:35px;display:grid;place-items:center;border-radius:12px;background:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.88);color:#7182d7;font-size:15px}
+.card-tag{font-size:9px;color:#8b97ad;letter-spacing:.09em;text-transform:uppercase}
+.card h2{font-size:18px;letter-spacing:-.35px;margin:17px 0 6px;font-weight:680}
+.card-copy{font-size:11px;line-height:1.65;color:#8290a6;margin:0;max-width:390px}
+.card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:22px;padding-top:12px;border-top:1px solid rgba(117,135,177,.12)}
+.card-action{border:0;background:transparent;padding:0;color:#5f70d5;font-size:11px;font-weight:650}
+.arrow{display:inline-block;transition:transform .18s;margin-left:5px}.card-action:hover .arrow{transform:translateX(4px)}
+.card-status{color:#9aa5b7;font-size:9px}
+.mini-compose{display:flex;align-items:center;gap:8px;margin-top:18px;padding:8px;border:1px solid rgba(255,255,255,.9);border-radius:13px;background:rgba(255,255,255,.5)}
+.mini-compose input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:var(--ink);font-size:10px;padding:4px}
+.mini-compose input::placeholder{color:#9ca7b8}
+.mini-compose button{border:0;border-radius:9px;width:29px;height:29px;color:white;background:linear-gradient(135deg,#667bfa,#9b70ef);box-shadow:0 4px 12px rgba(104,117,226,.2)}
+.tabs{display:flex;gap:5px;margin-top:14px;padding:4px;background:rgba(231,236,250,.56);border-radius:10px;width:max-content}
+.tabs button{border:0;background:transparent;color:#8a96ac;padding:6px 9px;border-radius:7px;font-size:9px}
+.tabs button.active{background:rgba(255,255,255,.88);color:#4b5b7a;box-shadow:0 2px 8px rgba(65,82,140,.08)}
+.tab-note{font-size:9px;color:#98a3b5;margin-top:10px;min-height:14px}
+.preview-row{display:flex;gap:8px;align-items:center;margin-top:13px;color:#7d8ba2;font-size:10px}
+.row-dot{height:6px;width:6px;border-radius:50%;background:#9eabe0;flex:none}
+.detail{display:none;margin-top:14px;padding:12px 13px;border-radius:12px;background:rgba(255,255,255,.57);border:1px solid rgba(255,255,255,.88);font-size:10px;line-height:1.65;color:#75829b}
+.card.open .detail{display:block;animation:reveal .2s ease}
+.card.open{border-color:rgba(126,143,218,.4)}
+@keyframes reveal{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.empty{display:none;grid-column:1/-1;padding:32px;text-align:center;color:#8b97ab;font-size:11px;border:1px dashed var(--line);border-radius:18px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,12px);opacity:0;pointer-events:none;padding:10px 15px;border:1px solid rgba(255,255,255,.9);border-radius:12px;background:rgba(255,255,255,.82);box-shadow:0 10px 26px rgba(79,96,151,.13);backdrop-filter:blur(16px);font-size:11px;color:#4c5a74;transition:.22s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:760px){.shell{grid-template-columns:1fr}.sidebar{position:sticky;z-index:5;top:0;height:auto;padding:10px 13px;display:block;border-right:0;border-bottom:1px solid rgba(255,255,255,.8)}.brand{padding:1px 3px 9px}.brand-icon{width:31px;height:31px;border-radius:11px}.nav-label,.side-bottom{display:none}.nav{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none}.nav button{white-space:nowrap;padding:8px 10px;font-size:10px}.nav-icon{width:auto}.workspace{padding:20px 16px 34px}.topline{margin-bottom:36px}.intro{margin-bottom:27px}h1{font-size:34px}.card,.card.wide,.card.compact{grid-column:span 12;min-height:205px}.grid{gap:11px}.tools{margin-bottom:13px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="brand"><div class="brand-icon">✦</div><div><div class="brand-name">Aster Voss</div><div class="brand-caption">个人 AI 助手</div></div></div>
+  <div class="nav-label">个人空间</div>
+  <nav class="nav" aria-label="侧边栏">
+    <button class="active" data-nav="对话"><span class="nav-icon">◌</span> 对话</button>
+    <button data-nav="新增对话"><span class="nav-icon">＋</span> 新增对话</button>
+    <button data-nav="设置"><span class="nav-icon">⚙</span> 设置</button>
+  </nav>
+  <div class="side-bottom">卡片布局草图<br>此页面用于体验交互与层级</div>
+</aside>
+<main class="workspace">
+  <div class="topline"><div class="crumb">Aster Voss <span>/</span> 布局预览</div><div class="top-actions"><span class="preview-pill">交互原型 · 不改动现有功能</span><a class="back-link" href="/">返回现有页面 ↗</a></div></div>
+  <section class="intro"><div class="eyebrow">A calmer workspace</div><h1>你好，我是 Aster Voss。</h1><p>把常用功能放进清晰、可点击的卡片里。先体验布局和交互，再决定是否应用到正式首页。</p></section>
+  <div class="tools"><div class="section-title">选择一个入口</div><input class="search" id="search" type="search" aria-label="筛选卡片" placeholder="筛选卡片…"></div>
+  <section class="grid" id="grid" aria-label="功能卡片">
+    <article class="card wide" data-card="对话 继续对话 chat">
+      <div class="card-top"><div class="card-symbol">◌</div><span class="card-tag">Your space</span></div>
+      <h2>继续对话</h2><p class="card-copy">从一个问题开始，Aster 会在同一处陪你继续探索。</p>
+      <form class="mini-compose"><input aria-label="输入消息草稿" placeholder="写下你想聊的内容…"><button aria-label="预览发送动作" type="submit">↑</button></form>
+      <div class="card-footer"><button class="card-action" type="button" data-open="chat">打开卡片预览<span class="arrow">→</span></button><span class="card-status">对话入口</span></div>
+      <div class="detail">交互草图：输入框保留在卡片内；进入正式页面后可接入现有对话流程。</div>
+    </article>
+    <article class="card compact" data-card="bts 信息中心 timeline weverse social">
+      <div class="card-top"><div class="card-symbol">◇</div><span class="card-tag">BTS Radar</span></div>
+      <h2>BTS 信息中心</h2><p class="card-copy">沿用现有信息来源；先把时间线与来源切换集中在一个入口。</p>
+      <div class="tabs" role="tablist" aria-label="BTS 内容来源">
+        <button class="active" type="button" role="tab" aria-selected="true">Timeline</button><button type="button" role="tab" aria-selected="false">Weverse</button><button type="button" role="tab" aria-selected="false">Social</button>
+      </div>
+      <div class="tab-note">切换来源，查看对应的信息流</div>
+      <div class="card-footer"><button class="card-action" type="button" data-open="bts">打开卡片预览<span class="arrow">→</span></button><span class="card-status">来源可切换</span></div>
+      <div class="detail">交互草图：来源标签可切换。正式页面继续使用 BTS Radar 已有数据与筛选功能。</div>
+    </article>
+    <article class="card compact" data-card="ai radar 热点">
+      <div class="card-top"><div class="card-symbol">✧</div><span class="card-tag">Discover</span></div>
+      <h2>AI Radar</h2><p class="card-copy">把每日热点整理成可浏览的内容卡，保留刷新与原文入口的位置。</p>
+      <div class="preview-row"><span class="row-dot"></span><span>热点卡片与摘要区域</span></div><div class="preview-row"><span class="row-dot"></span><span>来源与更新时间区域</span></div>
+      <div class="card-footer"><button class="card-action" type="button" data-open="radar">打开卡片预览<span class="arrow">→</span></button><span class="card-status">Radar 入口</span></div>
+      <div class="detail">交互草图：卡片展开后可放置摘要、来源与刷新状态；此原型不显示或编造热点数据。</div>
+    </article>
+    <article class="card wide" data-card="research 检索">
+      <div class="card-top"><div class="card-symbol">⌕</div><span class="card-tag">Explore</span></div>
+      <h2>Research</h2><p class="card-copy">从检索开始，浏览已有研究结果；卡片为搜索与结果提供稳定入口。</p>
+      <div class="preview-row"><span class="row-dot"></span><span>搜索框与筛选选项区域</span></div><div class="preview-row"><span class="row-dot"></span><span>研究结果列表区域</span></div>
+      <div class="card-footer"><button class="card-action" type="button" data-open="research">打开卡片预览<span class="arrow">→</span></button><span class="card-status">检索入口</span></div>
+      <div class="detail">交互草图：点击入口可展开布局说明；正式接入时使用现有 Research 搜索与结果，不添加演示数据。</div>
+    </article>
+    <div class="empty" id="empty">没有匹配的卡片</div>
+  </section>
+</main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+const cards=[...document.querySelectorAll('.card')], toast=document.getElementById('toast');
+let toastTimer;
+function notify(text){toast.textContent=text;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2100)}
+document.querySelectorAll('[data-open]').forEach(button=>button.addEventListener('click',()=>{const card=button.closest('.card');const open=card.classList.toggle('open');button.innerHTML=open?'收起卡片<span class="arrow">↑</span>':'打开卡片预览<span class="arrow">→</span>'}));
+document.querySelectorAll('.tabs button').forEach(tab=>tab.addEventListener('click',()=>{const group=tab.closest('.tabs');group.querySelectorAll('button').forEach(item=>{const active=item===tab;item.classList.toggle('active',active);item.setAttribute('aria-selected',String(active))});tab.closest('.card').querySelector('.tab-note').textContent='已选择 '+tab.textContent+' 来源 · 原型预览'}));
+document.querySelectorAll('.mini-compose').forEach(form=>form.addEventListener('submit',event=>{event.preventDefault();notify('这是布局预览，尚未发送消息。')}));
+document.getElementById('search').addEventListener('input',event=>{const query=event.target.value.trim().toLocaleLowerCase();let visible=0;cards.forEach(card=>{const show=card.dataset.card.toLocaleLowerCase().includes(query);card.hidden=!show;if(show)visible++});document.getElementById('empty').style.display=visible?'none':'block'});
+document.querySelectorAll('.nav button').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.nav button').forEach(item=>item.classList.toggle('active',item===button));const label=button.dataset.nav;if(label==='对话'){cards.forEach(card=>card.hidden=false);document.getElementById('search').value='';document.getElementById('empty').style.display='none';document.querySelector('.card[data-card^="对话"]').scrollIntoView({behavior:'smooth',block:'center'})}else if(label==='新增对话'){const form=document.querySelector('.mini-compose');form.reset();const card=form.closest('.card');card.hidden=false;card.classList.add('open');document.getElementById('search').value='';document.querySelectorAll('.card').forEach(item=>{if(item!==card)item.hidden=false});document.getElementById('empty').style.display='none';form.querySelector('input').focus();notify('新对话草图已准备好。')}else{notify('设置入口已保留；设置面板可在下一步接入。')}}));
+</script>
+</body>
+</html>
