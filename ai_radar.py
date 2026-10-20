@@ -356,7 +356,7 @@ def _raw_item(candidate: dict[str, Any], importance: str, status: str = "fallbac
 
 
 def curate_v2(provider, candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Generate bounded Chinese understanding for selected A/B candidates only."""
+    """Generate bounded Chinese understanding for each selected candidate."""
     if not candidates:
         return []
     rows = []
