@@ -791,7 +791,7 @@ function renderRadarItems(){
     return region==="international"||region==="mixed";
   });
   radarList.replaceChildren();
-  if(!matches.length){const empty=document.createElement("div");empty.className="radar-empty";empty.textContent=radarRegionFilter==="domestic"?"今天暂时没有国内 AI 动态。":"今天暂时没有国外 AI 动态。";radarList.appendChild(empty);return;}
+  if(!matches.length){const empty=document.createElement("div");empty.className="radar-empty";empty.textContent=radarRegionFilter==="domestic"?"当前全球前 10 条中没有国内 AI 动态。":"暂时没有抓取到国外 AI 动态；可点右上角刷新重试。";radarList.appendChild(empty);return;}
   matches.forEach(renderRadarCard);
 }
 document.querySelector("#radar-categories").addEventListener("click",event=>{
@@ -817,9 +817,9 @@ function renderRadarCard(item){
   const originalSummary=document.createElement("details");const originalSummaryToggle=document.createElement("summary");originalSummaryToggle.textContent="原文摘要";const originalSummaryText=document.createElement("p");originalSummaryText.textContent=summaryHasChinese?"":rawSummary;originalSummary.append(originalSummaryToggle,originalSummaryText);
   const heat=document.createElement("div");heat.className="radar-heat";
   const score=Number(item.hot_score);const scoreValid=Number.isFinite(score)&&score>=0;
-  const heatLabel=document.createElement("div");heatLabel.className="radar-heat-label";heatLabel.textContent=scoreValid?"当前热度":"当前热度暂不可用";
-  const heatValue=document.createElement("span");heatValue.textContent=scoreValid?String(Math.round(Math.max(0,Math.min(100,score))))+"/100":"";heatLabel.appendChild(heatValue);heat.appendChild(heatLabel);
-  if(scoreValid){const track=document.createElement("div");track.className="radar-heat-track";track.setAttribute("role","progressbar");track.setAttribute("aria-label","当前热度");track.setAttribute("aria-valuemin","0");track.setAttribute("aria-valuemax","100");const value=Math.round(Math.max(0,Math.min(100,score)));track.setAttribute("aria-valuenow",String(value));const fill=document.createElement("span");fill.className="radar-heat-fill";fill.style.width=value+"%";track.appendChild(fill);heat.appendChild(track);}
+  const heatLabel=document.createElement("div");heatLabel.className="radar-heat-label";heatLabel.textContent=scoreValid?"全球候选相对热度":"热度暂不可用";
+  const heatValue=document.createElement("span");const rank=Number(item.hot_rank);heatValue.textContent=scoreValid?(Number.isFinite(rank)&&rank>0?"第 "+rank+" 位 · ":"")+String(Math.round(Math.max(0,Math.min(100,score))))+"/100":"";heatLabel.appendChild(heatValue);heat.appendChild(heatLabel);
+  if(scoreValid){const track=document.createElement("div");track.className="radar-heat-track";track.setAttribute("role","progressbar");track.setAttribute("aria-label","全球候选相对热度");track.setAttribute("aria-valuemin","0");track.setAttribute("aria-valuemax","100");const value=Math.round(Math.max(0,Math.min(100,score)));track.setAttribute("aria-valuenow",String(value));const fill=document.createElement("span");fill.className="radar-heat-fill";fill.style.width=value+"%";track.appendChild(fill);heat.appendChild(track);}
   if(!headlineHasChinese&&item.ai_status!=="ready")headline.classList.add("radar-summary-fallback");
   const generated=document.createElement("span");generated.className="radar-ai-badge";generated.textContent=item.ai_status==="ready"?"AI 生成 · 已做基础事实校验":"原始来源";
   const oneLiner=document.createElement("p");oneLiner.className="radar-one-liner";oneLiner.textContent=item.one_liner_zh||"";
