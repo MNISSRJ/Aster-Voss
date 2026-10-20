@@ -4,6 +4,8 @@ from llm.base import LLMResponse
 from services.radar_service import RadarService
 from fastapi.testclient import TestClient
 import web_app
+import services.radar_article as radar_article
+from types import SimpleNamespace
 
 
 class FakeProvider:
@@ -198,6 +200,56 @@ def test_story_cache_uses_keyed_memory_and_skips_second_call(monkeypatch):
 def test_concepts_reject_generic_labels_and_keep_limits():
     assert normalize_concepts(["AI", "technology", "retrieval augmented generation", "RAG", "long concept with too many words to fit"], 3) == ["retrieval augmented generation", "RAG"]
 
+
+
+def test_article_extractor_prefers_article_and_skips_navigation():
+    text = "The complete report explains the new system and its deployment details. " * 8
+    extracted = radar_article.extract_article_text(
+        "<html><body><nav>Menu navigation should not appear</nav><article><p>"
+        + text
+        + "</p></article><footer>Footer should not appear</footer></body></html>"
+    )
+    assert "complete report" in extracted
+    assert "Menu navigation" not in extracted
+    assert "Footer should not appear" not in extracted
+
+
+def test_article_reader_rejects_private_network_targets():
+    for url in ("http://127.0.0.1/admin", "http://169.254.169.254/latest/meta-data"):
+        try:
+            radar_article._validate_public_url(url)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("private target was not rejected")
+
+
+def test_radar_question_includes_fetched_article_context(monkeypatch):
+    monkeypatch.setattr(web_app, "radar_2_enabled", lambda: True)
+    monkeypatch.setattr(web_app.cloud, "enabled", lambda: False)
+    monkeypatch.setattr(web_app, "fetch_article_text", lambda url: "全文正文：交通运输部介绍了人工智能在运输领域的具体部署方案。")
+    captured = {}
+
+    def run_local_chat(message):
+        captured["message"] = message
+        return SimpleNamespace(text="已根据正文回答。", provider="fake", model="fake")
+
+    monkeypatch.setattr(web_app, "_run_local_chat", run_local_chat)
+    response = TestClient(web_app.app).post(
+        "/api/chat",
+        json={
+            "message": "请用三句话总结这条内容。",
+            "radar_context": {
+                "title": "人工智能+交通运输",
+                "summary": "一条简短摘要",
+                "url": "https://news.example/article",
+            },
+        },
+    )
+    assert response.status_code == 200
+    assert "全文正文：交通运输部介绍了人工智能在运输领域的具体部署方案。" in captured["message"]
+    assert "请用三句话总结这条内容。" in captured["message"]
+    assert "正文已读取" in captured["message"]
 
 def test_story_api_flag_off_does_not_call_generation(monkeypatch):
     monkeypatch.setenv("RADAR_2_ENABLED", "false")
