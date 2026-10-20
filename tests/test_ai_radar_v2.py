@@ -225,3 +225,11 @@ def test_candidate_heat_is_relative_ranked_and_varies(monkeypatch):
     assert len({item["hot_score"] for item in result}) == 4
     assert result[0]["hot_score"] == 100
     assert result[-1]["hot_score"] == 0
+
+
+def test_international_feed_locale_wins_over_china_mentions_without_domestic_ai_entity():
+    story = {
+        "title": "US AI chip makers face new export rules for China",
+        "description": "The policy concerns international AI hardware supply chains.",
+    }
+    assert ai_radar._story_region(story, "international") == "international"
