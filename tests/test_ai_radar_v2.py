@@ -192,3 +192,36 @@ def test_story_api_dispatches_to_service_when_enabled(monkeypatch):
     assert response.status_code == 200
     assert response.json()["title"] == "A title"
 
+
+
+def test_read_feed_parses_atom_entries_and_iso_timestamps(monkeypatch):
+    atom = b'''<?xml version="1.0" encoding="utf-8"?>
+    <feed xmlns="http://www.w3.org/2005/Atom">
+      <entry><title>Google announces a new AI model</title>
+      <link href="https://example.test/atom-story"/>
+      <published>2026-10-20T08:30:00+00:00</published>
+      <summary>Google announced an AI model.</summary></entry>
+    </feed>'''
+    monkeypatch.setattr(ai_radar, "_fetch", lambda url: atom)
+    rows = ai_radar._read_feed("The Verge AI", "https://example.test/feed")
+    assert len(rows) == 1
+    assert rows[0]["url"] == "https://example.test/atom-story"
+    assert rows[0]["published_at"] == "2026-10-20T08:30:00+00:00"
+    assert rows[0]["description"] == "Google announced an AI model."
+
+
+def test_candidate_heat_is_relative_ranked_and_varies(monkeypatch):
+    now = ai_radar.datetime.now(ai_radar.timezone.utc).isoformat()
+    rows = [{
+        "id": str(i), "title": f"Global AI update {i}", "url": f"https://example.test/{i}",
+        "description": "AI industry news", "published_at": now,
+        "feed": "TechCrunch AI", "source": "TechCrunch AI",
+    } for i in range(1, 5)]
+    monkeypatch.setattr(ai_radar, "FEEDS", [("TechCrunch AI", "https://foreign.test/feed")])
+    monkeypatch.setattr(ai_radar, "DOMESTIC_FEEDS", [])
+    monkeypatch.setattr(ai_radar, "_read_feed", lambda name, url: rows)
+    result = ai_radar.collect_candidates()
+    assert [item["hot_rank"] for item in result] == [1, 2, 3, 4]
+    assert len({item["hot_score"] for item in result}) == 4
+    assert result[0]["hot_score"] == 100
+    assert result[-1]["hot_score"] == 0
