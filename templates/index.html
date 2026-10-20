@@ -815,7 +815,7 @@ function renderRadarCard(item){
   const originalTitle=document.createElement("details");const originalToggle=document.createElement("summary");originalToggle.textContent="原始英文标题";const original=document.createElement("p");original.textContent=item.title_original||item.title||"";originalTitle.append(originalToggle,original);
   const link=document.createElement("a");link.className="radar-source";link.textContent=(item.source_list||[]).join(" · ")+"  ↗";link.href=item.url||"#";link.target="_blank";link.rel="noopener noreferrer";
   const timestamp=document.createElement("time");timestamp.className="radar-time";timestamp.dateTime=item.published_at||"";timestamp.textContent=item.published_at?new Date(item.published_at).toLocaleString("zh-CN"):"时间未提供";
-  card.append(top,headline,generated,summary,originalSummary,heat,oneLiner,why,tags,originalTitle,timestamp,link);if(window.RADAR_2_ENABLED)addRadarActions(card,item,"ai");radarList.appendChild(card);radarEvent(item,"item_view","ai");
+  card.append(top,headline,generated,summary,heat,oneLiner,why,tags,originalTitle,timestamp,link);if(!summaryHasChinese)card.appendChild(originalSummary);if(window.RADAR_2_ENABLED)addRadarActions(card,item,"ai");radarList.appendChild(card);radarEvent(item,"item_view","ai");
 }
 let researchMinutes=20;
 async function loadResearch({query="",refresh=false}={}){
