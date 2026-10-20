@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from llm.base import LLMMessage
+import log
 from ai_radar_enrichment import (
     LANGUAGE,
     PROMPT_VERSION,
@@ -156,7 +157,7 @@ def _story_region(row: dict[str, Any], feed_region: str) -> str:
     """Prefer the AI company/ecosystem named in the story over the search locale."""
     text = f"{row.get('title', '')} {row.get('description', '')}".casefold()
     domestic = bool(re.search(
-        r"中国|国内|国产|字节跳动|阿里巴巴|百度|腾讯|华为|智谱|minimax|moonshot|"
+        r"字节跳动|阿里巴巴|百度|腾讯|华为|智谱|minimax|moonshot|"
         r"deepseek|商汤|科大讯飞|小米|通义|豆包|文心|火山引擎|百川智能|零一万物|面壁智能",
         text,
     ))
@@ -181,18 +182,25 @@ def collect_candidates() -> list[dict[str, Any]]:
     groups: dict[str, dict[str, Any]] = {}
 
     domestic_names = {name for name, _ in DOMESTIC_FEEDS}
+    feed_stats = {}
     for feed_name, url in [*FEEDS, *DOMESTIC_FEEDS]:
         try:
             rows = _read_feed(feed_name, url)
         except Exception as exc:
-            logging.getLogger("ai_radar").warning("AI Radar feed failed: %s (%s)", feed_name, type(exc).__name__)
+            feed_stats[feed_name] = {"rows": 0, "accepted": 0, "error": type(exc).__name__}
+            log.info("AI Radar feed failed feed=%s error=%s", feed_name, type(exc).__name__)
             continue
-        if not rows:
-            logging.getLogger("ai_radar").warning("AI Radar feed returned no entries: %s", feed_name)
+        stats = {"rows": len(rows), "accepted": 0, "stale": 0, "irrelevant": 0}
+        feed_stats[feed_name] = stats
         for row in rows:
             dt = _parse_date(row["published_at"]) or now
-            if dt < cutoff or not _is_ai_relevant(row):
+            if dt < cutoff:
+                stats["stale"] += 1
                 continue
+            if not _is_ai_relevant(row):
+                stats["irrelevant"] += 1
+                continue
+            stats["accepted"] += 1
             key = _norm_title(row["title"])
             if not key:
                 continue
@@ -206,6 +214,7 @@ def collect_candidates() -> list[dict[str, Any]]:
                 group["description"] = row["description"]
 
     items = list(groups.values())
+    region_counts = {"domestic": 0, "international": 0, "mixed": 0}
     for item in items:
         dt = _parse_date(item["published_at"]) or now
         age_hours = max(0.0, (now - dt).total_seconds() / 3600)
@@ -218,11 +227,13 @@ def collect_candidates() -> list[dict[str, Any]]:
         item["source_list"] = sorted(item["sources"])
         item["feeds"] = sorted(item["feeds"])
         item["region"] = next(iter(item["regions"])) if len(item["regions"]) == 1 else "mixed"
+        region_counts[item["region"]] = region_counts.get(item["region"], 0) + 1
         del item["sources"]
         del item["regions"]
 
     items.sort(key=lambda item: (item["_heat_evidence"], item["published_at"], item["title"]), reverse=True)
     items = items[:MAX_CANDIDATES]
+    log.info("AI Radar collected feeds=%s candidates=%s regions=%s", feed_stats, len(items), region_counts)
     denominator = max(1, len(items) - 1)
     for index, item in enumerate(items):
         item["hot_rank"] = index + 1
