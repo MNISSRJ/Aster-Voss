@@ -30,7 +30,7 @@ FEEDS = [
         "https://news.google.com/rss/search?"
         + urllib.parse.urlencode(
             {
-                "q": "AI artificial intelligence AI agents LLM",
+                "q": "AI OR artificial intelligence OR generative AI OR large language model OR AI agent OR OpenAI OR Anthropic OR Gemini OR DeepSeek OR NVIDIA",
                 "hl": "en-US",
                 "gl": "US",
                 "ceid": "US:en",
@@ -44,7 +44,7 @@ DOMESTIC_FEEDS = [
         "https://news.google.com/rss/search?"
         + urllib.parse.urlencode(
             {
-                "q": "人工智能 中国 OR 大模型 中国 OR AI 中国",
+                "q": "人工智能 OR 大模型 OR 生成式 AI OR 智能体 OR 机器学习 OR 通义 OR 豆包 OR DeepSeek",
                 "hl": "zh-CN",
                 "gl": "CN",
                 "ceid": "CN:zh-Hans",
@@ -123,6 +123,45 @@ def _read_feed(feed_name: str, url: str) -> list[dict[str, Any]]:
     return rows
 
 
+def _is_ai_relevant(row: dict[str, Any]) -> bool:
+    """Reject unrelated headlines returned by broad regional news search."""
+    text = f"{row.get('title', '')} {row.get('description', '')}".casefold()
+    return bool(re.search(
+        r"(?<![a-z0-9])ai(?![a-z0-9])|artificial intelligence|machine learning|deep learning|"
+        r"large language model|\\bllm\\b|generative ai|\\bgenai\\b|agentic|\\bagents?\\b|"
+        r"chatgpt|\\bgpt[- ]?\\d|\\bclaude\\b|\\bgemini\\b|\\bllama\\b|deepseek|"
+        r"openai|anthropic|nvidia|neural network|transformer model|foundation model|"
+        r"人工智能|大模型|生成式|智能体|机器学习|深度学习|神经网络|推理模型|基础模型|"
+        r"通义|豆包|文心|智谱|月之暗面|讯飞星火|混元|千问|百川智能|商汤",
+        text,
+    ))
+
+
+def _story_region(row: dict[str, Any], feed_region: str) -> str:
+    """Prefer the AI company/ecosystem named in the story over the search locale."""
+    text = f"{row.get('title', '')} {row.get('description', '')}".casefold()
+    domestic = bool(re.search(
+        r"中国|国内|国产|字节跳动|阿里巴巴|百度|腾讯|华为|智谱|minimax|moonshot|"
+        r"deepseek|商汤|科大讯飞|小米|通义|豆包|文心|火山引擎|百川智能|零一万物|面壁智能",
+        text,
+    ))
+    international = bool(re.search(
+        r"openai|anthropic|google deepmind|\\bgoogle\\b|microsoft|\\bmeta\\b|nvidia|"
+        r"\\bxai\\b|mistral|cohere|perplexity|amazon|\\bapple\\b|\\bclaude\\b|"
+        r"\\bgemini\\b|\\bgpt[- ]?\\d",
+        text,
+    ))
+    if domestic and international:
+        return "mixed"
+    if domestic:
+        return "domestic"
+    if international:
+        return "international"
+    return feed_region
+
+
+def collect_candidates() -> list[dict[str, Any]]:
+
 def collect_candidates() -> list[dict[str, Any]]:
     now = datetime.now(timezone.utc)
     cutoff = now - timedelta(hours=MAX_AGE_HOURS)
@@ -136,7 +175,7 @@ def collect_candidates() -> list[dict[str, Any]]:
             continue
         for row in rows:
             dt = _parse_date(row["published_at"]) or now
-            if dt < cutoff:
+            if dt < cutoff or not _is_ai_relevant(row):
                 continue
             key = _norm_title(row["title"])
             if not key:
@@ -144,7 +183,7 @@ def collect_candidates() -> list[dict[str, Any]]:
             group = groups.setdefault(key, {**row, "feeds": set(), "sources": set(), "regions": set()})
             group["feeds"].add(feed_name)
             group["sources"].add(row["source"])
-            group["regions"].add("domestic" if feed_name in domestic_names else "international")
+            group["regions"].add(_story_region(row, "domestic" if feed_name in domestic_names else "international"))
             if dt > (_parse_date(group["published_at"]) or cutoff):
                 group["published_at"] = row["published_at"]
                 group["url"] = row["url"]
