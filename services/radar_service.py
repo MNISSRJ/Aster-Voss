@@ -79,6 +79,7 @@ class RadarService:
             payload = self._fallback_payload(candidates)
 
         payload.setdefault("status", "ready" if payload.get("items") else "empty")
+        payload["items"].sort(key=lambda item: item.get("hot_rank", 10_000))
         payload["saved"] = (
             bool(self.repository.save(payload["brief_date"], payload, self.user_id))
             if cloud.enabled()
@@ -123,6 +124,7 @@ class RadarService:
             item = {**item, "source_list": candidate.get("source_list", []), "hot_score": candidate.get("hot_score", 0), "hot_rank": candidate.get("hot_rank", 0), "region": candidate.get("region", "international")}
             results.append(item)
 
+        results.sort(key=lambda item: item.get("hot_rank", 10_000))
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         payload = {
             "status": "ready" if results else "empty",
