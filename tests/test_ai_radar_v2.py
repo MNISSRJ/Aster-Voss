@@ -129,7 +129,7 @@ def test_story_limits_concepts_and_returns_separate_suggestions():
 
 def test_radar_v2_generates_chinese_summaries_for_c_items(monkeypatch):
     monkeypatch.setenv("RADAR_2_ENABLED", "true")
-    monkeypatch.setattr("services.radar_service.collect_candidates", lambda: [candidate("Opinion: weekly roundup", "A low priority recap")])
+    monkeypatch.setattr("services.radar_service.collect_candidates", lambda: [candidate()])
     monkeypatch.setattr("services.radar_service.classify_importance", lambda item: "C")
     monkeypatch.setattr("services.radar_service.cloud.enabled", lambda: False)
     provider = FakeProvider(valid_enrichment())
