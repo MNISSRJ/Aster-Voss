@@ -38,6 +38,10 @@ FEEDS = [
         ),
     ),
 ]
+DOMESTIC_FEEDS = [
+    ("机器之心", "https://www.jiqizhixin.com/rss"),
+    ("量子位", "https://www.qbitai.com/feed"),
+]
 MAX_AGE_HOURS = 48
 MAX_CANDIDATES = 20
 MAX_ITEMS = 6
@@ -114,7 +118,8 @@ def collect_candidates() -> list[dict[str, Any]]:
     cutoff = now - timedelta(hours=MAX_AGE_HOURS)
     groups: dict[str, dict[str, Any]] = {}
 
-    for feed_name, url in FEEDS:
+    domestic_names = {name for name, _ in DOMESTIC_FEEDS}
+    for feed_name, url in [*FEEDS, *DOMESTIC_FEEDS]:
         try:
             rows = _read_feed(feed_name, url)
         except Exception:
@@ -126,9 +131,10 @@ def collect_candidates() -> list[dict[str, Any]]:
             key = _norm_title(row["title"])
             if not key:
                 continue
-            group = groups.setdefault(key, {**row, "feeds": set(), "sources": set()})
+            group = groups.setdefault(key, {**row, "feeds": set(), "sources": set(), "regions": set()})
             group["feeds"].add(feed_name)
             group["sources"].add(row["source"])
+            group["regions"].add("domestic" if feed_name in domestic_names else "international")
             if dt > (_parse_date(group["published_at"]) or cutoff):
                 group["published_at"] = row["published_at"]
                 group["url"] = row["url"]
@@ -144,7 +150,9 @@ def collect_candidates() -> list[dict[str, Any]]:
         item["hot_score"] = round(min(100.0, freshness + cross_feed + source_diversity), 1)
         item["source_list"] = sorted(item["sources"])
         item["feeds"] = sorted(item["feeds"])
+        item["region"] = next(iter(item["regions"])) if len(item["regions"]) == 1 else "mixed"
         del item["sources"]
+        del item["regions"]
     items.sort(key=lambda x: (x["hot_score"], x["published_at"]), reverse=True)
     return items[:MAX_CANDIDATES]
 
@@ -291,6 +299,7 @@ def curate(
                 "source_list": source["source_list"],
                 "published_at": source["published_at"],
                 "hot_score": source["hot_score"],
+                "region": source.get("region", "international"),
             }
         )
         used_candidates.add(candidate_index)
@@ -332,6 +341,7 @@ def _raw_item(candidate: dict[str, Any], importance: str, status: str = "fallbac
         "source_list": candidate.get("source_list", []),
         "published_at": candidate.get("published_at", ""),
         "hot_score": candidate.get("hot_score", 0),
+        "region": candidate.get("region", "international"),
         "importance": importance,
         "source_type": "official",
         "ai_status": status,
