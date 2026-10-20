@@ -142,6 +142,28 @@ def test_radar_v2_generates_chinese_summaries_for_c_items(monkeypatch):
     assert payload["items"][0]["summary_zh"]
 
 
+
+def test_regional_top_ten_are_not_lost_to_global_top_ten(monkeypatch):
+    monkeypatch.setenv("RADAR_2_ENABLED", "true")
+    candidates = []
+    for index in range(15):
+        region = "domestic" if index < 10 else "international"
+        candidates.append({
+            "id": f"candidate-{index}", "title": f"AI industry update {index}",
+            "url": f"https://example.test/{index}", "description": "AI industry update",
+            "published_at": "2026-10-20T09:00:00+00:00", "source_list": ["Example"],
+            "hot_score": 100 - index, "hot_rank": index + 1, "region": region,
+        })
+    monkeypatch.setattr("services.radar_service.collect_candidates", lambda: candidates)
+    monkeypatch.setattr("services.radar_service.classify_importance", lambda item: "B")
+    monkeypatch.setattr("services.radar_service.cloud.enabled", lambda: False)
+
+    payload = RadarService().generate(provider=None)
+
+    assert [item["id"] for item in payload["items"]] == [f"candidate-{i}" for i in range(10)]
+    international = [item for item in payload["regional_items"] if item["region"] == "international"]
+    assert [item["id"] for item in international] == [f"candidate-{i}" for i in range(10, 15)]
+
 def test_cached_enrichment_is_reused_without_an_llm_call(monkeypatch):
     monkeypatch.setenv("RADAR_2_ENABLED", "true")
     source = candidate()
