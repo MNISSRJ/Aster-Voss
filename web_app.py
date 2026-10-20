@@ -239,9 +239,15 @@ def chat(body: ChatIn):
     if radar_2_enabled() and isinstance(body.radar_context, dict):
         allowed = ("title", "title_zh", "summary", "source_excerpt", "source", "published_at", "url", "category", "member", "core_concepts")
         context = {key: body.radar_context[key] for key in allowed if key in body.radar_context}
-        for key in ("title", "title_zh", "summary", "source_excerpt", "source", "published_at", "url", "category", "member"):
+        field_limits = {
+            "title": 300, "title_zh": 300, "summary": 1000, "source_excerpt": 1000,
+            "source": 300, "published_at": 100, "url": 1500, "category": 200, "member": 200,
+        }
+        for key, limit in field_limits.items():
             if isinstance(context.get(key), str):
-                context[key] = context[key][:1200]
+                context[key] = context[key][:limit]
+        if isinstance(context.get("core_concepts"), list):
+            context["core_concepts"] = [str(value)[:80] for value in context["core_concepts"][:10]]
         article_url = context.get("url", "") if isinstance(context.get("url", ""), str) else ""
         article_text = fetch_article_text(article_url) if article_url else ""
         context["article_text_status"] = "正文已读取" if article_text else "未能读取正文，仅有来源摘要"
