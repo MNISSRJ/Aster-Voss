@@ -6,7 +6,7 @@ import time
 
 import log
 
-from ai_radar import collect_candidates, curate, curate_v2, generate_story, _raw_item
+from ai_radar import MAX_ITEMS, collect_candidates, curate, curate_v2, generate_story, _raw_item
 from memory import cloud
 from ai_radar_enrichment import LANGUAGE, STORY_PROMPT_VERSION, cache_key, classify_importance, content_hash
 from feature_flags import radar_2_enabled
@@ -40,9 +40,10 @@ class RadarService:
                     "source_list": item.get("source_list", []),
                     "published_at": item["published_at"],
                     "hot_score": item["hot_score"],
+                    "hot_rank": item.get("hot_rank", 0),
                     "region": item.get("region", "international"),
                 }
-                for item in candidates[:6]
+                for item in candidates[:MAX_ITEMS]
             ],
             "source_count": len({s for item in candidates for s in item.get("source_list", [])}),
             "candidate_count": len(candidates),
@@ -100,7 +101,7 @@ class RadarService:
         for candidate in candidates:
             candidate["importance"] = classify_importance(candidate)
         # Keep selection bounded and predictable; the score remains internal.
-        selected = candidates[:6]
+        selected = candidates[:MAX_ITEMS]
         historical = self.repository.list(limit=14, user_id=self.user_id) if cloud.enabled() else []
         cached = self._cached_enrichments(historical)
         ai_candidates = selected
@@ -119,7 +120,7 @@ class RadarService:
             key = cache_key(candidate)
             item = cached.get(key) or generated_by_key.get(key) or _raw_item(candidate, importance)
             # Refresh transient feed metadata while reusing only cached AI fields.
-            item = {**item, "source_list": candidate.get("source_list", []), "hot_score": candidate.get("hot_score", 0), "region": candidate.get("region", "international")}
+            item = {**item, "source_list": candidate.get("source_list", []), "hot_score": candidate.get("hot_score", 0), "hot_rank": candidate.get("hot_rank", 0), "region": candidate.get("region", "international")}
             results.append(item)
 
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -127,7 +128,7 @@ class RadarService:
             "status": "ready" if results else "empty",
             "brief_date": time.strftime("%Y-%m-%d", time.gmtime()),
             "generated_at": now,
-            "intro_zh": "今天的 AI 动态已按重要性整理；入选动态均提供中文概要。" if results else "今天暂时没有抓到可用的 AI 热点。",
+            "intro_zh": "按全球 AI 行业候选的来源覆盖与新鲜度排序，展示前 10 条；热度是相对排名，不是浏览量。" if results else "今天暂时没有抓到可用的 AI 热点。",
             "items": results,
             "source_count": len({source for item in candidates for source in item.get("source_list", [])}),
             "candidate_count": len(candidates),
