@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+import logging
 import re
 import urllib.parse
 import urllib.request
@@ -54,7 +55,7 @@ DOMESTIC_FEEDS = [
 ]
 MAX_AGE_HOURS = 48
 MAX_CANDIDATES = 20
-MAX_ITEMS = 6
+MAX_ITEMS = 10
 USER_AGENT = "Aster-Voss-AI-Radar/1.0"
 
 
@@ -81,13 +82,15 @@ def _id(title: str, url: str) -> str:
 def _parse_date(value: str | None) -> datetime | None:
     if not value:
         return None
-    for fmt in (
-        "%a, %d %b %Y %H:%M:%S %z",
-        "%a, %d %b %Y %H:%M:%S GMT",
-        "%Y-%m-%dT%H:%M:%SZ",
-    ):
+    value = value.strip()
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    except ValueError:
+        pass
+    for fmt in ("%a, %d %b %Y %H:%M:%S %z", "%a, %d %b %Y %H:%M:%S GMT"):
         try:
-            dt = datetime.strptime(value.strip(), fmt)
+            dt = datetime.strptime(value, fmt)
             return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
         except ValueError:
             pass
@@ -103,21 +106,33 @@ def _fetch(url: str) -> bytes:
 def _read_feed(feed_name: str, url: str) -> list[dict[str, Any]]:
     root = ET.fromstring(_fetch(url))
     rows: list[dict[str, Any]] = []
-    for item in root.findall(".//item"):
-        title = _clean(item.findtext("title"))
-        link = (item.findtext("link") or "").strip()
+
+    def child_text(element, name: str) -> str:
+        child = next((node for node in element if node.tag.rsplit("}", 1)[-1] == name), None)
+        return (child.text or "").strip() if child is not None else ""
+
+    entries = root.findall(".//item")
+    if not entries:
+        entries = [node for node in root.iter() if node.tag.rsplit("}", 1)[-1] == "entry"]
+
+    for item in entries:
+        title = _clean(child_text(item, "title"))
+        link_node = next((node for node in item if node.tag.rsplit("}", 1)[-1] == "link"), None)
+        link = (child_text(item, "link") or (link_node.get("href", "") if link_node is not None else "")).strip()
         if not title or not link:
             continue
-        dt = _parse_date(item.findtext("pubDate")) or datetime.now(timezone.utc)
+        published = child_text(item, "pubDate") or child_text(item, "published") or child_text(item, "updated")
+        dt = _parse_date(published) or datetime.now(timezone.utc)
+        description = child_text(item, "description") or child_text(item, "summary") or child_text(item, "content")
         rows.append(
             {
                 "id": _id(title, link),
                 "title": title,
                 "url": link,
-                "description": _clean(item.findtext("description"))[:700],
+                "description": _clean(description)[:700],
                 "published_at": dt.astimezone(timezone.utc).isoformat(),
                 "feed": feed_name,
-                "source": _clean(item.findtext("source")) or feed_name,
+                "source": _clean(child_text(item, "source")) or feed_name,
             }
         )
     return rows
@@ -169,8 +184,11 @@ def collect_candidates() -> list[dict[str, Any]]:
     for feed_name, url in [*FEEDS, *DOMESTIC_FEEDS]:
         try:
             rows = _read_feed(feed_name, url)
-        except Exception:
+        except Exception as exc:
+            logging.getLogger("ai_radar").warning("AI Radar feed failed: %s (%s)", feed_name, type(exc).__name__)
             continue
+        if not rows:
+            logging.getLogger("ai_radar").warning("AI Radar feed returned no entries: %s", feed_name)
         for row in rows:
             dt = _parse_date(row["published_at"]) or now
             if dt < cutoff or not _is_ai_relevant(row):
@@ -191,17 +209,26 @@ def collect_candidates() -> list[dict[str, Any]]:
     for item in items:
         dt = _parse_date(item["published_at"]) or now
         age_hours = max(0.0, (now - dt).total_seconds() / 3600)
-        freshness = max(0.0, 60.0 - age_hours * 2.0)
-        cross_feed = min(25.0, max(0, len(item["feeds"]) - 1) * 12.5)
-        source_diversity = min(15.0, len(item["sources"]) * 5.0)
-        item["hot_score"] = round(min(100.0, freshness + cross_feed + source_diversity), 1)
+        # Use observable recency and independent source coverage, not fabricated audience data.
+        item["_heat_evidence"] = (
+            max(0.0, 48.0 - age_hours) * 0.25
+            + min(4, len(item["feeds"])) * 12.0
+            + min(6, len(item["sources"])) * 8.0
+        )
         item["source_list"] = sorted(item["sources"])
         item["feeds"] = sorted(item["feeds"])
         item["region"] = next(iter(item["regions"])) if len(item["regions"]) == 1 else "mixed"
         del item["sources"]
         del item["regions"]
-    items.sort(key=lambda x: (x["hot_score"], x["published_at"]), reverse=True)
-    return items[:MAX_CANDIDATES]
+
+    items.sort(key=lambda item: (item["_heat_evidence"], item["published_at"], item["title"]), reverse=True)
+    items = items[:MAX_CANDIDATES]
+    denominator = max(1, len(items) - 1)
+    for index, item in enumerate(items):
+        item["hot_rank"] = index + 1
+        item["hot_score"] = round(100.0 * (len(items) - index - 1) / denominator, 1) if len(items) > 1 else 100.0
+        del item["_heat_evidence"]
+    return items
 
 
 
@@ -346,6 +373,7 @@ def curate(
                 "source_list": source["source_list"],
                 "published_at": source["published_at"],
                 "hot_score": source["hot_score"],
+                "hot_rank": source.get("hot_rank", candidate_index),
                 "region": source.get("region", "international"),
             }
         )
@@ -388,6 +416,7 @@ def _raw_item(candidate: dict[str, Any], importance: str, status: str = "fallbac
         "source_list": candidate.get("source_list", []),
         "published_at": candidate.get("published_at", ""),
         "hot_score": candidate.get("hot_score", 0),
+        "hot_rank": candidate.get("hot_rank", 0),
         "region": candidate.get("region", "international"),
         "importance": importance,
         "source_type": "official",
@@ -429,7 +458,7 @@ def curate_v2(provider, candidates: list[dict[str, Any]]) -> list[dict[str, Any]
         "Only importance A may receive why_it_matters_zh. Importance is fixed by the input rules."
     )
     user = (
-        "TASK INSTRUCTIONS: Select up to 6 useful candidates and explain them accurately. "
+        "TASK INSTRUCTIONS: Select up to 10 useful candidates and explain them accurately. "
         "For each selected item return candidate, headline_zh, summary_zh, one_liner_zh, "
         "why_it_matters_zh, core_concepts, related_concepts. Return an empty why_it_matters_zh "
         "for B items.\nUNTRUSTED SOURCE CONTENT (JSON records):\n<untrusted_source_content>\n"
@@ -439,7 +468,7 @@ def curate_v2(provider, candidates: list[dict[str, Any]]) -> list[dict[str, Any]
     response = provider.complete(
         [LLMMessage.system(system), LLMMessage.user(user)],
         temperature=0.2,
-        max_tokens=3200,
+        max_tokens=6000,
         reasoning=None,
         response_format={"type": "json_object"},
     )
