@@ -128,8 +128,8 @@ def _is_ai_relevant(row: dict[str, Any]) -> bool:
     text = f"{row.get('title', '')} {row.get('description', '')}".casefold()
     return bool(re.search(
         r"(?<![a-z0-9])ai(?![a-z0-9])|artificial intelligence|machine learning|deep learning|"
-        r"large language model|\\bllm\\b|generative ai|\\bgenai\\b|agentic|\\bagents?\\b|"
-        r"chatgpt|\\bgpt[- ]?\\d|\\bclaude\\b|\\bgemini\\b|\\bllama\\b|deepseek|"
+        r"large language model|\bllm\b|generative ai|\bgenai\b|agentic|\bagents?\b|"
+        r"chatgpt|\bgpt[- ]?\d|\bclaude\b|\bgemini\b|\bllama\b|deepseek|"
         r"openai|anthropic|nvidia|neural network|transformer model|foundation model|"
         r"人工智能|大模型|生成式|智能体|机器学习|深度学习|神经网络|推理模型|基础模型|"
         r"通义|豆包|文心|智谱|月之暗面|讯飞星火|混元|千问|百川智能|商汤",
@@ -146,9 +146,9 @@ def _story_region(row: dict[str, Any], feed_region: str) -> str:
         text,
     ))
     international = bool(re.search(
-        r"openai|anthropic|google deepmind|\\bgoogle\\b|microsoft|\\bmeta\\b|nvidia|"
-        r"\\bxai\\b|mistral|cohere|perplexity|amazon|\\bapple\\b|\\bclaude\\b|"
-        r"\\bgemini\\b|\\bgpt[- ]?\\d",
+        r"openai|anthropic|google deepmind|\bgoogle\b|microsoft|\bmeta\b|nvidia|"
+        r"\bxai\b|mistral|cohere|perplexity|amazon|\bapple\b|\bclaude\b|"
+        r"\bgemini\b|\bgpt[- ]?\d",
         text,
     ))
     if domestic and international:
