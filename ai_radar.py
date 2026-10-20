@@ -32,7 +32,7 @@ FEEDS = [
         "https://news.google.com/rss/search?"
         + urllib.parse.urlencode(
             {
-                "q": "AI OR artificial intelligence OR generative AI OR large language model OR AI agent OR OpenAI OR Anthropic OR Gemini OR DeepSeek OR NVIDIA",
+                "q": "AI OR artificial intelligence OR generative AI OR large language model OR AI agent OR OpenAI OR Anthropic OR Gemini OR DeepSeek OR NVIDIA OR OpenCode",
                 "hl": "en-US",
                 "gl": "US",
                 "ceid": "US:en",
@@ -55,8 +55,9 @@ DOMESTIC_FEEDS = [
     ),
 ]
 MAX_AGE_HOURS = 48
-MAX_CANDIDATES = 20
+MAX_CANDIDATES = 100
 MAX_ITEMS = 10
+MAX_ENRICHED_ITEMS = 20
 USER_AGENT = "Aster-Voss-AI-Radar/1.0"
 
 
@@ -469,7 +470,7 @@ def curate_v2(provider, candidates: list[dict[str, Any]]) -> list[dict[str, Any]
         "Only importance A may receive why_it_matters_zh. Importance is fixed by the input rules."
     )
     user = (
-        "TASK INSTRUCTIONS: Select up to 10 useful candidates and explain them accurately. "
+        "TASK INSTRUCTIONS: Select up to 20 useful candidates and explain them accurately. "
         "For each selected item return candidate, headline_zh, summary_zh, one_liner_zh, "
         "why_it_matters_zh, core_concepts, related_concepts. Return an empty why_it_matters_zh "
         "for B items.\nUNTRUSTED SOURCE CONTENT (JSON records):\n<untrusted_source_content>\n"
@@ -479,7 +480,7 @@ def curate_v2(provider, candidates: list[dict[str, Any]]) -> list[dict[str, Any]
     response = provider.complete(
         [LLMMessage.system(system), LLMMessage.user(user)],
         temperature=0.2,
-        max_tokens=6000,
+        max_tokens=9000,
         reasoning=None,
         response_format={"type": "json_object"},
     )
@@ -492,7 +493,7 @@ def curate_v2(provider, candidates: list[dict[str, Any]]) -> list[dict[str, Any]
     by_index = {index: item for index, item in enumerate(candidates, 1)}
     generated: list[dict[str, Any]] = []
     seen: set[int] = set()
-    for entry in selected[:MAX_ITEMS]:
+    for entry in selected[:MAX_ENRICHED_ITEMS]:
         if not isinstance(entry, dict):
             continue
         try:
