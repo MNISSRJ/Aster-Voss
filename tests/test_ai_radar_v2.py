@@ -40,6 +40,27 @@ def valid_enrichment(candidate_num=1):
     )
 
 
+def test_collect_candidates_marks_domestic_international_and_mixed_regions(monkeypatch):
+    now = ai_radar.datetime.now(ai_radar.timezone.utc).isoformat()
+    rows = {
+        "TechCrunch AI": [
+            {"id":"one","title":"Shared AI update","url":"https://example.test/1","description":"International item","published_at":now,"feed":"TechCrunch AI","source":"TechCrunch AI"},
+            {"id":"two","title":"Global model update","url":"https://example.test/2","description":"Global item","published_at":now,"feed":"TechCrunch AI","source":"TechCrunch AI"},
+        ],
+        "机器之心": [
+            {"id":"one","title":"Shared AI update","url":"https://example.test/1","description":"Domestic item","published_at":now,"feed":"机器之心","source":"机器之心"},
+            {"id":"three","title":"China AI update","url":"https://example.test/3","description":"Domestic item","published_at":now,"feed":"机器之心","source":"机器之心"},
+        ],
+    }
+    monkeypatch.setattr(ai_radar, "FEEDS", [("TechCrunch AI", "https://foreign.test/feed")])
+    monkeypatch.setattr(ai_radar, "DOMESTIC_FEEDS", [("机器之心", "https://domestic.test/feed")])
+    monkeypatch.setattr(ai_radar, "_read_feed", lambda name, url: rows[name])
+    result = {item["title"]: item for item in ai_radar.collect_candidates()}
+    assert result["Global model update"]["region"] == "international"
+    assert result["China AI update"]["region"] == "domestic"
+    assert result["Shared AI update"]["region"] == "mixed"
+
+
 def test_importance_rules_are_configurable_and_uncertain_defaults_to_b(monkeypatch):
     monkeypatch.setenv("AI_RADAR_IMPORTANCE_RULES_JSON", '{"official_sources":["Trusted Lab"],"a_keywords":["breakthrough"],"c_keywords":["opinion"]}')
     source = candidate("Trusted Lab breakthrough", "New method")
@@ -106,16 +127,17 @@ def test_story_limits_concepts_and_returns_separate_suggestions():
     assert len(result["separate_explanations"]) <= 3
 
 
-def test_radar_v2_never_calls_llm_for_c_items(monkeypatch):
+def test_radar_v2_generates_chinese_summaries_for_c_items(monkeypatch):
     monkeypatch.setenv("RADAR_2_ENABLED", "true")
     monkeypatch.setattr("services.radar_service.collect_candidates", lambda: [candidate("Opinion: weekly roundup", "A low priority recap")])
     monkeypatch.setattr("services.radar_service.classify_importance", lambda item: "C")
     monkeypatch.setattr("services.radar_service.cloud.enabled", lambda: False)
     provider = FakeProvider(valid_enrichment())
     payload = RadarService().generate(provider)
-    assert provider.calls == 0
+    assert provider.calls == 1
     assert payload["items"][0]["importance"] == "C"
-    assert payload["items"][0]["ai_status"] == "source_only"
+    assert payload["items"][0]["ai_status"] == "ready"
+    assert payload["items"][0]["summary_zh"]
 
 
 def test_cached_enrichment_is_reused_without_an_llm_call(monkeypatch):
