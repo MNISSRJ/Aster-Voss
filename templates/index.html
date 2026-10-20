@@ -359,6 +359,16 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 @media(max-width:899px){.home-view{height:calc(100dvh - 60px);padding:25px 16px 40px}.home-grid{gap:11px}.home-card,.home-card-chat,.home-card-bts,.home-card-radar,.home-card-research{grid-column:span 6}.brand.home-brand{display:flex}.home-brand .brand-sub{display:none}}
 @media(max-width:620px){.home-intro{margin-bottom:26px}.home-title{font-size:33px}.home-card,.home-card-chat,.home-card-bts,.home-card-radar,.home-card-research{grid-column:span 12;min-height:190px}.home-grid{gap:10px}.home-card-chat{min-height:214px}.home-section-head{margin-bottom:10px}}
 
+  .radar-categories{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .radar-category{border:1px solid rgba(103,121,176,.18);background:rgba(255,255,255,.42);color:#69768d;border-radius:999px;padding:7px 12px;font-size:12px;transition:.15s ease}
+  .radar-category:hover{background:rgba(255,255,255,.72)}
+  .radar-category.active{background:rgba(255,255,255,.85);color:#34405a;border-color:rgba(103,121,176,.32);box-shadow:0 3px 12px rgba(88,103,157,.08)}
+  .radar-region{font-size:10px;color:#64708a;background:rgba(226,233,250,.66);padding:4px 7px;border-radius:999px;white-space:nowrap}
+  .radar-heat{margin-top:11px;color:#7a879d;font-size:10px}
+  .radar-heat-label{display:flex;justify-content:space-between;gap:10px;margin-bottom:5px}
+  .radar-heat-track{height:5px;border-radius:99px;background:rgba(122,139,181,.15);overflow:hidden}
+  .radar-heat-fill{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#75c9ed,#7784f7 62%,#a77bea);transition:width .35s ease}
+  .radar-summary-fallback{color:#8b6b54;background:rgba(250,239,226,.5);border-radius:9px;padding:8px 10px}
 </style>
 </head>
 <body>
@@ -410,6 +420,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
         <button class="radar-refresh" id="radar-refresh" type="button">↻ 刷新</button>
       </div>
       <div class="radar-intro" id="radar-intro">Aster 正在整理多源 AI 热点。</div>
+      <nav class="radar-categories" id="radar-categories" aria-label="AI 动态地区分类">
+        <button class="radar-category active" type="button" data-radar-region="all" aria-pressed="true">全部动态</button>
+        <button class="radar-category" type="button" data-radar-region="domestic" aria-pressed="false">国内 AI</button>
+        <button class="radar-category" type="button" data-radar-region="international" aria-pressed="false">国外 AI</button>
+      </nav>
       <div class="radar-list" id="radar-list"><div class="radar-empty">正在读取今日简报…</div></div>
     </section>
 
@@ -503,6 +518,7 @@ const radarView=document.querySelector("#radar");
 const radarList=document.querySelector("#radar-list");
 const radarIntro=document.querySelector("#radar-intro");
 const radarDate=document.querySelector("#radar-date");
+let radarItems=[];let radarRegionFilter="all";
 const btsRadarView=document.querySelector("#bts-radar");
 const btsList=document.querySelector("#bts-list");
 const btsIntro=document.querySelector("#bts-intro");
@@ -737,21 +753,59 @@ async function loadRadar(){
       return;
     }
     radarIntro.textContent=data.intro_zh||"Aster 已为你整理今天的 AI 热点。";
-    radarList.innerHTML="";
-    data.items.forEach(renderRadarCard);
+    radarItems=Array.isArray(data.items)?data.items:[];
+    renderRadarItems();
   }catch(error){
     radarList.innerHTML='<div class="radar-empty">简报暂时无法读取，请点击刷新。</div>';
     console.error(error);
   }
 }
+function getRadarRegion(item){
+  const value=String(item.region||"").toLowerCase();
+  if(["domestic","international","mixed"].includes(value))return value;
+  const sources=(item.source_list||[]).join(" ").toLowerCase();
+  if(/机器之心|jiqizhixin|量子位|qbitai/.test(sources))return "domestic";
+  if(/techcrunch|the verge|google news/.test(sources))return "international";
+  return "unknown";
+}
+function renderRadarItems(){
+  const matches=radarItems.filter(item=>{
+    const region=getRadarRegion(item);
+    if(radarRegionFilter==="all")return true;
+    if(radarRegionFilter==="domestic")return region==="domestic"||region==="mixed";
+    return region==="international"||region==="mixed";
+  });
+  radarList.replaceChildren();
+  if(!matches.length){const empty=document.createElement("div");empty.className="radar-empty";empty.textContent=radarRegionFilter==="domestic"?"今天暂时没有国内 AI 动态。":"今天暂时没有国外 AI 动态。";radarList.appendChild(empty);return;}
+  matches.forEach(renderRadarCard);
+}
+document.querySelector("#radar-categories").addEventListener("click",event=>{
+  const button=event.target.closest("[data-radar-region]");if(!button)return;
+  radarRegionFilter=button.dataset.radarRegion;
+  document.querySelectorAll("#radar-categories [data-radar-region]").forEach(item=>{const active=item===button;item.classList.toggle("active",active);item.setAttribute("aria-pressed",String(active));});
+  renderRadarItems();
+});
 function renderRadarCard(item){
   const card=document.createElement("article");card.className="radar-card radar-interactive-card"+(item.importance==="C"?" importance-c":"");
   const top=document.createElement("div");top.className="radar-top";
   const company=document.createElement("span");company.className="radar-company";company.textContent=(item.source_list||[]).join(" · ")||item.company||"AI 动态";
   const importance=document.createElement("span");importance.className="radar-score";importance.textContent=item.importance==="A"?"重点动态":item.importance==="C"?"低优先级简讯":"近期动态";
-  top.append(company,importance);
+  const region=document.createElement("span");region.className="radar-region";const regionValue=getRadarRegion(item);region.textContent=regionValue==="domestic"?"国内 AI":regionValue==="international"?"国外 AI":regionValue==="mixed"?"跨区域":"地区待确认";
+  top.append(company,region,importance);
   const headline=document.createElement("div");headline.className="radar-headline";headline.textContent=item.title_zh||item.headline_zh||item.title_original||"";
-  const summary=document.createElement("div");summary.className="radar-summary";summary.textContent=item.ai_status==="failed"?"中文摘要暂不可用。\n"+(item.summary_zh||""):item.summary_zh||"";
+  const headlineHasChinese=/[\u3400-\u9fff]/.test(headline.textContent);
+  const summary=document.createElement("div");summary.className="radar-summary";
+  const rawSummary=String(item.summary_zh||item.summary_original||"").trim();
+  const summaryHasChinese=/[\u3400-\u9fff]/.test(rawSummary);
+  if(summaryHasChinese){summary.textContent=rawSummary;}
+  else{summary.classList.add("radar-summary-fallback");summary.textContent="中文概要暂不可用，请点击右上角“刷新”重新整理。";}
+  const originalSummary=document.createElement("details");const originalSummaryToggle=document.createElement("summary");originalSummaryToggle.textContent="原文摘要";const originalSummaryText=document.createElement("p");originalSummaryText.textContent=summaryHasChinese?"":rawSummary;originalSummary.append(originalSummaryToggle,originalSummaryText);
+  const heat=document.createElement("div");heat.className="radar-heat";
+  const score=Number(item.hot_score);const scoreValid=Number.isFinite(score)&&score>=0;
+  const heatLabel=document.createElement("div");heatLabel.className="radar-heat-label";heatLabel.textContent=scoreValid?"当前热度":"当前热度暂不可用";
+  const heatValue=document.createElement("span");heatValue.textContent=scoreValid?String(Math.round(Math.max(0,Math.min(100,score))))+"/100":"";heatLabel.appendChild(heatValue);heat.appendChild(heatLabel);
+  if(scoreValid){const track=document.createElement("div");track.className="radar-heat-track";track.setAttribute("role","progressbar");track.setAttribute("aria-label","当前热度");track.setAttribute("aria-valuemin","0");track.setAttribute("aria-valuemax","100");const value=Math.round(Math.max(0,Math.min(100,score)));track.setAttribute("aria-valuenow",String(value));const fill=document.createElement("span");fill.className="radar-heat-fill";fill.style.width=value+"%";track.appendChild(fill);heat.appendChild(track);}
+  if(!headlineHasChinese&&item.ai_status!=="ready")headline.classList.add("radar-summary-fallback");
   const generated=document.createElement("span");generated.className="radar-ai-badge";generated.textContent=item.ai_status==="ready"?"AI 生成 · 已做基础事实校验":"原始来源";
   const oneLiner=document.createElement("p");oneLiner.className="radar-one-liner";oneLiner.textContent=item.one_liner_zh||"";
   const why=document.createElement("div");why.className="radar-why";why.textContent=item.why_it_matters_zh?("为什么重要 · "+item.why_it_matters_zh):"";
@@ -761,7 +815,7 @@ function renderRadarCard(item){
   const originalTitle=document.createElement("details");const originalToggle=document.createElement("summary");originalToggle.textContent="原始英文标题";const original=document.createElement("p");original.textContent=item.title_original||item.title||"";originalTitle.append(originalToggle,original);
   const link=document.createElement("a");link.className="radar-source";link.textContent=(item.source_list||[]).join(" · ")+"  ↗";link.href=item.url||"#";link.target="_blank";link.rel="noopener noreferrer";
   const timestamp=document.createElement("time");timestamp.className="radar-time";timestamp.dateTime=item.published_at||"";timestamp.textContent=item.published_at?new Date(item.published_at).toLocaleString("zh-CN"):"时间未提供";
-  card.append(top,headline,generated,summary,oneLiner,why,tags,originalTitle,timestamp,link);if(window.RADAR_2_ENABLED)addRadarActions(card,item,"ai");radarList.appendChild(card);radarEvent(item,"item_view","ai");
+  card.append(top,headline,generated,summary,originalSummary,heat,oneLiner,why,tags,originalTitle,timestamp,link);if(window.RADAR_2_ENABLED)addRadarActions(card,item,"ai");radarList.appendChild(card);radarEvent(item,"item_view","ai");
 }
 let researchMinutes=20;
 async function loadResearch({query="",refresh=false}={}){
@@ -826,8 +880,8 @@ document.querySelector("#radar-refresh").addEventListener("click",async()=>{
     radarDate.textContent=(data.brief_date||"").replace(/-/g,".")+" · "+(data.status==="ready"?"刚刚更新":"已完成");
     if(data.generated_at)radarDate.textContent+=" · "+new Date(data.generated_at).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"});
     radarIntro.textContent=data.intro_zh||"";
-    radarList.innerHTML="";
-    (data.items||[]).forEach(renderRadarCard);
+    radarItems=Array.isArray(data.items)?data.items:[];
+    renderRadarItems();
     if(data.items&&data.items.length)showToast("AI 简报已更新，"+data.items.length+" 条");
     else showToast("简报生成完成，但暂无可展示内容");
   }catch(error){
