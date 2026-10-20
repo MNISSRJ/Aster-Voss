@@ -40,6 +40,7 @@ class RadarService:
                     "source_list": item.get("source_list", []),
                     "published_at": item["published_at"],
                     "hot_score": item["hot_score"],
+                    "region": item.get("region", "international"),
                 }
                 for item in candidates[:6]
             ],
@@ -123,7 +124,7 @@ class RadarService:
                 key = cache_key(candidate)
                 item = cached.get(key) or generated_by_key.get(key) or _raw_item(candidate, importance)
                 # Refresh transient feed metadata while reusing only cached AI fields.
-                item = {**item, "source_list": candidate.get("source_list", []), "hot_score": candidate.get("hot_score", 0)}
+                item = {**item, "source_list": candidate.get("source_list", []), "hot_score": candidate.get("hot_score", 0), "region": candidate.get("region", "international")}
             results.append(item)
 
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
