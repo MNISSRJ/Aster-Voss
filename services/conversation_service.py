@@ -9,7 +9,11 @@ from memory import cloud
 
 @dataclass(frozen=True)
 class ConversationService:
-    user_id: str = (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "mint"
+    user_id: str
+
+    def __post_init__(self):
+        if not self.user_id or not self.user_id.strip():
+            raise ValueError("user_id is required")
 
     @property
     def enabled(self) -> bool:

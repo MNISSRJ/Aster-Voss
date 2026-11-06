@@ -11,6 +11,7 @@ from llm.base import LLMMessage
 from memory import cloud, persistence
 from rate_limit import RateLimitDecision, RateLimiter
 import web_app
+from auth import UserContext
 
 
 def test_local_rate_limiter_is_repeatable_and_resettable(monkeypatch):
@@ -110,7 +111,7 @@ def test_constant_time_auth_path_uses_hmac(monkeypatch):
     monkeypatch.setattr(
         web_app,
         "CONFIG",
-        SimpleNamespace(require_auth=True, log_level="INFO"),
+        SimpleNamespace(require_auth=True, log_level="INFO", access_token="secret", owner_id="owner-123", local_development=False),
     )
     monkeypatch.setenv("ASTER_ACCESS_TOKEN", "secret")
     calls = []
@@ -119,7 +120,8 @@ def test_constant_time_auth_path_uses_hmac(monkeypatch):
         "compare_digest",
         lambda a, b: calls.append((a, b)) or True,
     )
-    monkeypatch.setattr(web_app.ConversationService, "list", lambda self: [])
+    seen = []
+    monkeypatch.setattr(web_app.ConversationService, "list", lambda self: seen.append(self.user_id) or [])
 
     response = TestClient(web_app.app).get(
         "/api/conversations",
@@ -127,6 +129,7 @@ def test_constant_time_auth_path_uses_hmac(monkeypatch):
     )
     assert response.status_code == 200
     assert calls
+    assert seen == ["owner-123"]
 
 
 def test_local_chat_transaction_prevents_lost_updates(monkeypatch):
@@ -158,7 +161,8 @@ def test_local_chat_transaction_prevents_lost_updates(monkeypatch):
             for x in history
         ]
 
-    def fake_agent_from_messages(seen):
+    def fake_agent_from_messages(seen, context):
+        assert context == UserContext("local-owner")
         return FakeAgent(seen)
 
     def fake_save_history(messages):
@@ -174,7 +178,7 @@ def test_local_chat_transaction_prevents_lost_updates(monkeypatch):
     web_app._LOCAL_CHAT_LOCK = __import__("threading").Lock()
 
     with ThreadPoolExecutor(max_workers=2) as pool:
-        list(pool.map(web_app._run_local_chat, ["A", "B"]))
+        list(pool.map(lambda message: web_app._run_local_chat(message, UserContext("local-owner")), ["A", "B"]))
 
     assert max_active == 1
     assert {item["content"] for item in history if item["role"] == "user"} == {"A", "B"}
@@ -189,6 +193,6 @@ def test_web_agent_factory_skips_duplicate_history_io(monkeypatch):
             self._messages = []
 
     monkeypatch.setattr(web_app, "AsterVoss", FakeAgent)
-    web_app._agent_from_messages([])
+    web_app._agent_from_messages([], UserContext("local-owner"))
     assert captured["restore_history"] is False
     assert captured["persist_history"] is False

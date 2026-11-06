@@ -10,7 +10,11 @@ from .retrieval import LexicalMemoryRetriever
 
 @dataclass(frozen=True)
 class MemoryService:
-    user_id: str = (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "mint"
+    user_id: str
+
+    def __post_init__(self):
+        if not self.user_id or not self.user_id.strip():
+            raise ValueError("user_id is required")
 
     @property
     def cloud_enabled(self) -> bool:

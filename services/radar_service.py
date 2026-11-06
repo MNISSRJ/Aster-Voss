@@ -11,10 +11,12 @@ from memory import cloud
 
 
 class RadarService:
-    def __init__(self, repository=None, user_id: str | None = None):
+    def __init__(self, repository=None, user_id: str):
         from .radar_repository import RadarRepository
         self.repository = repository or RadarRepository()
-        self.user_id = user_id or (os.getenv("ASTER_DEFAULT_USER_ID") or "mint").strip() or "mint"
+        if not user_id or not user_id.strip():
+            raise ValueError("user_id is required")
+        self.user_id = user_id
 
     def _fallback_payload(self, candidates):
         return {

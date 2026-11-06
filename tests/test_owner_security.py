@@ -32,6 +32,7 @@ def test_production_forces_auth(monkeypatch):
 
 def test_local_keeps_owner_compatibility(monkeypatch):
     monkeypatch.delenv("VERCEL_ENV", raising=False)
+    monkeypatch.delenv("VERCEL", raising=False)
     monkeypatch.delenv("ASTER_OWNER_ID", raising=False)
     config = load_config()
     assert config.owner_id == "mint"

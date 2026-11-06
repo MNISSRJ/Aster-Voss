@@ -28,25 +28,42 @@ from rate_limit import RateLimiter, rate_limit_rule
 
 CONFIG = load_config()
 log.configure(CONFIG.log_level)
-RADAR = RadarService()
 RATE_LIMITER = RateLimiter()
 _LOCAL_CHAT_LOCK = threading.Lock()
 
-def memory_service(user_id: str | None = None):
-    return MemoryService(user_id=user_id or CONFIG.owner_id)
+def _trusted_context(request: Request) -> UserContext:
+    context = getattr(request.state, "user_context", None)
+    if not isinstance(context, UserContext) or not context.user_id:
+        raise HTTPException(status_code=401, detail="unauthorized")
+    return context
 
 
-def conversation_service(user_id: str | None = None):
-    return ConversationService(user_id=user_id or CONFIG.owner_id)
+def memory_service(context: UserContext):
+    if not isinstance(context, UserContext):
+        raise TypeError("trusted UserContext required")
+    return MemoryService(user_id=context.user_id)
 
 
-def build_prompt(user_id: str | None = None):
-    user_id = user_id or CONFIG.owner_id
-    m = memory_service(user_id).context()
+def conversation_service(context: UserContext):
+    if not isinstance(context, UserContext):
+        raise TypeError("trusted UserContext required")
+    return ConversationService(user_id=context.user_id)
+
+
+def radar_service(context: UserContext):
+    if not isinstance(context, UserContext):
+        raise TypeError("trusted UserContext required")
+    return RadarService(user_id=context.user_id)
+
+
+def build_prompt(context: UserContext):
+    if not isinstance(context, UserContext):
+        raise TypeError("trusted UserContext required")
+    m = memory_service(context).context()
     growth = ""
     growth_path = Path(__file__).resolve().parent / "memory" / "GROWTH_LOG.md"
     try:
-        if user_id == CONFIG.owner_id:
+        if context.is_owner:
             growth = growth_path.read_text(encoding="utf-8")
     except OSError:
         growth = ""
@@ -82,8 +99,16 @@ def _rate_limit_client_identity(request: Request) -> str:
 async def access_control_and_observability(request: Request, call_next):
     started = time.perf_counter()
     request_id = request.headers.get("x-request-id") or uuid4().hex
-    if request.url.path not in {"/", "/api/status"}:
-        context = OwnerTokenProvider(CONFIG.access_token, CONFIG.owner_id).authenticate(request.headers.get("authorization", "")) if CONFIG.require_auth else UserContext(CONFIG.owner_id)
+    public_paths = {"/", "/api/status"}
+    if request.url.path not in public_paths and not request.url.path.startswith("/api/cron/"):
+        if CONFIG.require_auth:
+            context = OwnerTokenProvider(CONFIG.access_token, CONFIG.owner_id).authenticate(
+                request.headers.get("authorization", "")
+            )
+        elif CONFIG.local_development:
+            context = UserContext(CONFIG.owner_id, is_owner=True)
+        else:
+            context = None
         if context is None:
             response = JSONResponse({"error": "unauthorized", "request_id": request_id}, status_code=401)
             response.headers["X-Request-ID"] = request_id
@@ -145,7 +170,9 @@ def _message_dicts(messages):
     ][-80:]
 
 
-def _run_local_chat(message: str):
+def _run_local_chat(message: str, context: UserContext):
+    if not isinstance(context, UserContext):
+        raise TypeError("trusted UserContext required")
     # Local file history requires one transaction lock across read -> model -> write.
     # Atomic replacement prevents partial files, but not lost updates from
     # concurrent read/modify/write requests.
@@ -155,7 +182,7 @@ def _run_local_chat(message: str):
             for m in load_history()
             if m.role in {"user", "assistant"} and isinstance(m.content, str)
         ]
-        request_agent = _agent_from_messages(history, user_id)
+        request_agent = _agent_from_messages(history, context)
         result = request_agent.run(message)
         save_history(request_agent.messages)
         return result
@@ -168,10 +195,12 @@ def _conversation_title(text: str) -> str:
     return clean[:30] + ("…" if len(clean) > 30 else "")
 
 
-def _agent_from_messages(history, user_id: str | None = None):
+def _agent_from_messages(history, context: UserContext):
+    if not isinstance(context, UserContext):
+        raise TypeError("trusted UserContext required")
     a = AsterVoss(
         CONFIG,
-        system_prompt=build_prompt(user_id),
+        system_prompt=build_prompt(context),
         identity_name=AGENT_IDENTITY.name,
         identity_tagline=AGENT_TAGLINE,
         restore_history=False,
@@ -186,7 +215,7 @@ def _agent_from_messages(history, user_id: str | None = None):
             and item["content"].strip()
         ):
             restored.append(LLMMessage(role=item["role"], content=item["content"]))
-    a._messages = [LLMMessage.system(build_prompt(user_id))] + restored
+    a._messages = [LLMMessage.system(build_prompt(context))] + restored
     return a
 
 
@@ -222,8 +251,9 @@ def home():
 
 @app.post("/api/chat")
 def chat(body: ChatIn, request: Request):
-    user_id = request.state.user_context.user_id
-    conversations = conversation_service(user_id)
+    context = _trusted_context(request)
+    user_id = context.user_id
+    conversations = conversation_service(context)
     if cloud.enabled():
         conversation_id = (body.conversation_id or "").strip() or str(uuid4())
         existing = conversations.get(conversation_id)
@@ -231,7 +261,7 @@ def chat(body: ChatIn, request: Request):
         title = existing.get("title", "新对话") if existing else _conversation_title(body.message)
         created_at = existing.get("created_at") if existing else None
 
-        request_agent = _agent_from_messages(history)
+        request_agent = _agent_from_messages(history, context)
         r = request_agent.run(body.message)
 
         persisted = conversations.save(
@@ -281,7 +311,7 @@ def chat(body: ChatIn, request: Request):
 
     # Development fallback when cloud storage is not configured:
     # create a fresh request-scoped agent instead of sharing global state.
-    r = _run_local_chat(body.message)
+    r = _run_local_chat(body.message, context)
     return {
         "text": r.text,
         "provider": r.provider,
@@ -300,7 +330,7 @@ def reset():
 
 @app.get("/api/conversations")
 def get_conversations(request: Request):
-    conversations = conversation_service(request.state.user_context.user_id)
+    conversations = conversation_service(_trusted_context(request))
     return {
         "cloud": conversations.enabled,
         "conversations": conversations.list(),
@@ -310,7 +340,7 @@ def get_conversations(request: Request):
 
 @app.get("/api/conversations/{conversation_id}")
 def get_conversation(conversation_id: str, request: Request):
-    conversations = conversation_service(request.state.user_context.user_id)
+    conversations = conversation_service(_trusted_context(request))
     conversation = conversations.get(conversation_id)
     if not conversation:
         raise HTTPException(status_code=404, detail="对话不存在")
@@ -320,13 +350,13 @@ def get_conversation(conversation_id: str, request: Request):
 
 @app.delete("/api/conversations/{conversation_id}")
 def remove_conversation(conversation_id: str, request: Request):
-    conversations = conversation_service(request.state.user_context.user_id)
+    conversations = conversation_service(_trusted_context(request))
     if not conversations.delete(conversation_id):
         raise HTTPException(status_code=503, detail="对话暂时无法删除")
     return {"ok": True, "server_time": int(time.time())}
 
 
-def _generate_ai_brief():
+def _generate_ai_brief(user_id: str):
     try:
         provider = None
         provider_config = CONFIG.active_provider
@@ -334,14 +364,15 @@ def _generate_ai_brief():
             candidate = create_provider(CONFIG.main_provider, CONFIG)
             if candidate.is_available():
                 provider = candidate
-        return RADAR.generate(provider)
+        return RadarService(user_id=user_id).generate(provider)
     except Exception as exc:
         raise HTTPException(status_code=502, detail="AI 热点抓取失败：" + type(exc).__name__) from exc
 
 
 @app.get("/api/ai-radar/today")
-def ai_radar_today():
-    stored = RADAR.today()
+def ai_radar_today(request: Request):
+    context = _trusted_context(request)
+    stored = radar_service(context).today()
     if stored:
         return stored
     return {
@@ -354,15 +385,15 @@ def ai_radar_today():
 
 
 @app.post("/api/ai-radar/refresh")
-def ai_radar_refresh():
-    payload = _generate_ai_brief()
+def ai_radar_refresh(request: Request):
+    payload = _generate_ai_brief(_trusted_context(request).user_id)
     payload["server_time"] = int(time.time())
     return payload
 
 
 @app.get("/api/ai-radar/history")
-def ai_radar_history():
-    return {"briefs": RADAR.history(limit=14), "server_time": int(time.time())}
+def ai_radar_history(request: Request):
+    return {"briefs": radar_service(_trusted_context(request)).history(limit=14), "server_time": int(time.time())}
 
 
 @app.get("/api/cron/ai-radar")
@@ -377,20 +408,21 @@ def ai_radar_cron(request: Request):
     )
     if not authorized:
         raise HTTPException(status_code=401, detail="unauthorized")
-    return _generate_ai_brief()
+    return _generate_ai_brief(CONFIG.owner_id)
 
 
 @app.post("/api/memory/suggestions")
 def memory_suggestions(body: ConversationRefIn, request: Request):
-    user_id = request.state.user_context.user_id
-    conversations = conversation_service(user_id)
+    context = _trusted_context(request)
+    user_id = context.user_id
+    conversations = conversation_service(context)
     conversation = conversations.get(body.conversation_id or "") if conversations.enabled else None
     source = conversation.get("messages", []) if conversation else []
     messages = extractor.messages_for_agent(source)
     if len(messages) < 2:
         return {"status": "empty", "suggestions": []}
     try:
-        reviewer = _agent_from_messages([], user_id)
+        reviewer = _agent_from_messages([], context)
         decision = reviewer.router.select("Extract durable memory suggestions")
         provider = reviewer.router.get_provider(decision.provider_name)
         if not provider.is_available():
@@ -416,13 +448,13 @@ def get_automations():
 
 @app.get("/api/memory")
 def get_memories(request: Request):
-    memory = memory_service(request.state.user_context.user_id)
+    memory = memory_service(_trusted_context(request))
     return {"cloud": memory.cloud_enabled, "memories": memory.list()}
 
 
 @app.post("/api/memory")
 def add_memory(body: MemoryIn, request: Request):
-    memory = memory_service(request.state.user_context.user_id)
+    memory = memory_service(_trusted_context(request))
     text_value = brain.scrub_secrets(body.text).strip()
     if not text_value:
         raise HTTPException(status_code=400, detail="记忆内容不能为空")
@@ -433,7 +465,7 @@ def add_memory(body: MemoryIn, request: Request):
 
 @app.put("/api/memory/{memory_id}")
 def edit_memory(memory_id: str, body: MemoryEditIn, request: Request):
-    memory = memory_service(request.state.user_context.user_id)
+    memory = memory_service(_trusted_context(request))
     text_value = brain.scrub_secrets(body.text).strip()
     if not text_value:
         raise HTTPException(status_code=400, detail="记忆内容不能为空")
@@ -450,7 +482,7 @@ def edit_memory(memory_id: str, body: MemoryEditIn, request: Request):
 
 @app.delete("/api/memory/{memory_id}")
 def remove_memory(memory_id: str, request: Request):
-    memory = memory_service(request.state.user_context.user_id)
+    memory = memory_service(_trusted_context(request))
     if not memory.delete(memory_id):
         raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
     return {"ok": True}
@@ -458,8 +490,9 @@ def remove_memory(memory_id: str, request: Request):
 
 @app.post("/api/memory/summarize")
 def summarize_memories(body: ConversationRefIn, request: Request):
-    user_id = request.state.user_context.user_id
-    conversations = conversation_service(user_id)
+    context = _trusted_context(request)
+    user_id = context.user_id
+    conversations = conversation_service(context)
     conversation = conversations.get(body.conversation_id or "") if conversations.enabled else None
     source_messages = conversation.get("messages", []) if conversation else (_message_dicts(load_history()) if not conversations.enabled else [])
     messages = [
@@ -487,7 +520,7 @@ def summarize_memories(body: ConversationRefIn, request: Request):
         + transcript
     )
     try:
-        summarizer = _agent_from_messages([], user_id)
+        summarizer = _agent_from_messages([], context)
         decision = summarizer.router.select("Summarize durable user memory")
         provider = summarizer.router.get_provider(decision.provider_name)
         if not provider.is_available():
@@ -515,7 +548,7 @@ def summarize_memories(body: ConversationRefIn, request: Request):
     saved = []
     for candidate in candidates[:8] if isinstance(candidates, list) else []:
         value = brain.scrub_secrets(str(candidate)).strip()
-        if value and memory_service(user_id).add(value, source="conversation"):
+        if value and memory_service(context).add(value, source="conversation"):
             saved.append(value)
     return {"ok": True, "added": len(saved), "memories": saved}
 
@@ -528,7 +561,7 @@ def status():
         "provider": CONFIG.main_provider,
         "providers": available_providers(CONFIG),
         "configured": bool(CONFIG.active_provider and CONFIG.active_provider.is_configured),
-        "memory": memory_service(CONFIG.owner_id).storage_mode,
+        "memory": "supabase" if cloud.enabled() else "local-or-disabled",
         "server_time": int(time.time()),
         "version": "0.2.0",
         "rate_limit": RATE_LIMITER.backend_status,
@@ -538,14 +571,14 @@ def status():
 
 @app.get("/api/usage")
 def usage(request: Request):
-    return {"usage": cloud.usage_summary(user_id=request.state.user_context.user_id), "server_time": int(time.time())}
+    return {"usage": cloud.usage_summary(user_id=_trusted_context(request).user_id), "server_time": int(time.time())}
 
 
 @app.get("/api/capabilities")
 def capabilities():
     return {
         "providers": available_providers(CONFIG),
-        "memory": memory_service(CONFIG.owner_id).cloud_enabled,
+        "memory": cloud.enabled(),
         "automations": list_automations(),
         "server_time": int(time.time()),
     }

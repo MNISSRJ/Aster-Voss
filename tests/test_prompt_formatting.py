@@ -1,6 +1,8 @@
 from ai_radar import _norm_title, curate
 from llm.base import LLMResponse
 import web_app
+from auth import UserContext
+from types import SimpleNamespace
 
 
 class CaptureProvider:
@@ -45,8 +47,8 @@ def test_radar_prompt_uses_real_newlines():
 
 
 def test_build_prompt_uses_real_newlines(monkeypatch):
-    monkeypatch.setattr(type(web_app.MEMORY), "context", lambda self, max_chars=1800: "")
-    prompt = web_app.build_prompt()
+    monkeypatch.setattr(web_app, "memory_service", lambda context: SimpleNamespace(context=lambda: ""))
+    prompt = web_app.build_prompt(UserContext(web_app.CONFIG.owner_id, is_owner=True))
     assert '<shared_growth_history>\n' in prompt
     assert '\n</shared_growth_history>' in prompt
     assert '\\n' not in prompt
