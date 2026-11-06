@@ -398,14 +398,11 @@ def ai_radar_history(request: Request):
 
 @app.get("/api/cron/ai-radar")
 def ai_radar_cron(request: Request):
-    user_agent = request.headers.get("user-agent", "")
     authorization = request.headers.get("authorization", "")
     secret = os.getenv("CRON_SECRET", "")
-    is_production = os.getenv("VERCEL_ENV", "").strip().lower() == "production"
-    authorized = (
-        (secret and hmac.compare_digest(authorization, "Bearer " + secret))
-        or (not is_production and "vercel-cron/1.0" in user_agent)
-    )
+    authorized = bool(secret) and hmac.compare_digest(authorization, "Bearer " + secret)
+    if not authorized and CONFIG.local_development:
+        authorized = True
     if not authorized:
         raise HTTPException(status_code=401, detail="unauthorized")
     return _generate_ai_brief(CONFIG.owner_id)

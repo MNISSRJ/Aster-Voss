@@ -5,7 +5,7 @@ import hmac
 @dataclass(frozen=True)
 class UserContext:
     user_id: str
-    is_owner: bool = True
+    is_owner: bool = False
 
 class OwnerTokenProvider:
     """Temporary single-owner token gate; not multi-user authentication."""
@@ -16,4 +16,4 @@ class OwnerTokenProvider:
             return None
         if not hmac.compare_digest(authorization or "", "Bearer " + self._token):
             return None
-        return UserContext(self._owner_id, True)
+        return UserContext(self._owner_id, is_owner=True)

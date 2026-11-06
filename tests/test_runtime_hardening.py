@@ -196,3 +196,77 @@ def test_web_agent_factory_skips_duplicate_history_io(monkeypatch):
     web_app._agent_from_messages([], UserContext("local-owner"))
     assert captured["restore_history"] is False
     assert captured["persist_history"] is False
+
+
+
+def _cron_test_client(monkeypatch, *, local_development=False, environment="preview", secret=None, authorization="", user_agent=""):
+    monkeypatch.setattr(
+        web_app,
+        "CONFIG",
+        SimpleNamespace(local_development=local_development, owner_id="owner-123"),
+    )
+    monkeypatch.setenv("VERCEL_ENV", environment)
+    if secret is None:
+        monkeypatch.delenv("CRON_SECRET", raising=False)
+    else:
+        monkeypatch.setenv("CRON_SECRET", secret)
+    monkeypatch.setattr(web_app, "_generate_ai_brief", lambda user_id: {"user_id": user_id})
+    return TestClient(web_app.app).get(
+        "/api/cron/ai-radar",
+        headers={"Authorization": authorization, "User-Agent": user_agent},
+    )
+
+
+def test_preview_cron_without_secret_is_rejected(monkeypatch):
+    response = _cron_test_client(monkeypatch, secret=None)
+    assert response.status_code == 401
+
+
+def test_preview_cron_user_agent_does_not_bypass_auth(monkeypatch):
+    response = _cron_test_client(monkeypatch, secret=None, user_agent="vercel-cron/1.0")
+    assert response.status_code == 401
+
+
+def test_preview_cron_accepts_correct_secret(monkeypatch):
+    response = _cron_test_client(
+        monkeypatch, secret="cron-secret", authorization="Bearer cron-secret"
+    )
+    assert response.status_code == 200
+    assert response.json()["user_id"] == "owner-123"
+
+
+def test_production_cron_without_secret_is_rejected(monkeypatch):
+    response = _cron_test_client(monkeypatch, environment="production", secret=None)
+    assert response.status_code == 401
+
+
+def test_cron_local_fallback_requires_explicit_local_development(monkeypatch):
+    denied = _cron_test_client(monkeypatch, local_development=False, secret=None)
+    allowed = _cron_test_client(monkeypatch, local_development=True, secret=None)
+    assert denied.status_code == 401
+    assert allowed.status_code == 200
+
+
+def test_memory_endpoint_uses_authenticated_owner_context(monkeypatch):
+    seen = []
+    class FakeMemory:
+        cloud_enabled = True
+        def list(self):
+            return []
+    monkeypatch.setattr(
+        web_app,
+        "CONFIG",
+        SimpleNamespace(
+            require_auth=True,
+            access_token="owner-token",
+            owner_id="owner-123",
+            local_development=False,
+            log_level="INFO",
+        ),
+    )
+    monkeypatch.setattr(web_app, "memory_service", lambda context: seen.append(context.user_id) or FakeMemory())
+    response = TestClient(web_app.app).get(
+        "/api/memory", headers={"Authorization": "Bearer owner-token"}
+    )
+    assert response.status_code == 200
+    assert seen == ["owner-123"]
