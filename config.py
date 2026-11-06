@@ -39,7 +39,7 @@ class ProviderConfig:
 class AgentConfig:
     main_provider:str; auto_routing:bool; providers:dict; jev_enabled:bool
     jev_api_key:str; jev_base_url:str; jev_timeout:float
-    default_reasoning:str|None; log_level:str; require_auth:bool
+    default_reasoning:str|None; log_level:str; require_auth:bool; owner_id:str; access_token:str
     def provider(self,name): return self.providers.get(name)
     @property
     def active_provider(self): return self.providers.get(self.main_provider)
@@ -53,7 +53,17 @@ def load_config():
     main_provider = _get("MAIN_PROVIDER","deepseek").lower()
     if main_provider not in providers:
         main_provider = "deepseek"
-    return AgentConfig(main_provider,_bool("AUTO_ROUTING",False),providers,bool(_get("JEV_API_KEY")), _get("JEV_API_KEY"),_get("JEV_BASE_URL","https://www.jevai.org"),_float("JEV_TIMEOUT",8),_get("DEFAULT_REASONING_EFFORT") or None,_get("LOG_LEVEL","INFO").upper(),_bool("ASTER_REQUIRE_AUTH",False))
+    environment = _get("VERCEL_ENV", "development").lower()
+    owner_id = _get("ASTER_OWNER_ID") or ("" if environment == "production" else "mint")
+    access_token = _get("ASTER_ACCESS_TOKEN")
+    require_auth = _bool("ASTER_REQUIRE_AUTH", False)
+    if environment == "production":
+        if not owner_id:
+            raise RuntimeError("ASTER_OWNER_ID is required in Production")
+        if not access_token:
+            raise RuntimeError("ASTER_ACCESS_TOKEN is required in Production")
+        require_auth = True
+    return AgentConfig(main_provider,_bool("AUTO_ROUTING",False),providers,bool(_get("JEV_API_KEY")), _get("JEV_API_KEY"),_get("JEV_BASE_URL","https://www.jevai.org"),_float("JEV_TIMEOUT",8),_get("DEFAULT_REASONING_EFFORT") or None,_get("LOG_LEVEL","INFO").upper(),require_auth,owner_id,access_token)
 
 DEEPSEEK_EFFORTS={"low","high","max"}
 OPENAI_EFFORTS={"none","minimal","low","medium","high","xhigh"}

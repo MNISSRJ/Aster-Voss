@@ -6,6 +6,7 @@ from llm.base import LLMMessage
 from llm.factory import create_provider, available_providers
 from aster import AGENT_IDENTITY, AGENT_TAGLINE, get_memory
 from config import load_config
+from auth import OwnerTokenProvider, UserContext
 from memory.persistence import long_term_context, load_history, save_history
 from memory import brain, cloud
 from memory import extractor
@@ -27,18 +28,26 @@ from rate_limit import RateLimiter, rate_limit_rule
 
 CONFIG = load_config()
 log.configure(CONFIG.log_level)
-MEMORY = MemoryService()
-CONVERSATIONS = ConversationService()
 RADAR = RadarService()
 RATE_LIMITER = RateLimiter()
 _LOCAL_CHAT_LOCK = threading.Lock()
 
-def build_prompt(user_id: str = MEMORY.user_id):
-    m = MEMORY.context()
+def memory_service(user_id: str | None = None):
+    return MemoryService(user_id=user_id or CONFIG.owner_id)
+
+
+def conversation_service(user_id: str | None = None):
+    return ConversationService(user_id=user_id or CONFIG.owner_id)
+
+
+def build_prompt(user_id: str | None = None):
+    user_id = user_id or CONFIG.owner_id
+    m = memory_service(user_id).context()
     growth = ""
     growth_path = Path(__file__).resolve().parent / "memory" / "GROWTH_LOG.md"
     try:
-        growth = growth_path.read_text(encoding="utf-8")
+        if user_id == CONFIG.owner_id:
+            growth = growth_path.read_text(encoding="utf-8")
     except OSError:
         growth = ""
     parts = [AGENT_IDENTITY.render_system_prompt()]
@@ -47,7 +56,7 @@ def build_prompt(user_id: str = MEMORY.user_id):
     if growth:
         parts.append(
             "<shared_growth_history>\n"
-            "These are a few curated milestones in Aster and Mint's shared history. "
+            "These are owner-private milestones in Aster's history. "
             "Use them naturally when relevant; never recite the log unless asked.\n"
             + growth
             + "\n</shared_growth_history>"
@@ -73,15 +82,14 @@ def _rate_limit_client_identity(request: Request) -> str:
 async def access_control_and_observability(request: Request, call_next):
     started = time.perf_counter()
     request_id = request.headers.get("x-request-id") or uuid4().hex
-    if CONFIG.require_auth and request.url.path not in {"/", "/api/status"}:
-        expected = os.getenv("ASTER_ACCESS_TOKEN", "")
-        provided = request.headers.get("authorization", "")
-        expected_header = "Bearer " + expected
-        if not expected or not hmac.compare_digest(provided, expected_header):
+    if request.url.path not in {"/", "/api/status"}:
+        context = OwnerTokenProvider(CONFIG.access_token, CONFIG.owner_id).authenticate(request.headers.get("authorization", "")) if CONFIG.require_auth else UserContext(CONFIG.owner_id)
+        if context is None:
             response = JSONResponse({"error": "unauthorized", "request_id": request_id}, status_code=401)
             response.headers["X-Request-ID"] = request_id
             response.headers["X-Server-Time"] = str(int(time.time()))
             return response
+        request.state.user_context = context
 
     rule = rate_limit_rule(request.method.upper(), request.url.path)
     if rule:
@@ -147,7 +155,7 @@ def _run_local_chat(message: str):
             for m in load_history()
             if m.role in {"user", "assistant"} and isinstance(m.content, str)
         ]
-        request_agent = _agent_from_messages(history)
+        request_agent = _agent_from_messages(history, user_id)
         result = request_agent.run(message)
         save_history(request_agent.messages)
         return result
@@ -160,10 +168,10 @@ def _conversation_title(text: str) -> str:
     return clean[:30] + ("…" if len(clean) > 30 else "")
 
 
-def _agent_from_messages(history):
+def _agent_from_messages(history, user_id: str | None = None):
     a = AsterVoss(
         CONFIG,
-        system_prompt=build_prompt(),
+        system_prompt=build_prompt(user_id),
         identity_name=AGENT_IDENTITY.name,
         identity_tagline=AGENT_TAGLINE,
         restore_history=False,
@@ -178,7 +186,7 @@ def _agent_from_messages(history):
             and item["content"].strip()
         ):
             restored.append(LLMMessage(role=item["role"], content=item["content"]))
-    a._messages = [LLMMessage.system(build_prompt())] + restored
+    a._messages = [LLMMessage.system(build_prompt(user_id))] + restored
     return a
 
 
@@ -213,10 +221,12 @@ def home():
 
 
 @app.post("/api/chat")
-def chat(body: ChatIn):
+def chat(body: ChatIn, request: Request):
+    user_id = request.state.user_context.user_id
+    conversations = conversation_service(user_id)
     if cloud.enabled():
         conversation_id = (body.conversation_id or "").strip() or str(uuid4())
-        existing = CONVERSATIONS.get(conversation_id)
+        existing = conversations.get(conversation_id)
         history = existing.get("messages", []) if existing else []
         title = existing.get("title", "新对话") if existing else _conversation_title(body.message)
         created_at = existing.get("created_at") if existing else None
@@ -224,13 +234,13 @@ def chat(body: ChatIn):
         request_agent = _agent_from_messages(history)
         r = request_agent.run(body.message)
 
-        persisted = CONVERSATIONS.save(
+        persisted = conversations.save(
             conversation_id,
             title,
             _message_dicts(request_agent.messages),
             created_at=created_at,
         )
-        usage_logged = bool(cloud.save_usage_event(conversation_id, r.provider, r.model, r.usage)) if r.usage else False
+        usage_logged = bool(cloud.save_usage_event(conversation_id, r.provider, r.model, r.usage, user_id=user_id)) if r.usage else False
         if not persisted:
             log.error("conversation persistence failed conversation_id=%s", conversation_id)
             return JSONResponse(
@@ -251,7 +261,7 @@ def chat(body: ChatIn):
                     "usage_logged": usage_logged,
                 },
             )
-        saved_record = CONVERSATIONS.get(conversation_id)
+        saved_record = conversations.get(conversation_id)
         return {
             "ok": True,
             "text": r.text,
@@ -289,17 +299,19 @@ def reset():
 
 
 @app.get("/api/conversations")
-def get_conversations():
+def get_conversations(request: Request):
+    conversations = conversation_service(request.state.user_context.user_id)
     return {
-        "cloud": CONVERSATIONS.enabled,
-        "conversations": CONVERSATIONS.list(),
+        "cloud": conversations.enabled,
+        "conversations": conversations.list(),
         "server_time": int(time.time()),
     }
 
 
 @app.get("/api/conversations/{conversation_id}")
-def get_conversation(conversation_id: str):
-    conversation = CONVERSATIONS.get(conversation_id)
+def get_conversation(conversation_id: str, request: Request):
+    conversations = conversation_service(request.state.user_context.user_id)
+    conversation = conversations.get(conversation_id)
     if not conversation:
         raise HTTPException(status_code=404, detail="对话不存在")
     conversation["server_time"] = int(time.time())
@@ -307,8 +319,9 @@ def get_conversation(conversation_id: str):
 
 
 @app.delete("/api/conversations/{conversation_id}")
-def remove_conversation(conversation_id: str):
-    if not CONVERSATIONS.delete(conversation_id):
+def remove_conversation(conversation_id: str, request: Request):
+    conversations = conversation_service(request.state.user_context.user_id)
+    if not conversations.delete(conversation_id):
         raise HTTPException(status_code=503, detail="对话暂时无法删除")
     return {"ok": True, "server_time": int(time.time())}
 
@@ -368,14 +381,16 @@ def ai_radar_cron(request: Request):
 
 
 @app.post("/api/memory/suggestions")
-def memory_suggestions(body: ConversationRefIn):
-    conversation = CONVERSATIONS.get(body.conversation_id or "") if CONVERSATIONS.enabled else None
+def memory_suggestions(body: ConversationRefIn, request: Request):
+    user_id = request.state.user_context.user_id
+    conversations = conversation_service(user_id)
+    conversation = conversations.get(body.conversation_id or "") if conversations.enabled else None
     source = conversation.get("messages", []) if conversation else []
     messages = extractor.messages_for_agent(source)
     if len(messages) < 2:
         return {"status": "empty", "suggestions": []}
     try:
-        reviewer = _agent_from_messages([])
+        reviewer = _agent_from_messages([], user_id)
         decision = reviewer.router.select("Extract durable memory suggestions")
         provider = reviewer.router.get_provider(decision.provider_name)
         if not provider.is_available():
@@ -400,47 +415,53 @@ def get_automations():
 
 
 @app.get("/api/memory")
-def get_memories():
-    return {"cloud": MEMORY.cloud_enabled, "memories": MEMORY.list()}
+def get_memories(request: Request):
+    memory = memory_service(request.state.user_context.user_id)
+    return {"cloud": memory.cloud_enabled, "memories": memory.list()}
 
 
 @app.post("/api/memory")
-def add_memory(body: MemoryIn):
+def add_memory(body: MemoryIn, request: Request):
+    memory = memory_service(request.state.user_context.user_id)
     text_value = brain.scrub_secrets(body.text).strip()
     if not text_value:
         raise HTTPException(status_code=400, detail="记忆内容不能为空")
-    if not MEMORY.add(text_value, source="manual"):
+    if not memory.add(text_value, source="manual"):
         raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
     return {"ok": True}
 
 
 @app.put("/api/memory/{memory_id}")
-def edit_memory(memory_id: str, body: MemoryEditIn):
+def edit_memory(memory_id: str, body: MemoryEditIn, request: Request):
+    memory = memory_service(request.state.user_context.user_id)
     text_value = brain.scrub_secrets(body.text).strip()
     if not text_value:
         raise HTTPException(status_code=400, detail="记忆内容不能为空")
-    memories = MEMORY.list()
+    memories = memory.list()
     for item in memories:
         if str(item.get("id")) == str(memory_id):
             item["text"] = text_value
             item["source"] = item.get("source") or "manual"
-            if not MEMORY.replace(memories):
+            if not memory.replace(memories):
                 raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
             return {"ok": True}
     raise HTTPException(status_code=404, detail="记忆不存在")
 
 
 @app.delete("/api/memory/{memory_id}")
-def remove_memory(memory_id: str):
-    if not MEMORY.delete(memory_id):
+def remove_memory(memory_id: str, request: Request):
+    memory = memory_service(request.state.user_context.user_id)
+    if not memory.delete(memory_id):
         raise HTTPException(status_code=503, detail="长期记忆暂时无法保存")
     return {"ok": True}
 
 
 @app.post("/api/memory/summarize")
-def summarize_memories(body: ConversationRefIn):
-    conversation = CONVERSATIONS.get(body.conversation_id or "") if CONVERSATIONS.enabled else None
-    source_messages = conversation.get("messages", []) if conversation else _message_dicts(load_history())
+def summarize_memories(body: ConversationRefIn, request: Request):
+    user_id = request.state.user_context.user_id
+    conversations = conversation_service(user_id)
+    conversation = conversations.get(body.conversation_id or "") if conversations.enabled else None
+    source_messages = conversation.get("messages", []) if conversation else (_message_dicts(load_history()) if not conversations.enabled else [])
     messages = [
         LLMMessage(role=item["role"], content=item["content"])
         for item in source_messages[-16:]
@@ -466,7 +487,7 @@ def summarize_memories(body: ConversationRefIn):
         + transcript
     )
     try:
-        summarizer = _agent_from_messages([])
+        summarizer = _agent_from_messages([], user_id)
         decision = summarizer.router.select("Summarize durable user memory")
         provider = summarizer.router.get_provider(decision.provider_name)
         if not provider.is_available():
@@ -494,7 +515,7 @@ def summarize_memories(body: ConversationRefIn):
     saved = []
     for candidate in candidates[:8] if isinstance(candidates, list) else []:
         value = brain.scrub_secrets(str(candidate)).strip()
-        if value and brain.add(value, source="conversation"):
+        if value and memory_service(user_id).add(value, source="conversation"):
             saved.append(value)
     return {"ok": True, "added": len(saved), "memories": saved}
 
@@ -507,7 +528,7 @@ def status():
         "provider": CONFIG.main_provider,
         "providers": available_providers(CONFIG),
         "configured": bool(CONFIG.active_provider and CONFIG.active_provider.is_configured),
-        "memory": MEMORY.storage_mode,
+        "memory": memory_service(CONFIG.owner_id).storage_mode,
         "server_time": int(time.time()),
         "version": "0.2.0",
         "rate_limit": RATE_LIMITER.backend_status,
@@ -516,15 +537,15 @@ def status():
 
 
 @app.get("/api/usage")
-def usage():
-    return {"usage": cloud.usage_summary(user_id=MEMORY.user_id), "server_time": int(time.time())}
+def usage(request: Request):
+    return {"usage": cloud.usage_summary(user_id=request.state.user_context.user_id), "server_time": int(time.time())}
 
 
 @app.get("/api/capabilities")
 def capabilities():
     return {
         "providers": available_providers(CONFIG),
-        "memory": MEMORY.cloud_enabled,
+        "memory": memory_service(CONFIG.owner_id).cloud_enabled,
         "automations": list_automations(),
         "server_time": int(time.time()),
     }
