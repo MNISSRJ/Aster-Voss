@@ -1,7 +1,6 @@
 """AI Radar business service."""
 from __future__ import annotations
 
-import os
 import time
 
 import log
@@ -11,7 +10,7 @@ from memory import cloud
 
 
 class RadarService:
-    def __init__(self, repository=None, user_id: str):
+    def __init__(self, user_id: str, repository=None):
         from .radar_repository import RadarRepository
         self.repository = repository or RadarRepository()
         if not user_id or not user_id.strip():
@@ -24,7 +23,7 @@ class RadarService:
             "brief_date": time.strftime("%Y-%m-%d", time.gmtime()),
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "intro_zh": (
-                "AI 编辑暂时不可用，以下按新鲜度与跨来源出现情况展示实时候选。"
+                "AI 编辑暂时不可用，以下按新鲜度与跨来源出现情况展示。"
                 if candidates else "今天暂时没有抓到可用的 AI 热点。"
             ),
             "items": [
@@ -80,6 +79,7 @@ class RadarService:
             else False
         )
         return payload
+
     def today(self):
         date_str = time.strftime("%Y-%m-%d", time.gmtime())
         stored = self.repository.get(date_str, self.user_id)
