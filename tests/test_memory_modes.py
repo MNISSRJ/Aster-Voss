@@ -98,7 +98,7 @@ def test_cloud_conversation_write_failure_returns_non_success(monkeypatch):
                 complexity=1,
             )
 
-    monkeypatch.setattr(web_app, "_agent_from_messages", lambda history: FakeAgent())
+    monkeypatch.setattr(web_app, "_agent_from_messages", lambda history, context: FakeAgent())
 
     client = TestClient(web_app.app)
     response = client.post("/api/chat", json={"message": "ping"})

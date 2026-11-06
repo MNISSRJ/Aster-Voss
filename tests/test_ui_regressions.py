@@ -21,7 +21,7 @@ def test_enter_still_submits_chat():
 def test_radar_has_refresh_and_safe_fallback():
     assert '"/api/ai-radar/refresh"' in SOURCE
     from services.radar_service import RadarService
-    assert "AI 编辑暂时不可用" in RadarService()._fallback_payload([{"id":"x","title":"t","description":"","url":"u","published_at":"p","source_list":["s"],"hot_score":1}])["intro_zh"]
+    assert "AI 编辑暂时不可用" in RadarService(user_id="test-owner")._fallback_payload([{"id":"x","title":"t","description":"","url":"u","published_at":"p","source_list":["s"],"hot_score":1}])["intro_zh"]
 
 
 def test_new_chat_does_not_clear_conversation_archive():

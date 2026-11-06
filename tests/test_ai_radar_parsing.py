@@ -153,7 +153,7 @@ def test_radar_service_retries_failed_curation_then_succeeds(monkeypatch):
     monkeypatch.setattr(radar_module, "curate", fake_curate)
     monkeypatch.setattr(radar_module.cloud, "enabled", lambda: False)
 
-    payload = RadarService().generate(AvailableProvider())
+    payload = RadarService(user_id="test-owner").generate(AvailableProvider())
 
     assert calls == [1, 2]
     assert payload["status"] == "ready"
@@ -178,7 +178,7 @@ def test_radar_service_falls_back_after_two_failed_curation_attempts(monkeypatch
     monkeypatch.setattr(radar_module, "curate", fake_curate)
     monkeypatch.setattr(radar_module.cloud, "enabled", lambda: False)
 
-    payload = RadarService().generate(AvailableProvider())
+    payload = RadarService(user_id="test-owner").generate(AvailableProvider())
 
     assert calls == [1, 2]
     assert payload["status"] == "fallback"
